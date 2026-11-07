@@ -6,7 +6,8 @@ model AcademicYear {
   endDate   DateTime @map("end_date") @db.Date
   isCurrent Boolean  @default(false) @map("is_current")
 
-  school School @relation(fields: [schoolId], references: [id])
+  school       School        @relation(fields: [schoolId], references: [id])
+  applications Application[]
 
   @@unique([schoolId, name])
   @@map("academic_years")
@@ -18,8 +19,10 @@ model SchoolClass {
   name      String
   sortOrder Int    @map("sort_order")
 
-  school    School     @relation(fields: [schoolId], references: [id])
-  divisions Division[]
+  school              School        @relation(fields: [schoolId], references: [id])
+  divisions           Division[]
+  applications        Application[] @relation("AppliedClass")
+  grantedApplications Application[] @relation("GrantedClass")
 
   @@unique([schoolId, name])
   @@map("classes")
@@ -31,8 +34,9 @@ model Division {
   classId  String @map("class_id") @db.Uuid
   name     String
 
-  school School      @relation(fields: [schoolId], references: [id])
-  class  SchoolClass @relation(fields: [classId], references: [id])
+  school              School        @relation(fields: [schoolId], references: [id])
+  class               SchoolClass   @relation(fields: [classId], references: [id])
+  grantedApplications Application[]
 
   @@unique([classId, name])
   @@index([schoolId])

@@ -1,0 +1,29 @@
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// A configurable form (for example the admission application), stored as data.
+/// A published version never changes; editing creates a new draft version.
+model FormDefinition {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  schoolId    String     @map("school_id") @db.Uuid
+  /// Which form this is: "admission" for now.
+  key         String
+  version     Int
+  name        String
+  status      FormStatus @default(DRAFT)
+  /// { sections: [{ id, title, fields: [...] }] }, checked by the forms module.
+  schema      Json
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  publishedAt DateTime?  @map("published_at")
+
+  school       School        @relation(fields: [schoolId], references: [id])
+  applications Application[]
+
+  @@unique([schoolId, key, version])
+  @@index([schoolId, key, status])
+  @@map("form_definitions")
+}

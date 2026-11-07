@@ -1,14 +1,18 @@
 import 'dotenv/config';
 import argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client.js';
+import { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
+import {
+  DEFAULT_ADMISSION_FORM,
+  DEFAULT_ADMISSION_FORM_NAME,
+} from '../src/modules/forms/default-admission-form.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
 const PERMISSIONS = [
-  'users.manage', 'settings.manage', 'audit.read', 'dashboard.view',
+  'users.manage', 'settings.manage', 'audit.read', 'dashboard.view', 'forms.manage',
   'academics.read', 'academics.manage',
   'admissions.read', 'admissions.manage',
   'students.read', 'students.manage',
@@ -90,8 +94,28 @@ async function main() {
 
   // School
   const school =
-    (await prisma.school.findFirst()) ??
+    // Oldest first: the same rule the app uses to decide which school a login belongs to.
+    (await prisma.school.findFirst({ orderBy: { createdAt: 'asc' } })) ??
     (await prisma.school.create({ data: { name: 'Demo School' } }));
+
+  // The school's admission form, as published version 1. Editable later in the form builder.
+  const hasAdmissionForm = await prisma.formDefinition.findFirst({
+    where: { schoolId: school.id, key: 'admission' },
+    select: { id: true },
+  });
+  if (!hasAdmissionForm) {
+    await prisma.formDefinition.create({
+      data: {
+        schoolId: school.id,
+        key: 'admission',
+        version: 1,
+        name: DEFAULT_ADMISSION_FORM_NAME,
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        schema: DEFAULT_ADMISSION_FORM as unknown as Prisma.InputJsonObject,
+      },
+    });
+  }
 
   // First admin
   const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
