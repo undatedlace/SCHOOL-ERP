@@ -18,6 +18,9 @@ model School {
   forms         FormDefinition[]
   applications  Application[]
   files         StoredFile[]
+  students      Student[]
+  guardians     Guardian[]
+  enrollments   Enrollment[]
 
   @@map("schools")
 }

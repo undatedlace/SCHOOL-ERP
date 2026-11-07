@@ -8,6 +8,7 @@ model AcademicYear {
 
   school       School        @relation(fields: [schoolId], references: [id])
   applications Application[]
+  enrollments  Enrollment[]
 
   @@unique([schoolId, name])
   @@map("academic_years")
@@ -37,6 +38,7 @@ model Division {
   school              School        @relation(fields: [schoolId], references: [id])
   class               SchoolClass   @relation(fields: [classId], references: [id])
   grantedApplications Application[]
+  enrollments         Enrollment[]
 
   @@unique([classId, name])
   @@index([schoolId])
