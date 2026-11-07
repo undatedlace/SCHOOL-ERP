@@ -10,6 +10,8 @@ import {
   Eligibility,
   FormDetail,
   GuardianInput,
+  NewStaff,
+  StaffMember,
   FormSchema,
   FormSummary,
   FormVersion,
@@ -208,4 +210,16 @@ export class Api {
   ) => this.http.patch(`/api/guardians/${id}`, body);
   unlinkGuardian = (studentId: string, guardianId: string) =>
     this.http.delete<void>(`/api/students/${studentId}/guardians/${guardianId}`);
+
+  // ---------- Staff ----------
+  staffList = (q: { page: number; pageSize: number; search?: string; status?: string | null }) =>
+    this.http.get<Page<StaffMember>>('/api/staff', { params: params(q) });
+  staffMember = (id: string) => this.http.get<StaffMember>(`/api/staff/${id}`);
+  createStaff = (body: NewStaff) => this.http.post<StaffMember>('/api/staff', body);
+  updateStaff = (
+    id: string,
+    body: Partial<Omit<NewStaff, 'account'>> & { status?: string; leftOn?: string },
+  ) => this.http.patch<StaffMember>(`/api/staff/${id}`, body);
+  addStaffAccount = (id: string, roleCodes: string[]) =>
+    this.http.post<StaffMember>(`/api/staff/${id}/account`, { roleCodes });
 }

@@ -28,6 +28,12 @@ export const NAV: NavItem[] = [
     permission: 'students.read_all',
   },
   {
+    label: 'Staff',
+    path: '/app/staff',
+    description: 'Teachers and other staff, their joining and leaving dates',
+    permission: 'staff.read_all',
+  },
+  {
     label: 'Users',
     path: '/app/settings/users',
     description: 'Staff and parent accounts, roles and passwords',

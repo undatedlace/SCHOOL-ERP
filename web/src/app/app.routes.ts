@@ -80,6 +80,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/students/student-page').then((m) => m.StudentPage),
       },
       {
+        path: 'staff',
+        canActivate: [permissionGuard('staff.read_all')],
+        loadComponent: () => import('./features/staff/staff-list').then((m) => m.StaffList),
+      },
+      {
+        path: 'staff/:id',
+        canActivate: [permissionGuard('staff.read_all')],
+        loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
+      },
+      {
         path: 'settings/forms',
         canActivate: [permissionGuard('forms.manage')],
         loadComponent: () => import('./features/forms/forms-list').then((m) => m.FormsList),
