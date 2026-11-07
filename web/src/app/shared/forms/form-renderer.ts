@@ -233,6 +233,12 @@ export class FormRenderer {
   }
 
   protected span(f: Field): string {
+    const width = this.widthClass(f);
+    // In a grid, an item told to start in column 1 moves to the next row.
+    return f.newRow ? `${width} col-start-1` : width;
+  }
+
+  private widthClass(f: Field): string {
     switch (f.width) {
       case 'quarter':
         return 'col-span-6 sm:col-span-4 lg:col-span-3';

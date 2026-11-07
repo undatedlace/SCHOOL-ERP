@@ -213,6 +213,49 @@ async function main() {
     }
   }
 
+  // The four photographs start on their own row. Applied once to a published form whose child photo
+  // has no layout choice yet (a school that sets it either way in the form builder is left alone).
+  const current = await prisma.formDefinition.findFirst({
+    where: { schoolId: school.id, key: 'admission', status: 'PUBLISHED' },
+  });
+  if (current) {
+    const schema = structuredClone(current.schema) as unknown as {
+      sections: {
+        fields: { id: string; system?: string; newRow?: boolean }[];
+      }[];
+    };
+    const photo = schema.sections
+      .flatMap((s) => s.fields)
+      .find((f) => f.system === 'student.photo');
+    if (photo && photo.newRow === undefined) {
+      photo.newRow = true;
+      const last = await prisma.formDefinition.aggregate({
+        where: { schoolId: school.id, key: 'admission' },
+        _max: { version: true },
+      });
+      await prisma.$transaction([
+        prisma.formDefinition.update({
+          where: { id: current.id },
+          data: { status: 'ARCHIVED' },
+        }),
+        prisma.formDefinition.create({
+          data: {
+            schoolId: school.id,
+            key: 'admission',
+            version: (last._max.version ?? current.version) + 1,
+            name: current.name,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+            schema: schema as unknown as Prisma.InputJsonObject,
+          },
+        }),
+      ]);
+      console.log(
+        'Photographs now start on their own row (new version published).',
+      );
+    }
+  }
+
   // First admin
   const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
   const password = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe123!';

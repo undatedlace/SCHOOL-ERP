@@ -62,6 +62,8 @@ export interface FormField {
   helpText?: string;
   placeholder?: string;
   width?: FieldWidth;
+  /** Starts on a new row instead of continuing the row above. */
+  newRow?: boolean;
   options?: FieldOption[];
   /** For a select: take the options from the school's classes instead of a fixed list. */
   optionsFrom?: 'classes';
@@ -237,6 +239,10 @@ function readField(raw: unknown, ctx: ReadContext): FormField | null {
     if (FIELD_WIDTHS.includes(raw['width'] as FieldWidth))
       field.width = raw['width'] as FieldWidth;
     else fail(`Field "${name}" has an unknown width`);
+  }
+  if (raw['newRow'] !== undefined) {
+    if (typeof raw['newRow'] === 'boolean') field.newRow = raw['newRow'];
+    else fail(`Field "${name}": newRow must be true or false`);
   }
 
   readLimits(raw, field, name, fail);

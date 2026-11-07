@@ -19,6 +19,7 @@ export const PHOTO_FIELDS: FormField[] = [
     label: 'Latest photograph of child',
     system: 'student.photo',
     width: 'quarter',
+    newRow: true, // the four photographs start on their own row, below the class
   },
   {
     id: 'motherPhoto',

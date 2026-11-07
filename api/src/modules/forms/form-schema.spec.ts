@@ -237,6 +237,39 @@ describe('validateFormSchema', () => {
   });
 });
 
+describe('starting a field on a new row', () => {
+  it('is kept when true or false, and left out when not given', () => {
+    const { schema, errors } = validateFormSchema(
+      form(
+        { id: 'a', type: 'text', label: 'A', newRow: true },
+        { id: 'b', type: 'text', label: 'B', newRow: false },
+        { id: 'c', type: 'text', label: 'C' },
+      ),
+    );
+    expect(errors).toEqual([]);
+    expect(allFields(schema).map((f) => f.newRow)).toEqual([
+      true,
+      false,
+      undefined,
+    ]);
+  });
+
+  it('must be a true or false value', () => {
+    expect(
+      validateFormSchema(
+        form({ id: 'a', type: 'text', label: 'A', newRow: 'yes' }),
+      ).errors.join(),
+    ).toMatch(/newRow/);
+  });
+
+  it('the default admission form starts the child photo on a new row', () => {
+    const childPhoto = allFields(DEFAULT_ADMISSION_FORM).find(
+      (f) => f.id === 'childPhoto',
+    );
+    expect(childPhoto?.newRow).toBe(true);
+  });
+});
+
 describe('photo fields', () => {
   it('are allowed at the top level, with a quarter width, and linked to the child photo', () => {
     const { errors } = validateFormSchema(

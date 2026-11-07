@@ -91,6 +91,8 @@ export interface FormField {
   helpText?: string;
   placeholder?: string;
   width?: FieldWidth;
+  /** Starts on a new row instead of continuing the row above. */
+  newRow?: boolean;
   options?: FieldOption[];
   /** Options come from the school's classes. */
   optionsFrom?: 'classes';

@@ -119,6 +119,11 @@ const WIDTHS: { value: FieldWidth; label: string }[] = [
           }
         </div>
 
+        <div class="flex items-center gap-2">
+          <p-checkbox formControlName="newRow" [binary]="true" inputId="fe_newrow" />
+          <label for="fe_newrow" class="text-sm">Start on a new row</label>
+        </div>
+
         <app-form-field label="Help text" for="fe_help" hint="Shown under the question.">
           <input pInputText id="fe_help" formControlName="helpText" [fluid]="true" />
         </app-form-field>
@@ -292,6 +297,7 @@ export class FieldEditor {
     label: ['', [Validators.required, Validators.maxLength(150)]],
     type: ['text' as FieldType],
     width: ['full' as FieldWidth],
+    newRow: [false],
     required: [false],
     helpText: ['', Validators.maxLength(300)],
     placeholder: ['', Validators.maxLength(100)],
@@ -336,6 +342,7 @@ export class FieldEditor {
       label: f?.label ?? '',
       type: f?.type ?? 'text',
       width: f?.width ?? 'full',
+      newRow: !!f?.newRow,
       required: !!f?.required,
       helpText: f?.helpText ?? '',
       placeholder: f?.placeholder ?? '',
@@ -371,6 +378,9 @@ export class FieldEditor {
     if (v.required || this.requiredLocked()) result.required = true;
     if (v.helpText.trim()) result.helpText = v.helpText.trim();
     if (v.width !== 'full') result.width = v.width;
+    if (v.newRow) result.newRow = true;
+    // Remember an explicit "no" on a field that had the setting, so it is not applied again later.
+    else if (existing && existing.newRow !== undefined) result.newRow = false;
     if (existing?.system) result.system = existing.system;
 
     if (type === 'text' || type === 'textarea') {

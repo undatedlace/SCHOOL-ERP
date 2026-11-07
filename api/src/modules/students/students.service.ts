@@ -23,7 +23,8 @@ type Tx = Prisma.TransactionClient;
 const CURRENT_INCLUDE = (academicYearId: string | null) =>
   ({
     enrollments: {
-      where: academicYearId ? { academicYearId } : { id: '' },
+      // No current year: match nothing. (An empty string is not a valid uuid.)
+      where: academicYearId ? { academicYearId } : { OR: [] },
       take: 1,
       include: {
         division: {
