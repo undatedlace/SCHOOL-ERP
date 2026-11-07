@@ -99,7 +99,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
           <td>{{ user.fullName }}</td>
           <td class="text-sm">
             <div>{{ user.email }}</div>
-            <div class="text-slate-500">{{ user.mobile }}</div>
+            <div class="text-muted-foreground">{{ user.mobile }}</div>
           </td>
           <td>
             <div class="flex flex-wrap gap-1">
@@ -130,7 +130,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5" class="p-4 text-center text-slate-500">No users found.</td>
+          <td colspan="5" class="p-4 text-center text-muted-foreground">No users found.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -156,7 +156,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
         @if (
           form.errors?.['mismatch'] && form.controls.email.touched && form.controls.mobile.touched
         ) {
-          <small class="text-red-600" role="alert">{{ form.errors?.['mismatch'] }}</small>
+          <small class="text-destructive" role="alert">{{ form.errors?.['mismatch'] }}</small>
         }
         <app-form-field label="Roles" for="roles" [control]="form.controls.roleCodes">
           <p-multiselect
@@ -184,7 +184,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
             />
           </app-form-field>
         } @else {
-          <p class="text-sm text-slate-600">
+          <p class="text-sm text-muted-foreground">
             A temporary password is generated. The user must change it the first time they sign in.
           </p>
         }
@@ -213,7 +213,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
           >. It is shown only once, and they must change it when they sign in.
         </p>
         <div
-          class="mb-4 rounded-md bg-slate-100 p-3 text-center font-mono text-xl tracking-wider select-all"
+          class="mb-4 rounded-md bg-muted p-3 text-center font-mono text-xl tracking-wider select-all"
         >
           {{ t.password }}
         </div>

@@ -55,7 +55,7 @@ import { FormField } from '../../shared/ui/form-field';
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="3" class="p-4 text-center text-slate-500">
+          <td colspan="3" class="p-4 text-center text-muted-foreground">
             No subjects yet. Add the first one.
           </td>
         </tr>

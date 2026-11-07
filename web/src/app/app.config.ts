@@ -3,17 +3,17 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { provideOptimus } from '@openng/optimus-ui/config';
-import Aura from '@openng/optimus-ui-themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth.interceptor';
+import { AppPreset } from './theme/optimus-preset';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([authInterceptor])),
-    // Light theme only for now: dark mode would need an opt-in class on <html>.
-    provideOptimus({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
+    // Dark is on when <html> has the app-dark class (the default; see index.html and ThemeService).
+    provideOptimus({ theme: { preset: AppPreset, options: { darkModeSelector: '.app-dark' } } }),
     MessageService,
     ConfirmationService,
   ],

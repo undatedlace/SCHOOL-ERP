@@ -6,7 +6,7 @@ import { AuthService } from '../../core/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="mb-2 text-xl font-semibold">Welcome, {{ auth.me()?.fullName }}</h1>
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-muted-foreground">
       Attendance, homework, results, report cards, notices and fees will appear here once the school
       starts using those features.
     </p>

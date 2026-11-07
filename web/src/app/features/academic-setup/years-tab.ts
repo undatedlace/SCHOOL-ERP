@@ -85,7 +85,7 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5" class="p-4 text-center text-slate-500">
+          <td colspan="5" class="p-4 text-center text-muted-foreground">
             No academic years yet. Add the first one.
           </td>
         </tr>
@@ -129,7 +129,7 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
           </app-form-field>
         </div>
         @if (form.errors?.['mismatch']) {
-          <small class="text-red-600" role="alert">{{ form.errors?.['mismatch'] }}</small>
+          <small class="text-destructive" role="alert">{{ form.errors?.['mismatch'] }}</small>
         }
         <div class="flex items-center gap-2 text-sm">
           <p-checkbox formControlName="isCurrent" [binary]="true" inputId="isCurrent" />

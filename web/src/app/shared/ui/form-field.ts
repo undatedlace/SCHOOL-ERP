@@ -9,10 +9,10 @@ import { fieldError } from '../form-errors';
   host: { class: 'block' },
   template: `
     <div class="flex flex-col gap-1" (focusout)="touched.update((n) => n + 1)">
-      <label [attr.for]="for()" class="text-sm font-medium text-slate-700">{{ label() }}</label>
+      <label [attr.for]="for()" class="text-sm font-medium text-foreground">{{ label() }}</label>
       <ng-content />
       @if (message(); as text) {
-        <small class="text-red-600" role="alert">{{ text }}</small>
+        <small class="text-destructive" role="alert">{{ text }}</small>
       }
     </div>
   `,

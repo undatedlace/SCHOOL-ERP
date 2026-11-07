@@ -30,11 +30,11 @@ const passwordsMatch = (group: AbstractControl): ValidationErrors | null => {
   template: `
     <h1 class="mb-1 text-2xl font-semibold">Change your password</h1>
     @if (auth.me()?.mustChangePassword) {
-      <p class="mb-6 text-sm text-slate-600">
+      <p class="mb-6 text-sm text-muted-foreground">
         You are using a temporary password. Choose a new one to continue.
       </p>
     } @else {
-      <p class="mb-6 text-sm text-slate-600">Other devices will be signed out.</p>
+      <p class="mb-6 text-sm text-muted-foreground">Other devices will be signed out.</p>
     }
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4" novalidate>

@@ -53,12 +53,12 @@ import { PageHeader } from '../../shared/ui/page-header';
           <td class="whitespace-nowrap">{{ row.createdAt | date: 'd MMM y, h:mm a' }}</td>
           <td>{{ row.actorName ?? '-' }}</td>
           <td class="font-mono text-sm">{{ row.action }}</td>
-          <td class="text-sm text-slate-600">{{ row.entityType ?? '' }}</td>
+          <td class="text-sm text-muted-foreground">{{ row.entityType ?? '' }}</td>
         </tr>
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="4" class="p-4 text-center text-slate-500">Nothing recorded yet.</td>
+          <td colspan="4" class="p-4 text-center text-muted-foreground">Nothing recorded yet.</td>
         </tr>
       </ng-template>
     </p-table>

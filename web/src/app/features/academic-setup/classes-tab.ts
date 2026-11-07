@@ -47,13 +47,13 @@ type Dialog =
             <div class="flex flex-wrap gap-2">
               @for (d of cls.divisions; track d.id) {
                 <span
-                  class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm"
+                  class="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
                 >
                   {{ d.name }}
                   <button
                     *appHasPermission="'academics.manage'"
                     type="button"
-                    class="text-slate-500 hover:text-red-600"
+                    class="text-muted-foreground hover:text-destructive"
                     [attr.aria-label]="'Remove division ' + d.name + ' from ' + cls.name"
                     (click)="confirmDeleteDivision(cls, d)"
                   >
@@ -61,7 +61,7 @@ type Dialog =
                   </button>
                 </span>
               } @empty {
-                <span class="text-sm text-slate-500">None</span>
+                <span class="text-sm text-muted-foreground">None</span>
               }
             </div>
           </td>
@@ -85,7 +85,7 @@ type Dialog =
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="3" class="p-4 text-center text-slate-500">
+          <td colspan="3" class="p-4 text-center text-muted-foreground">
             No classes yet. Add the first one.
           </td>
         </tr>
