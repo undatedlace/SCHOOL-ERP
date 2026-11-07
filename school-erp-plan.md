@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phase 0 done. Phase 1 (foundation) in progress. Last updated: 7 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions and the form builder are built. Last updated: 7 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -249,6 +249,14 @@ Auth, sessions, RBAC, audit, school settings, academic years, classes, divisions
 Admissions, students, guardians, enrollments, staff, teaching assignments, documents, Excel import.
 **Done when:** a student is admitted into a division with linked parents, and a real school's data can be imported.
 
+**Status (7 Nov 2026): admissions and the form builder are built; the rest of Phase 2 is not started.**
+- **Form builder:** a form is data, not code. A definition is JSON in `form_definitions`, versioned (draft, published, archived). Field types: short text, long text, number, date, dropdown, choice buttons, tick box, repeating rows (for example siblings). The admin edits a draft (add, edit, move, remove questions and sections, preview), then publishes. Publishing creates a new immutable version; each application keeps the version it was filled in with, so changing the form never rewrites old applications. A few **core fields** (class applied for, surname, first name, gender, date of birth) are locked, because the admit flow needs them; the school can reword and move them but not remove or retype them. Structure and answers are checked on the server by `validateFormSchema` and `validateAnswers`.
+- **Admissions:** office staff record an application from the paper form (the school's own form is the seeded first version). Form number is the number printed on the paper form, or the next number in the sequence per school and academic year (assigned under an advisory lock, so simultaneous saves never collide). Statuses: received, under review, granted (with class and division), refused (a reason is required), withdrawn. A granted application is final. A refused or withdrawn one can be reopened. Search by name or form number, filter by status and class, counts by status.
+- **Left out of the paper form on purpose:** "Age as on" (shown as an age calculated from the date of birth), "Date of birth in words", photographs and signatures (need the files module; a tick box records that the signed undertaking was received), and "For office use only" (that is the status and decision).
+- **UI:** neutral (zinc) theme, dark by default, with a toggle. Design tokens live in `web/src/styles.css`; the Optimus preset is `web/src/app/theme/optimus-preset.ts`.
+- **Next in Phase 2:** the students, guardians and enrollments schema and the admit flow that turns a granted application into a student (design it first), staff, teaching assignments, documents, Excel import. Parent and student logins (login by mobile or admission number) come with guardians.
+
+
 ### Phase 3: Fees
 Fee heads and structures, invoices, instalments, concessions, offline payments, allocations, reversals, PDF receipts, dues by standard and division.
 **Done when:** a part payment produces a receipt and the correct balance at student, division and standard level.
@@ -279,7 +287,12 @@ Insights, security review, backups, deployment, staff training data.
 | 6 | Existing data format and opening balances? | Excel | Phase 2, 3 |
 | 7 | Does a separate front office role exist? | Yes | RBAC |
 | 8 | Consent and retention for children's data under India's DPDP Act? | Needs checking with a qualified adviser before launch | Phases 2, 5 |
+| 9 | Should parents apply online themselves, or only the office enter paper forms? | Office enters paper forms. The form renderer is reusable for a public page later | Phase 2, 5 |
+| 10 | Age eligibility by class (the paper form lists Nursery 3, Junior KG 4, Senior KG 5, Std 1 six, Std 2 seven)? | Not enforced. Age is shown, not checked | Admissions |
+| 11 | Is a fee or registration payment taken at admission? | No. The paper form has "Fees paid on" and "Fee receipt no."; these link to fees in Phase 3 | Phase 3 |
+| 12 | Form number format and who may enter a number by hand? | Anyone entering may type the paper number; otherwise sequential per year | Admissions |
+| 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
 
 ## 12. Next step
 
-Phase 0 is done and the Phase 1 schema (auth, RBAC, academics, audit) is migrated and seeded. Continue Phase 1: auth endpoints and guards, then users and RBAC, school settings, academic setup, and the Angular shells. Design the students and fees schema when Phase 2 and 3 start.
+Click through Phase 1 and the new admissions screens in a browser with each role and fix what that shows. Then design the students, guardians and enrollments schema and build the admit flow (granted application to student).
