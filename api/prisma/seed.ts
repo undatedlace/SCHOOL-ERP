@@ -5,6 +5,7 @@ import { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
 import {
   DEFAULT_ADMISSION_FORM,
   DEFAULT_ADMISSION_FORM_NAME,
+  PHOTO_FIELDS,
 } from '../src/modules/forms/default-admission-form.js';
 
 const prisma = new PrismaClient({
@@ -12,16 +13,32 @@ const prisma = new PrismaClient({
 });
 
 const PERMISSIONS = [
-  'users.manage', 'settings.manage', 'audit.read', 'dashboard.view', 'forms.manage',
-  'academics.read', 'academics.manage',
-  'admissions.read', 'admissions.manage',
-  'students.read', 'students.manage',
-  'staff.read', 'staff.manage',
-  'attendance.read', 'attendance.mark',
-  'homework.read', 'homework.manage',
-  'marks.enter', 'results.publish', 'results.read',
-  'fees.read', 'fees.structure.manage', 'fees.payment.create', 'fees.payment.reverse',
-  'notices.read', 'notices.create',
+  'users.manage',
+  'settings.manage',
+  'audit.read',
+  'dashboard.view',
+  'forms.manage',
+  'academics.read',
+  'academics.manage',
+  'admissions.read',
+  'admissions.manage',
+  'students.read',
+  'students.manage',
+  'staff.read',
+  'staff.manage',
+  'attendance.read',
+  'attendance.mark',
+  'homework.read',
+  'homework.manage',
+  'marks.enter',
+  'results.publish',
+  'results.read',
+  'fees.read',
+  'fees.structure.manage',
+  'fees.payment.create',
+  'fees.payment.reverse',
+  'notices.read',
+  'notices.create',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -30,40 +47,68 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
   OFFICE_STAFF: {
     name: 'Office Staff',
     permissions: [
-      'academics.read', 'admissions.read', 'admissions.manage', 'students.read',
-      'students.manage', 'staff.read', 'attendance.read', 'notices.read',
-      'notices.create', 'dashboard.view',
+      'academics.read',
+      'admissions.read',
+      'admissions.manage',
+      'students.read',
+      'students.manage',
+      'staff.read',
+      'attendance.read',
+      'notices.read',
+      'notices.create',
+      'dashboard.view',
     ],
   },
   ACCOUNTANT: {
     name: 'Accountant',
     permissions: [
-      'academics.read', 'admissions.read', 'students.read', 'fees.read',
-      'fees.structure.manage', 'fees.payment.create', 'notices.read',
-      'notices.create', 'dashboard.view',
+      'academics.read',
+      'admissions.read',
+      'students.read',
+      'fees.read',
+      'fees.structure.manage',
+      'fees.payment.create',
+      'notices.read',
+      'notices.create',
+      'dashboard.view',
     ],
   },
   TEACHER: {
     name: 'Teacher',
     permissions: [
-      'academics.read', 'students.read', 'attendance.read', 'attendance.mark',
-      'homework.read', 'homework.manage', 'marks.enter', 'notices.read',
-      'notices.create', 'dashboard.view',
+      'academics.read',
+      'students.read',
+      'attendance.read',
+      'attendance.mark',
+      'homework.read',
+      'homework.manage',
+      'marks.enter',
+      'notices.read',
+      'notices.create',
+      'dashboard.view',
     ],
   },
   STAFF: { name: 'Staff', permissions: ['notices.read'] },
   PARENT: {
     name: 'Parent',
     permissions: [
-      'students.read', 'attendance.read', 'homework.read', 'results.read',
-      'fees.read', 'notices.read',
+      'students.read',
+      'attendance.read',
+      'homework.read',
+      'results.read',
+      'fees.read',
+      'notices.read',
     ],
   },
   STUDENT: {
     name: 'Student',
     permissions: [
-      'students.read', 'attendance.read', 'homework.read', 'results.read',
-      'fees.read', 'notices.read',
+      'students.read',
+      'attendance.read',
+      'homework.read',
+      'results.read',
+      'fees.read',
+      'notices.read',
     ],
   },
 };
@@ -71,7 +116,11 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
 async function main() {
   // Permissions
   for (const code of PERMISSIONS) {
-    await prisma.permission.upsert({ where: { code }, update: {}, create: { code } });
+    await prisma.permission.upsert({
+      where: { code },
+      update: {},
+      create: { code },
+    });
   }
   const allPermissions = await prisma.permission.findMany();
 
@@ -117,6 +166,50 @@ async function main() {
     });
   }
 
+  // Databases that already have the admission form gain the four photograph boxes as a new published
+  // version. Skipped when the school's form already has photo questions (for example after editing it).
+  const live = await prisma.formDefinition.findFirst({
+    where: { schoolId: school.id, key: 'admission', status: 'PUBLISHED' },
+  });
+  if (live) {
+    const schema = live.schema as unknown as {
+      sections: { id: string; fields: { id: string; type: string }[] }[];
+    };
+    const hasPhotos = schema.sections.some((s) =>
+      s.fields.some((f) => f.type === 'image'),
+    );
+    if (!hasPhotos && schema.sections.length > 0) {
+      const next = structuredClone(schema);
+      const first =
+        next.sections.find((s) => s.id === 'admission') ?? next.sections[0];
+      first.fields.push(...structuredClone(PHOTO_FIELDS));
+      const last = await prisma.formDefinition.aggregate({
+        where: { schoolId: school.id, key: 'admission' },
+        _max: { version: true },
+      });
+      await prisma.$transaction([
+        prisma.formDefinition.update({
+          where: { id: live.id },
+          data: { status: 'ARCHIVED' },
+        }),
+        prisma.formDefinition.create({
+          data: {
+            schoolId: school.id,
+            key: 'admission',
+            version: (last._max.version ?? live.version) + 1,
+            name: live.name,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+            schema: next as unknown as Prisma.InputJsonObject,
+          },
+        }),
+      ]);
+      console.log(
+        'Added photograph boxes to the admission form (new version published).',
+      );
+    }
+  }
+
   // First admin
   const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
   const password = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe123!';
@@ -131,7 +224,9 @@ async function main() {
       mustChangePassword: true,
     },
   });
-  const adminRole = await prisma.role.findUniqueOrThrow({ where: { code: 'SCHOOL_ADMIN' } });
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { code: 'SCHOOL_ADMIN' },
+  });
   await prisma.userRole.createMany({
     data: [{ userId: admin.id, roleId: adminRole.id }],
     skipDuplicates: true,

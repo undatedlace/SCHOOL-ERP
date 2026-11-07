@@ -4,6 +4,7 @@ import {
   SYSTEM_FIELDS,
   SystemFieldKey,
   allFields,
+  photoIds,
   publishErrors,
   validateAnswers,
   validateFormSchema,
@@ -18,7 +19,8 @@ const form = (...fields: object[]) => ({
   sections: [{ id: 's1', title: 'Section', fields }],
 });
 const CLASS_A = '00000000-0000-7000-8000-00000000000a';
-const ctx = { classIds: new Set([CLASS_A]) };
+const FILE_A = '00000000-0000-7000-8000-0000000000f1';
+const ctx = { classIds: new Set([CLASS_A]), fileIds: new Set([FILE_A]) };
 
 describe('validateFormSchema', () => {
   it('accepts the default admission form and keeps it unchanged', () => {
@@ -235,6 +237,74 @@ describe('validateFormSchema', () => {
   });
 });
 
+describe('photo fields', () => {
+  it('are allowed at the top level, with a quarter width, and linked to the child photo', () => {
+    const { errors } = validateFormSchema(
+      form({
+        id: 'p',
+        type: 'image',
+        label: 'Photo',
+        width: 'quarter',
+        system: 'student.photo',
+      }),
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it('are not allowed as a column of a repeating group', () => {
+    const { errors } = validateFormSchema(
+      form({
+        id: 'g',
+        type: 'group',
+        label: 'G',
+        fields: [{ id: 'p', type: 'image', label: 'P' }],
+      }),
+    );
+    expect(errors.join()).toMatch(/can only hold/);
+  });
+
+  it('the default admission form has the four photograph boxes, and the child photo is optional', () => {
+    const photos = allFields(DEFAULT_ADMISSION_FORM).filter(
+      (f) => f.type === 'image',
+    );
+    expect(photos.map((f) => f.id)).toEqual([
+      'childPhoto',
+      'motherPhoto',
+      'fatherPhoto',
+      'guardianPhoto',
+    ]);
+    expect(photos.every((f) => !f.required)).toBe(true);
+    expect(photos[0].system).toBe('student.photo');
+  });
+
+  it('lists the photo ids given in the answers so they can be checked', () => {
+    const admission = validateFormSchema(DEFAULT_ADMISSION_FORM).schema;
+    expect(
+      photoIds(admission, { childPhoto: FILE_A, motherPhoto: 5, surname: 'x' }),
+    ).toEqual([FILE_A]);
+    expect(photoIds(admission, null)).toEqual([]);
+  });
+
+  it('keep a valid photo id in the answers', () => {
+    const admission = validateFormSchema(DEFAULT_ADMISSION_FORM).schema;
+    const { answers, errors } = validateAnswers(
+      admission,
+      {
+        classApplied: CLASS_A,
+        surname: 'S',
+        firstName: 'F',
+        gender: 'MALE',
+        dateOfBirth: '2021-06-15',
+        undertakingReceived: true,
+        childPhoto: FILE_A,
+      },
+      ctx,
+    );
+    expect(errors).toEqual({});
+    expect(answers['childPhoto']).toBe(FILE_A);
+  });
+});
+
 describe('publishErrors', () => {
   it('reports missing core fields', () => {
     const schema = clone(DEFAULT_ADMISSION_FORM);
@@ -284,6 +354,7 @@ describe('validateAnswers', () => {
         options: [{ value: 'MALE', label: 'Male' }],
       },
       { id: 'cls', type: 'select', label: 'Class', optionsFrom: 'classes' },
+      { id: 'photo', type: 'image', label: 'Photograph' },
       { id: 'agreed', type: 'checkbox', label: 'Agreed', required: true },
       {
         id: 'siblings',
@@ -371,6 +442,19 @@ describe('validateAnswers', () => {
       /choose one/,
     ],
     ['checkbox as text', { agreed: 'yes' }, 'agreed', /yes or no/],
+    [
+      'photo that was not uploaded',
+      { photo: '00000000-0000-7000-8000-0000000000ff' },
+      'photo',
+      /upload the photograph/,
+    ],
+    [
+      'photo that is not an id',
+      { photo: 'data:image/png;base64,AAAA' },
+      'photo',
+      /upload the photograph/,
+    ],
+    ['photo as a number', { photo: 5 }, 'photo', /upload the photograph/],
   ])('rejects %s', (_name, patch, field, message) => {
     const { errors } = validateAnswers(schema, { ...valid, ...patch }, ctx);
     expect(errors[field]).toMatch(message);

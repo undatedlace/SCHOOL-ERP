@@ -1,4 +1,6 @@
 import { config } from 'dotenv';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 config({ quiet: true });
@@ -24,6 +26,8 @@ export default defineConfig({
     hookTimeout: 120_000,
     env: {
       NODE_ENV: 'test',
+      // Uploaded test files go to a temporary folder, not the project.
+      FILES_DIR: join(tmpdir(), 'school-erp-e2e-files'),
       DATABASE_URL: testDatabaseUrl,
       APP_ORIGINS: 'http://localhost:4200',
       SEED_ADMIN_EMAIL: 'admin@test.local',

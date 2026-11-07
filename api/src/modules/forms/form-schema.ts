@@ -13,6 +13,7 @@ export const FIELD_TYPES = [
   'select',
   'radio',
   'checkbox',
+  'image',
   'group',
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
@@ -26,8 +27,8 @@ const GROUP_FIELD_TYPES: FieldType[] = [
   'select',
 ];
 
-export type FieldWidth = 'full' | 'half' | 'third';
-export const FIELD_WIDTHS: FieldWidth[] = ['full', 'half', 'third'];
+export type FieldWidth = 'full' | 'half' | 'third' | 'quarter';
+export const FIELD_WIDTHS: FieldWidth[] = ['full', 'half', 'third', 'quarter'];
 
 export interface FieldOption {
   value: string;
@@ -46,6 +47,7 @@ export const SYSTEM_FIELDS = {
   'student.fatherName': { type: 'text', required: false },
   'student.gender': { type: 'radio', required: true },
   'student.dateOfBirth': { type: 'date', required: true },
+  'student.photo': { type: 'image', required: false },
 } as const satisfies Record<string, { type: FieldType; required: boolean }>;
 export type SystemFieldKey = keyof typeof SYSTEM_FIELDS;
 
@@ -429,6 +431,8 @@ export const allFields = (schema: FormSchema): FormField[] =>
 export interface AnswerContext {
   /** Ids of the school's classes, for fields that take their options from them. */
   classIds: Set<string>;
+  /** Ids of uploaded photos that exist in this school, for photo fields. */
+  fileIds: Set<string>;
 }
 
 export interface AnswerResult {
@@ -521,6 +525,13 @@ function checkField(
       out[key] = value;
       return;
     }
+    case 'image': {
+      // The value is the id of a file uploaded earlier; the service checked which ids are real.
+      if (typeof value !== 'string' || !ctx.fileIds.has(value))
+        return bad(`${field.label}: upload the photograph again`);
+      out[key] = value;
+      return;
+    }
     case 'select':
     case 'radio': {
       if (typeof value !== 'string')
@@ -585,4 +596,14 @@ export function systemValue(
 ): unknown {
   const field = allFields(schema).find((f) => f.system === key);
   return field ? answers[field.id] : undefined;
+}
+
+/** The file ids given for photo fields, so the service can check they exist before validating. */
+export function photoIds(schema: FormSchema, raw: unknown): string[] {
+  if (!isObj(raw)) return [];
+  return allFields(schema)
+    .filter((f) => f.type === 'image')
+    .flatMap((f) =>
+      typeof raw[f.id] === 'string' ? [raw[f.id] as string] : [],
+    );
 }

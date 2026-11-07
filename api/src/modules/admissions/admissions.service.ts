@@ -13,9 +13,11 @@ import type { ApplicationStatus } from '../../generated/prisma/enums.js';
 import { AuditService } from '../audit/audit.service.js';
 import {
   FormSchema,
+  photoIds,
   systemValue,
   validateAnswers,
 } from '../forms/form-schema.js';
+import { FilesService } from '../files/files.service.js';
 import { FormsService } from '../forms/forms.service.js';
 import {
   CreateApplicationDto,
@@ -62,6 +64,7 @@ export class AdmissionsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly forms: FormsService,
+    private readonly files: FilesService,
   ) {}
 
   /** The published admission form the office fills in. */
@@ -401,8 +404,14 @@ export class AdmissionsService {
       where: { schoolId },
       select: { id: true },
     });
+    const fileIds = await this.files.existing(
+      schoolId,
+      'application-photo',
+      photoIds(schema, raw),
+    );
     const { answers, errors } = validateAnswers(schema, raw, {
       classIds: new Set(classes.map((c) => c.id)),
+      fileIds,
     });
     if (Object.keys(errors).length > 0) {
       throw new BadRequestException({

@@ -1,4 +1,4 @@
-import type { FormSchema } from './form-schema.js';
+import type { FormField, FormSchema } from './form-schema.js';
 
 /**
  * The school's paper "Application for Admission", as a form definition.
@@ -7,10 +7,39 @@ import type { FormSchema } from './form-schema.js';
  *
  * Left out on purpose:
  *  - "Age as on" and "Date of birth (in words)": calculated from the date of birth.
- *  - Photographs and signatures: need file uploads (a later module). The last
- *    checkbox records that the signed undertaking was received on paper.
+ *  - Signatures: the last checkbox records that the signed undertaking was
+ *    received on paper.
  *  - "For office use only": that is the application status and decision.
  */
+/** The four photograph boxes at the top of the paper form. */
+export const PHOTO_FIELDS: FormField[] = [
+  {
+    id: 'childPhoto',
+    type: 'image',
+    label: 'Latest photograph of child',
+    system: 'student.photo',
+    width: 'quarter',
+  },
+  {
+    id: 'motherPhoto',
+    type: 'image',
+    label: 'Latest photograph of mother',
+    width: 'quarter',
+  },
+  {
+    id: 'fatherPhoto',
+    type: 'image',
+    label: 'Latest photograph of father',
+    width: 'quarter',
+  },
+  {
+    id: 'guardianPhoto',
+    type: 'image',
+    label: 'Latest photograph of guardian',
+    width: 'quarter',
+  },
+];
+
 export const DEFAULT_ADMISSION_FORM_NAME = 'Application for admission';
 
 export const DEFAULT_ADMISSION_FORM: FormSchema = {
@@ -28,6 +57,7 @@ export const DEFAULT_ADMISSION_FORM: FormSchema = {
           system: 'student.class',
           width: 'half',
         },
+        ...PHOTO_FIELDS,
       ],
     },
     {

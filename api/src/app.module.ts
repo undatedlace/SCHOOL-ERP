@@ -8,6 +8,7 @@ import { AcademicsModule } from './modules/academics/academics.module.js';
 import { AdmissionsModule } from './modules/admissions/admissions.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 import { FormsModule } from './modules/forms/forms.module.js';
 import { SessionGuard } from './modules/auth/session.guard.js';
 import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
@@ -34,6 +35,7 @@ import { UsersModule } from './modules/users/users.module.js';
     UsersModule,
     AcademicsModule,
     FormsModule,
+    FilesModule,
     AdmissionsModule,
   ],
   controllers: [AppController],
