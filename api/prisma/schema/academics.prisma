@@ -1,0 +1,52 @@
+model AcademicYear {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  schoolId  String   @map("school_id") @db.Uuid
+  name      String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isCurrent Boolean  @default(false) @map("is_current")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, name])
+  @@map("academic_years")
+}
+
+model SchoolClass {
+  id        String @id @default(uuid(7)) @db.Uuid
+  schoolId  String @map("school_id") @db.Uuid
+  name      String
+  sortOrder Int    @map("sort_order")
+
+  school    School     @relation(fields: [schoolId], references: [id])
+  divisions Division[]
+
+  @@unique([schoolId, name])
+  @@map("classes")
+}
+
+model Division {
+  id       String @id @default(uuid(7)) @db.Uuid
+  schoolId String @map("school_id") @db.Uuid
+  classId  String @map("class_id") @db.Uuid
+  name     String
+
+  school School      @relation(fields: [schoolId], references: [id])
+  class  SchoolClass @relation(fields: [classId], references: [id])
+
+  @@unique([classId, name])
+  @@index([schoolId])
+  @@map("divisions")
+}
+
+model Subject {
+  id       String  @id @default(uuid(7)) @db.Uuid
+  schoolId String  @map("school_id") @db.Uuid
+  name     String
+  code     String?
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, name])
+  @@map("subjects")
+}

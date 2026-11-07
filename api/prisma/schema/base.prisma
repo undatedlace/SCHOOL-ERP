@@ -5,17 +5,9 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-}
-
-model School {
-  id String @id @default(uuid())
-  name String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("schools")
 }
