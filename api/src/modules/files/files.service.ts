@@ -57,7 +57,7 @@ export class FilesService {
 
     const year = new Date().getUTCFullYear();
     const storageKey = `${auth.schoolId}/${year}/${randomUUID()}.${image.ext}`;
-    await this.storage.put(storageKey, file.buffer);
+    await this.storage.put(storageKey, file.buffer, image.mime);
 
     const record = await this.prisma.storedFile.create({
       data: {

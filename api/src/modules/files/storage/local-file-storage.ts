@@ -11,7 +11,8 @@ export class LocalFileStorage implements FileStorage {
     this.root = resolve(rootDir);
   }
 
-  async put(key: string, data: Buffer): Promise<void> {
+  // The type is not needed on disk: every download declares its own, from the database.
+  async put(key: string, data: Buffer, _contentType?: string): Promise<void> {
     const path = this.pathFor(key);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, data, { flag: 'wx' }); // never overwrite an existing file
