@@ -26,6 +26,7 @@ const PERMISSIONS = [
   'students.read_all',
   'students.manage',
   'staff.read',
+  'staff.read_all',
   'staff.manage',
   'attendance.read',
   'attendance.mark',
@@ -55,6 +56,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'students.read_all',
       'students.manage',
       'staff.read',
+      'staff.read_all',
       'attendance.read',
       'notices.read',
       'notices.create',
@@ -81,6 +83,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
     permissions: [
       'academics.read',
       'students.read',
+      'staff.read',
       'attendance.read',
       'attendance.mark',
       'homework.read',
@@ -91,7 +94,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'dashboard.view',
     ],
   },
-  STAFF: { name: 'Staff', permissions: ['notices.read'] },
+  STAFF: { name: 'Staff', permissions: ['staff.read', 'notices.read'] },
   PARENT: {
     name: 'Parent',
     permissions: [

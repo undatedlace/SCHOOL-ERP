@@ -94,13 +94,37 @@ export class StudentsService {
   ) {}
 
   /**
-   * Who may see which students. Staff with students.read_all see everyone. Anyone else
-   * with students.read sees only the students they are a guardian of.
-   * (Teachers will see their assigned classes once teaching assignments exist.)
+   * Who may see which students.
+   *  - students.read_all (admin, office, accountant): everyone.
+   *  - Anyone else with students.read: the students they are a guardian of, plus,
+   *    for a teacher, the students of the divisions they teach (class teacher or
+   *    subject teacher) this academic year.
+   * A teacher who left, or whose assignment was removed, loses that access at once.
    */
-  private visible(auth: AuthContext): Prisma.StudentWhereInput {
+  private async visible(auth: AuthContext): Promise<Prisma.StudentWhereInput> {
     if (auth.permissions.includes('students.read_all')) return {};
-    return { guardians: { some: { guardian: { userId: auth.userId } } } };
+
+    const own: Prisma.StudentWhereInput = {
+      guardians: { some: { guardian: { userId: auth.userId } } },
+    };
+    const academicYearId = await this.currentYearId(auth.schoolId);
+    if (!academicYearId) return own;
+
+    const teacher = {
+      staff: { userId: auth.userId, status: 'ACTIVE' as const },
+    };
+    const taught: Prisma.DivisionWhereInput = {
+      OR: [
+        { classTeachers: { some: { academicYearId, ...teacher } } },
+        { subjectTeachers: { some: { academicYearId, ...teacher } } },
+      ],
+    };
+    return {
+      OR: [
+        own,
+        { enrollments: { some: { academicYearId, division: taught } } },
+      ],
+    };
   }
 
   async list(
@@ -116,7 +140,7 @@ export class StudentsService {
     };
     const where: Prisma.StudentWhereInput = {
       schoolId: auth.schoolId,
-      ...this.visible(auth),
+      ...(await this.visible(auth)),
       ...(q.status ? { status: q.status } : {}),
       ...(q.divisionId || q.classId
         ? { enrollments: { some: classFilter } }
@@ -152,7 +176,7 @@ export class StudentsService {
   async findOne(auth: AuthContext, id: string) {
     const wide = auth.permissions.includes('students.read_all');
     const s = await this.prisma.student.findFirst({
-      where: { id, schoolId: auth.schoolId, ...this.visible(auth) },
+      where: { id, schoolId: auth.schoolId, ...(await this.visible(auth)) },
       include: {
         guardians: {
           include: { guardian: true },

@@ -96,26 +96,13 @@ export class UsersService {
   }
 
   async create(auth: AuthContext, dto: CreateUserDto, ip?: string) {
-    if (!dto.email && !dto.mobile) {
-      throw new BadRequestException('Provide an email or a mobile number');
-    }
-    const roleIds = await this.resolveRoles(dto.roleCodes);
-
-    const temporaryPassword = dto.password
-      ? undefined
-      : generateTemporaryPassword();
-    const user = await this.prisma.user.create({
-      data: {
-        schoolId: auth.schoolId,
-        fullName: dto.fullName,
-        email: dto.email,
-        mobile: dto.mobile,
-        passwordHash: await hashPassword(
-          dto.password ?? (temporaryPassword as string),
-        ),
-        mustChangePassword: true,
-        roles: { create: roleIds.map((roleId) => ({ roleId })) },
-      },
+    const { id, temporaryPassword } = await this.createAccount(
+      this.prisma,
+      auth.schoolId,
+      dto,
+    );
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id },
       select: USER_SELECT,
     });
 
@@ -132,6 +119,46 @@ export class UsersService {
       ...toDto(user),
       ...(temporaryPassword ? { temporaryPassword } : {}),
     };
+  }
+
+  /**
+   * Creates a login account with a temporary password (generated unless one is
+   * given). Takes a database handle so a caller can do it inside its own
+   * transaction, as staff creation does.
+   */
+  async createAccount(
+    db: Pick<Prisma.TransactionClient, 'user'>,
+    schoolId: string,
+    input: {
+      fullName: string;
+      email?: string;
+      mobile?: string;
+      roleCodes: string[];
+      password?: string;
+    },
+  ): Promise<{ id: string; temporaryPassword?: string }> {
+    if (!input.email && !input.mobile) {
+      throw new BadRequestException('Provide an email or a mobile number');
+    }
+    const roleIds = await this.resolveRoles(input.roleCodes);
+    const temporaryPassword = input.password
+      ? undefined
+      : generateTemporaryPassword();
+    const user = await db.user.create({
+      data: {
+        schoolId,
+        fullName: input.fullName,
+        email: input.email,
+        mobile: input.mobile,
+        passwordHash: await hashPassword(
+          input.password ?? (temporaryPassword as string),
+        ),
+        mustChangePassword: true,
+        roles: { create: roleIds.map((roleId) => ({ roleId })) },
+      },
+      select: { id: true },
+    });
+    return { id: user.id, temporaryPassword };
   }
 
   async update(auth: AuthContext, id: string, dto: UpdateUserDto, ip?: string) {

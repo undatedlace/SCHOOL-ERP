@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { Api } from '../../core/api';
 import { AuthService } from '../../core/auth.service';
+import { Assignment } from '../../core/models';
 import { NAV } from '../../core/nav';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -10,6 +13,23 @@ import { PageHeader } from '../../shared/ui/page-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header [title]="'Welcome, ' + firstName()" subtitle="Here is what you can do." />
+
+    @if (mine().length) {
+      <section class="mb-8 rounded-lg border bg-card p-5" aria-labelledby="my-classes">
+        <h2 id="my-classes" class="mb-3 font-semibold">Your classes this year</h2>
+        <ul class="grid gap-2 text-sm sm:grid-cols-2">
+          @for (a of mine(); track a.id) {
+            <li>
+              <span class="font-medium">{{ a.division.class.name }}-{{ a.division.name }}</span>
+              <span class="text-muted-foreground">
+                &middot;
+                {{ a.kind === 'CLASS_TEACHER' ? 'Class teacher' : a.subject?.name }}
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       @for (item of shortcuts(); track item.path) {
@@ -34,6 +54,18 @@ import { PageHeader } from '../../shared/ui/page-header';
 })
 export class Dashboard {
   private readonly auth = inject(AuthService);
+  private readonly api = inject(Api);
+
+  /** The signed-in teacher's own classes and subjects (empty for everyone else). */
+  protected readonly mine = signal<Assignment[]>([]);
+
+  constructor() {
+    if (this.auth.has('academics.read')) {
+      firstValueFrom(this.api.myAssignments())
+        .then((rows) => this.mine.set(rows))
+        .catch(() => undefined);
+    }
+  }
 
   protected readonly firstName = computed(() => this.auth.me()?.fullName.split(' ')[0] ?? '');
   protected readonly shortcuts = computed(() =>

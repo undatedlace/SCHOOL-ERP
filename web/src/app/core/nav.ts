@@ -25,7 +25,13 @@ export const NAV: NavItem[] = [
     label: 'Students',
     path: '/app/students',
     description: 'Enrolled students, their classes and families',
-    permission: 'students.read_all',
+    permission: 'students.read',
+  },
+  {
+    label: 'Staff',
+    path: '/app/staff',
+    description: 'Teachers and other staff, their joining and leaving dates',
+    permission: 'staff.read_all',
   },
   {
     label: 'Users',

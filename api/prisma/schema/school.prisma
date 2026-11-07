@@ -8,19 +8,22 @@ model School {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  users         User[]
-  sessions      Session[]
-  academicYears AcademicYear[]
-  classes       SchoolClass[]
-  divisions     Division[]
-  subjects      Subject[]
-  auditLogs     AuditLog[]
-  forms         FormDefinition[]
-  applications  Application[]
-  files         StoredFile[]
-  students      Student[]
-  guardians     Guardian[]
-  enrollments   Enrollment[]
+  users           User[]
+  sessions        Session[]
+  academicYears   AcademicYear[]
+  classes         SchoolClass[]
+  divisions       Division[]
+  subjects        Subject[]
+  auditLogs       AuditLog[]
+  forms           FormDefinition[]
+  applications    Application[]
+  files           StoredFile[]
+  students        Student[]
+  guardians       Guardian[]
+  enrollments     Enrollment[]
+  staff           Staff[]
+  classTeachers   ClassTeacher[]
+  subjectTeachers SubjectTeacher[]
 
   @@map("schools")
 }

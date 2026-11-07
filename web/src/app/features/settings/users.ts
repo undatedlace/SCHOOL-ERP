@@ -20,6 +20,7 @@ import { apiError } from '../../core/api-error';
 import { Role, UserRow } from '../../core/models';
 import { FormField } from '../../shared/ui/form-field';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 
 const needsContact = (group: AbstractControl): ValidationErrors | null =>
   group.get('email')?.value || group.get('mobile')?.value
@@ -39,6 +40,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
     TagModule,
     FormField,
     PageHeader,
+    TempPasswordDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -200,29 +202,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
       </form>
     </p-dialog>
 
-    <p-dialog
-      header="Temporary password"
-      [visible]="!!temp()"
-      (visibleChange)="!$event && temp.set(null)"
-      [modal]="true"
-      [style]="{ width: '28rem', 'max-width': '95vw' }"
-    >
-      @if (temp(); as t) {
-        <p class="mb-3 text-sm">
-          Give this password to <strong>{{ t.name }}</strong
-          >. It is shown only once, and they must change it when they sign in.
-        </p>
-        <div
-          class="mb-4 rounded-md bg-muted p-3 text-center font-mono text-xl tracking-wider select-all"
-        >
-          {{ t.password }}
-        </div>
-        <div class="flex justify-end gap-2">
-          <p-button label="Copy" severity="secondary" (onClick)="copy(t.password)" />
-          <p-button label="Done" (onClick)="temp.set(null)" />
-        </div>
-      }
-    </p-dialog>
+    <app-temp-password-dialog [info]="temp()" (closed)="temp.set(null)" />
   `,
 })
 export class Users {
@@ -360,19 +340,6 @@ export class Users {
         }
       },
     });
-  }
-
-  protected async copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      this.toast.add({ severity: 'info', summary: 'Copied' });
-    } catch {
-      this.toast.add({
-        severity: 'warn',
-        summary: 'Could not copy',
-        detail: 'Select the password and copy it by hand.',
-      });
-    }
   }
 
   private refilter(apply: () => void) {

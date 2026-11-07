@@ -70,14 +70,24 @@ export const routes: Routes = [
       },
       {
         path: 'students',
-        canActivate: [permissionGuard('students.read_all')],
+        canActivate: [permissionGuard('students.read')],
         loadComponent: () =>
           import('./features/students/students-list').then((m) => m.StudentsList),
       },
       {
         path: 'students/:id',
-        canActivate: [permissionGuard('students.read_all')],
+        canActivate: [permissionGuard('students.read')],
         loadComponent: () => import('./features/students/student-page').then((m) => m.StudentPage),
+      },
+      {
+        path: 'staff',
+        canActivate: [permissionGuard('staff.read_all')],
+        loadComponent: () => import('./features/staff/staff-list').then((m) => m.StaffList),
+      },
+      {
+        path: 'staff/:id',
+        canActivate: [permissionGuard('staff.read_all')],
+        loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
         path: 'settings/forms',

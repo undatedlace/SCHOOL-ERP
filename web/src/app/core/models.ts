@@ -281,3 +281,63 @@ export interface Eligibility {
   ageText: string | null;
   asOn: string;
 }
+
+// ---------- Staff ----------
+
+export type StaffStatus = 'ACTIVE' | 'LEFT';
+
+export interface StaffAccount {
+  userId: string;
+  status: 'ACTIVE' | 'DISABLED';
+  mustChangePassword: boolean;
+  roles: { code: string; name: string }[];
+}
+
+export interface StaffMember {
+  id: string;
+  employeeNo: string;
+  fullName: string;
+  firstName: string;
+  surname: string;
+  gender: Gender;
+  dateOfBirth: string | null;
+  mobile: string | null;
+  email: string | null;
+  designation: string;
+  qualification: string | null;
+  address: string | null;
+  photoFileId: string | null;
+  status: StaffStatus;
+  joinedOn: string;
+  leftOn: string | null;
+  account: StaffAccount | null;
+  /** Present only in the response to creating a login. */
+  temporaryPassword?: string;
+}
+
+export interface NewStaff {
+  firstName: string;
+  surname: string;
+  gender: Gender;
+  designation: string;
+  dateOfBirth?: string;
+  mobile?: string;
+  email?: string;
+  qualification?: string;
+  address?: string;
+  photoFileId?: string;
+  joinedOn?: string;
+  employeeNo?: string;
+  account?: { roleCodes: string[] };
+}
+
+// ---------- Teaching assignments ----------
+
+export interface Assignment {
+  id: string;
+  kind: 'CLASS_TEACHER' | 'SUBJECT';
+  academicYear: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  subject: { id: string; name: string } | null;
+  staff: { id: string; fullName: string; status: StaffStatus };
+}
