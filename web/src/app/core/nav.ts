@@ -16,6 +16,12 @@ export const NAV: NavItem[] = [
     permission: 'academics.read',
   },
   {
+    label: 'Admissions',
+    path: '/app/admissions',
+    description: 'Admission applications and decisions',
+    permission: 'admissions.read',
+  },
+  {
     label: 'Users',
     path: '/app/settings/users',
     description: 'Staff and parent accounts, roles and passwords',
@@ -26,6 +32,12 @@ export const NAV: NavItem[] = [
     path: '/app/settings/school',
     description: 'School name, address and contact details',
     permission: 'settings.manage',
+  },
+  {
+    label: 'Forms',
+    path: '/app/settings/forms',
+    description: 'Change the questions on the admission form',
+    permission: 'forms.manage',
   },
   {
     label: 'Audit log',

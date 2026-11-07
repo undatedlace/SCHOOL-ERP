@@ -2,7 +2,15 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  AdmissionsSummary,
+  ApplicationDetail,
+  ApplicationListItem,
   AuditLogItem,
+  Decision,
+  FormDetail,
+  FormSchema,
+  FormSummary,
+  FormVersion,
   Page,
   Role,
   School,
@@ -83,4 +91,44 @@ export class Api {
   // ---------- Audit ----------
   auditLogs = (q: { page: number; pageSize: number; action?: string }) =>
     this.http.get<Page<AuditLogItem>>('/api/audit-logs', { params: params(q) });
+
+  // ---------- Forms (form builder) ----------
+  forms = () => this.http.get<FormSummary[]>('/api/forms');
+  form = (key: string) => this.http.get<FormDetail>(`/api/forms/${key}`);
+  startFormDraft = (key: string) => this.http.post<FormVersion>(`/api/forms/${key}/draft`, {});
+  saveFormDraft = (key: string, body: { name?: string; schema: FormSchema }) =>
+    this.http.put<FormVersion>(`/api/forms/${key}/draft`, body);
+  discardFormDraft = (key: string) => this.http.delete<void>(`/api/forms/${key}/draft`);
+  publishForm = (key: string) => this.http.post<FormVersion>(`/api/forms/${key}/publish`, {});
+
+  // ---------- Admissions ----------
+  admissionForm = () =>
+    this.http.get<{ id: string; version: number; name: string; schema: FormSchema }>(
+      '/api/admissions/form',
+    );
+  applications = (q: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string | null;
+    classId?: string | null;
+  }) =>
+    this.http.get<Page<ApplicationListItem>>('/api/admissions/applications', { params: params(q) });
+  applicationsSummary = () =>
+    this.http.get<AdmissionsSummary>('/api/admissions/applications/summary');
+  application = (id: string) =>
+    this.http.get<ApplicationDetail>(`/api/admissions/applications/${id}`);
+  createApplication = (body: {
+    formNo?: string;
+    receivedOn?: string;
+    answers: Record<string, unknown>;
+  }) => this.http.post<ApplicationDetail>('/api/admissions/applications', body);
+  updateApplication = (
+    id: string,
+    body: { formNo?: string; receivedOn?: string; answers?: Record<string, unknown> },
+  ) => this.http.patch<ApplicationDetail>(`/api/admissions/applications/${id}`, body);
+  decideApplication = (
+    id: string,
+    body: { decision: Decision; note?: string; classId?: string; divisionId?: string },
+  ) => this.http.post<ApplicationDetail>(`/api/admissions/applications/${id}/decision`, body);
 }
