@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same branch cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  api:
+    name: API (lint, build, unit and e2e tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: school
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: school_erp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U school -d school_erp_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Throwaway database inside the service container. The e2e suite wipes it.
+      DATABASE_URL: postgresql://school:ci_only_password@localhost:5432/school_erp_test?schema=public
+      TEST_DATABASE_URL: postgresql://school:ci_only_password@localhost:5432/school_erp_test?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - run: npm ci
+      - name: Generate the Prisma client
+        run: npx prisma generate
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run build
+      - name: Unit tests
+        run: npm test
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+  web:
+    name: Web (lint, build, unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run build
+      - name: Unit tests
+        run: npm test -- --watch=false

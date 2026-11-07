@@ -1,21 +1,19 @@
 # School ERP: V1 Plan
 
-Status: planning, no code written yet. Last updated: 5 Nov 2026.
+Status: Phase 0 done. Phase 1 (foundation) in progress. Last updated: 7 Nov 2026.
 
 ## 1. How we work (read this first)
 
-Ismail writes all the code by hand to get hands-on experience.
+Claude Code writes the code and works through the plan phase by phase. Ismail reviews and steers.
 
 **Claude Code must:**
-- Not create, edit or delete project files unless Ismail explicitly asks for that specific change.
-- Work one small step at a time: explain what the step does and why, give the code, then wait.
-- Keep code chunks small enough to type and understand. Say which file each one goes in.
-- Explain unfamiliar concepts and trade-offs briefly when they first come up.
-- Give a way to verify each step (command, request or expected result).
-- Review the code after Ismail has typed it, and point out bugs and better patterns.
-- Ask before moving on to the next step or phase.
-
-Read-only actions (reading files, checking errors, reviewing code) are fine without asking.
+- Implement whole modules and features end to end (backend, frontend, tests) rather than step by step, and keep each phase's "Done when" as the target.
+- Verify its own work before reporting: build, lint, tests, and real requests against the running app.
+- Report briefly after each module: what was built, what was verified, and any decision Ismail should know about.
+- Follow the plan's design decisions (sections 4 to 9). If something needs to change, say so and update the plan.
+- Ask before: deleting or resetting data, changing a decision in this plan, adding a paid service, pushing, or anything outward-facing. Commit only when Ismail asks.
+- Pin exact dependency versions, and keep secrets out of git.
+- Keep this plan up to date as things are built.
 
 ## 2. What we're building
 
@@ -48,12 +46,13 @@ A school management system for **one school**, structured so it can become multi
 
 **Repo:** one repository with `api/` and `web/`. No Nx for now.
 
-### Optimus UI check (do this before building screens)
-Build a small test page, then confirm:
-- [ ] Tailwind and Optimus styling work together
-- [ ] Data table handles server-side filters, sorting and pagination
-- [ ] Reactive form with validation works with its input, select and date controls
-- [ ] It runs cleanly in the Angular setup we choose (including zoneless, if used)
+**As built (7 Nov 2026):** NestJS 12 (Vitest, oxlint), Angular 22.2 zoneless, Prisma 7.10.1 with `@prisma/adapter-pg`, Postgres 18 running locally (not Docker, for development), Optimus UI 2.0.2 (`@openng/optimus-ui`, not the React package named `optimus-ui`), Tailwind 4.3.4. The Prisma schema is a folder, `api/prisma/schema/*.prisma`, one file per domain. The generated client is in `api/src/generated/prisma` and is not committed (run `npx prisma generate`).
+
+### Optimus UI check (done 5 Nov 2026)
+- [x] Tailwind and Optimus styling work together
+- [x] Data table handles server-side filters, sorting and pagination (lazy mode, tested paging and sorting)
+- [x] Reactive form with validation works with its input, select and date controls
+- [x] It runs cleanly in the Angular setup we choose (including zoneless, if used)
 
 Wrap heavily used components (data table especially) in our own shared components. Fallback: Angular Material.
 
@@ -240,6 +239,12 @@ Repo, NestJS, Angular, Prisma, Postgres in Docker, linting, Swagger, Optimus UI 
 Auth, sessions, RBAC, audit, school settings, academic years, classes, divisions, subjects, app shells.
 **Done when:** each role logs in and sees only what it should, and admin can set up a school year.
 
+**Status (7 Nov 2026): built and tested, not yet clicked through in a browser.**
+- API: login, logout, `/auth/me`, change-password (forced for temporary passwords, rotates the session), admin password reset, users and role assignment (protects the last School Admin), school profile, academic years (exactly one current), classes, divisions, subjects, audit log with filtering. Session guard, permissions guard, rate-limited login, Origin check, validation, Prisma error filter. 15 unit tests and 43 end-to-end tests (against `school_erp_test`, which the suite wipes and re-seeds; the database name must end in `_test`).
+- Web: auth shell, staff shell (sidebar, phone menu), portal shell, login, change password, dashboard, school settings, users (search, filters, create, edit, reset password), audit log, academic setup (years, classes and divisions, subjects). Route guards, session interceptor, `*appHasPermission` directive. 33 unit tests.
+- Notes: Prisma 7 does not seed after `migrate reset`, so run `npx prisma db seed`. The seed creates the admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` with a temporary password. A parent or student with no school-wide role gets a 30-day session; sliding renewal is implemented in the session guard. The portal home is a placeholder until Phases 4 and 5.
+- Still to do in Phase 1: click through each role in a browser and fix what that shows.
+
 ### Phase 2: People
 Admissions, students, guardians, enrollments, staff, teaching assignments, documents, Excel import.
 **Done when:** a student is admitted into a division with linked parents, and a real school's data can be imported.
@@ -277,4 +282,4 @@ Insights, security review, backups, deployment, staff training data.
 
 ## 12. Next step
 
-Start Phase 0, one step at a time. Before Phase 1, design the Prisma schema together, starting with auth, academics and students.
+Phase 0 is done and the Phase 1 schema (auth, RBAC, academics, audit) is migrated and seeded. Continue Phase 1: auth endpoints and guards, then users and RBAC, school settings, academic setup, and the Angular shells. Design the students and fees schema when Phase 2 and 3 start.

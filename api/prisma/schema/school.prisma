@@ -1,0 +1,20 @@
+model School {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  board     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  users         User[]
+  sessions      Session[]
+  academicYears AcademicYear[]
+  classes       SchoolClass[]
+  divisions     Division[]
+  subjects      Subject[]
+  auditLogs     AuditLog[]
+
+  @@map("schools")
+}
