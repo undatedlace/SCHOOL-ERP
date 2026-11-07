@@ -21,6 +21,7 @@ model School {
   students      Student[]
   guardians     Guardian[]
   enrollments   Enrollment[]
+  staff         Staff[]
 
   @@map("schools")
 }

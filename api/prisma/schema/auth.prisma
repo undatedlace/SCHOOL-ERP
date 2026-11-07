@@ -19,6 +19,7 @@ model User {
   roles    UserRole[]
   sessions Session[]
   guardian Guardian?
+  staff    Staff?
 
   @@unique([schoolId, email])
   @@unique([schoolId, mobile])

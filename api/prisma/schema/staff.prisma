@@ -1,0 +1,42 @@
+enum StaffStatus {
+  ACTIVE
+  LEFT
+}
+
+/// A member of staff. Never hard-deleted: leaving sets status and left_on, so joining
+/// and leaving counts per year stay correct. A login account is optional (user_id).
+model Staff {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  schoolId      String      @map("school_id") @db.Uuid
+  /// Counts 1, 2, 3 ... within a school, assigned by the server.
+  seq           Int
+  /// What the school calls the employee number (defaults to the sequence number).
+  employeeNo    String      @map("employee_no")
+  firstName     String      @map("first_name")
+  surname       String
+  gender        Gender
+  dateOfBirth   DateTime?   @map("date_of_birth") @db.Date
+  mobile        String?
+  email         String?
+  /// For example "Teacher", "Clerk", "Peon".
+  designation   String
+  qualification String?
+  address       String?
+  photoFileId   String?     @map("photo_file_id") @db.Uuid
+  status        StaffStatus @default(ACTIVE)
+  joinedOn      DateTime    @map("joined_on") @db.Date
+  leftOn        DateTime?   @map("left_on") @db.Date
+  /// The login account. Set when the school gives this person access.
+  userId        String?     @unique @map("user_id") @db.Uuid
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@unique([schoolId, seq])
+  @@unique([schoolId, employeeNo])
+  @@index([schoolId, status])
+  @@index([schoolId, surname, firstName])
+  @@map("staff")
+}
