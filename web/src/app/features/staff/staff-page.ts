@@ -11,7 +11,7 @@ import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { StaffMember } from '../../core/models';
+import { Assignment, StaffMember } from '../../core/models';
 import { ageText, formatDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
@@ -136,6 +136,22 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           </dl>
         </section>
 
+        @if (teaching().length) {
+          <section class="rounded-lg border bg-card p-5 lg:col-span-2">
+            <h2 class="mb-3 font-semibold">Teaching this year</h2>
+            <ul class="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              @for (a of teaching(); track a.id) {
+                <li>
+                  <span class="font-medium">{{ a.division.class.name }}-{{ a.division.name }}</span>
+                  <span class="text-muted-foreground">
+                    &middot; {{ a.kind === 'CLASS_TEACHER' ? 'Class teacher' : a.subject?.name }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
         <section class="rounded-lg border bg-card p-5">
           <h2 class="mb-3 font-semibold">Login</h2>
           @if (s.account; as a) {
@@ -248,6 +264,7 @@ export class StaffPage {
   protected readonly roleOptions = STAFF_ROLE_OPTIONS;
 
   protected readonly staff = signal<StaffMember | null>(null);
+  protected readonly teaching = signal<Assignment[]>([]);
   protected readonly error = signal<string | null>(null);
   protected readonly formOpen = signal(false);
 
@@ -266,8 +283,13 @@ export class StaffPage {
   private async load(id: string) {
     this.error.set(null);
     this.staff.set(null);
+    this.teaching.set([]);
     try {
       this.staff.set(await firstValueFrom(this.api.staffMember(id)));
+      // What they teach this year. Shown when it can be read; left out otherwise.
+      firstValueFrom(this.api.assignments({ staffId: id }))
+        .then((rows) => this.teaching.set(rows))
+        .catch(() => undefined);
     } catch (error) {
       this.error.set(
         error instanceof HttpErrorResponse && error.status === 404

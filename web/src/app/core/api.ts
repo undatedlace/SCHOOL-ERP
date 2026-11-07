@@ -5,6 +5,7 @@ import {
   AdmissionsSummary,
   ApplicationDetail,
   ApplicationListItem,
+  Assignment,
   AuditLogItem,
   Decision,
   Eligibility,
@@ -222,4 +223,14 @@ export class Api {
   ) => this.http.patch<StaffMember>(`/api/staff/${id}`, body);
   addStaffAccount = (id: string, roleCodes: string[]) =>
     this.http.post<StaffMember>(`/api/staff/${id}/account`, { roleCodes });
+
+  // ---------- Teaching assignments ----------
+  assignments = (q: { divisionId?: string | null; staffId?: string | null } = {}) =>
+    this.http.get<Assignment[]>('/api/teaching-assignments', { params: params(q) });
+  myAssignments = () => this.http.get<Assignment[]>('/api/teaching-assignments/mine');
+  assign = (body: { staffId: string; divisionId: string; subjectId?: string }) =>
+    this.http.post<Assignment>('/api/teaching-assignments', body);
+  changeTeacher = (id: string, staffId: string) =>
+    this.http.patch<Assignment>(`/api/teaching-assignments/${id}`, { staffId });
+  removeAssignment = (id: string) => this.http.delete<void>(`/api/teaching-assignments/${id}`);
 }

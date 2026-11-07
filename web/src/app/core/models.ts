@@ -330,3 +330,14 @@ export interface NewStaff {
   employeeNo?: string;
   account?: { roleCodes: string[] };
 }
+
+// ---------- Teaching assignments ----------
+
+export interface Assignment {
+  id: string;
+  kind: 'CLASS_TEACHER' | 'SUBJECT';
+  academicYear: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  subject: { id: string; name: string } | null;
+  staff: { id: string; fullName: string; status: StaffStatus };
+}
