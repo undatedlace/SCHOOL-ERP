@@ -5,8 +5,10 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AcademicsModule } from './modules/academics/academics.module.js';
+import { AdmissionsModule } from './modules/admissions/admissions.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { FormsModule } from './modules/forms/forms.module.js';
 import { SessionGuard } from './modules/auth/session.guard.js';
 import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
@@ -31,6 +33,8 @@ import { UsersModule } from './modules/users/users.module.js';
     RbacModule,
     UsersModule,
     AcademicsModule,
+    FormsModule,
+    AdmissionsModule,
   ],
   controllers: [AppController],
   providers: [
