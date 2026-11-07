@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions and the form builder are built. Last updated: 7 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians and the admit flow are built. Last updated: 7 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -255,7 +255,9 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 - **Photographs:** the four photo boxes (child, mother, father, guardian) are a `photograph` question type. Files module: `POST /files` and `GET /files/:id`. Every file has a purpose that decides who may add and see it (`api/src/modules/files/file-purposes.ts`); the type is judged from the file's bytes (PNG, JPEG, WebP only; SVG, HTML and PDF are refused), 5 MB limit, private downloads, and a file you may not see looks the same as one that does not exist. Bytes go through a `FileStorage` interface: local disk in development (`FILES_DIR`), S3-compatible storage in production (not written yet). Photos are not yet resized, and camera location data (EXIF) is not yet removed from them; do that before launch. Uploaded files that are never attached to an application are not yet cleaned up.
 - **Left out of the paper form on purpose:** "Age as on" (shown as an age calculated from the date of birth), "Date of birth in words", signatures (a tick box records that the signed undertaking was received), and "For office use only" (that is the status and decision).
 - **UI:** neutral (zinc) theme, dark by default, with a toggle. Design tokens live in `web/src/styles.css`; the Optimus preset is `web/src/app/theme/optimus-preset.ts`.
-- **Next in Phase 2:** the students, guardians and enrollments schema and the admit flow that turns a granted application into a student (design it first), staff, teaching assignments, documents, Excel import. Parent and student logins (login by mobile or admission number) come with guardians.
+- **Students, guardians, enrolments and the admit flow:** a granted application plus a division and the guardians' details becomes a student, guardians and the first enrolment, in one transaction (all or nothing). A student is never hard-deleted (status and left date) and holds no class: `enrollments` link student, academic year and division, one per year, so promotion will add rows and never rewrite history. A guardian is a person linked to students through `student_guardians` (relationship, primary contact); siblings share one guardian (same name and mobile number), while a father and mother who share a phone stay two people. Guardians can later be linked to a login (`guardians.user_id`). Admission numbers are sequential per school (a typed number is kept) and assigned under a lock; simultaneous admits of one application create exactly one student.
+- **Who sees which students:** `students.read_all` (admin, office, accountant) sees every student. Anyone else with `students.read` sees only students they are a guardian of; teachers and student accounts see none yet, until teaching assignments exist. A student you may not see looks the same as one that does not exist, and a parent does not see the admissions paperwork.
+- **Next in Phase 2:** staff (profiles, joining and exit dates, teaching assignments, which also unlocks teachers seeing their classes), parent and student logins (mobile number or admission number, linked to guardians and students), student documents, and Excel import. Bulk promotion to the next year belongs to Phase 4.
 
 
 ### Phase 3: Fees
@@ -296,4 +298,4 @@ Insights, security review, backups, deployment, staff training data.
 
 ## 12. Next step
 
-Click through Phase 1 and the new admissions screens in a browser with each role and fix what that shows. Then design the students, guardians and enrollments schema and build the admit flow (granted application to student).
+Click through Phase 1 and the admissions, photographs, students and admit screens in a browser with each role and fix what that shows. Then build staff and teaching assignments, and parent and student logins.
