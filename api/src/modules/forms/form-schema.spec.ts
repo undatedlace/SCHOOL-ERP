@@ -270,6 +270,51 @@ describe('starting a field on a new row', () => {
   });
 });
 
+describe('the age limits table', () => {
+  const table = { id: 'limits', type: 'ageLimits', label: 'Age limits' };
+
+  it('is a display-only block: allowed at the top level, and never required', () => {
+    const { schema, errors } = validateFormSchema(
+      form({ ...table, required: true }),
+    );
+    expect(errors).toEqual([]);
+    expect(allFields(schema)[0]).toEqual({
+      id: 'limits',
+      type: 'ageLimits',
+      label: 'Age limits',
+    });
+  });
+
+  it('is not allowed inside a repeating group', () => {
+    const { errors } = validateFormSchema(
+      form({ id: 'g', type: 'group', label: 'G', fields: [table] }),
+    );
+    expect(errors.join()).toMatch(/can only hold/);
+  });
+
+  it('takes no answer, so nothing is stored for it and nothing is required', () => {
+    const { schema } = validateFormSchema(
+      form(table, { id: 'name', type: 'text', label: 'Name' }),
+    );
+    const { answers, errors } = validateAnswers(
+      schema,
+      { limits: 'ignored', name: 'Asha' },
+      ctx,
+    );
+    expect(errors).toEqual({});
+    expect(answers).toEqual({ name: 'Asha' });
+  });
+
+  it('is on the default admission form, before the declaration', () => {
+    const ids = DEFAULT_ADMISSION_FORM.sections.map((s) => s.id);
+    expect(ids.indexOf('ageLimits')).toBeGreaterThan(-1);
+    expect(ids.indexOf('ageLimits')).toBeLessThan(ids.indexOf('declaration'));
+    expect(
+      allFields(DEFAULT_ADMISSION_FORM).some((f) => f.type === 'ageLimits'),
+    ).toBe(true);
+  });
+});
+
 describe('photo fields', () => {
   it('are allowed at the top level, with a quarter width, and linked to the child photo', () => {
     const { errors } = validateFormSchema(

@@ -19,6 +19,7 @@ import {
   AdmitDto,
   CreateApplicationDto,
   DecisionDto,
+  EligibilityQueryDto,
   ListApplicationsQueryDto,
   UpdateApplicationDto,
 } from './dto/admissions.dto.js';
@@ -41,6 +42,21 @@ export class AdmissionsController {
     @Query() query: ListApplicationsQueryDto,
   ) {
     return this.admissions.list(auth.schoolId, query);
+  }
+
+  /** Advice on whether a child's age suits a class. Never blocks saving. */
+  @Get('eligibility')
+  @RequirePermissions('admissions.read')
+  eligibility(
+    @CurrentAuth() auth: AuthContext,
+    @Query() q: EligibilityQueryDto,
+  ) {
+    return this.admissions.eligibility(
+      auth.schoolId,
+      q.classId,
+      q.dateOfBirth,
+      q.receivedOn,
+    );
   }
 
   @Get('applications/summary')

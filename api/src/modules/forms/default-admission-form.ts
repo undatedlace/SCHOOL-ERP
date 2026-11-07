@@ -41,6 +41,13 @@ export const PHOTO_FIELDS: FormField[] = [
   },
 ];
 
+/** The paper form's "Age limits" table. It fills itself in from the classes' settings. */
+export const AGE_LIMITS_FIELD: FormField = {
+  id: 'ageLimitsTable',
+  type: 'ageLimits',
+  label: 'Age limits',
+};
+
 export const DEFAULT_ADMISSION_FORM_NAME = 'Application for admission';
 
 export const DEFAULT_ADMISSION_FORM: FormSchema = {
@@ -377,6 +384,13 @@ export const DEFAULT_ADMISSION_FORM: FormSchema = {
         { id: 'guardianMobile', type: 'text', label: 'Mobile', width: 'third' },
         { id: 'guardianFax', type: 'text', label: 'Fax', width: 'third' },
       ],
+    },
+    {
+      id: 'ageLimits',
+      title: 'Age limits',
+      description:
+        'The youngest age a child may be admitted at in each class. Set in Academic setup.',
+      fields: [AGE_LIMITS_FIELD],
     },
     {
       id: 'declaration',

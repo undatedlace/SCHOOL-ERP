@@ -44,6 +44,19 @@ export class CreateApplicationDto {
   answers: Record<string, unknown>;
 }
 
+export class EligibilityQueryDto {
+  @IsUUID()
+  classId: string;
+
+  @IsDateString({ strict: true })
+  dateOfBirth: string;
+
+  /** The date on the form, if it is not today. */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  receivedOn?: string;
+}
+
 export class UpdateApplicationDto {
   @IsOptional()
   @Transform(trim)

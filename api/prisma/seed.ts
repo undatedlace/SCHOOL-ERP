@@ -169,92 +169,80 @@ async function main() {
     });
   }
 
-  // Databases that already have the admission form gain the four photograph boxes as a new published
-  // version. Skipped when the school's form already has photo questions (for example after editing it).
-  const live = await prisma.formDefinition.findFirst({
-    where: { schoolId: school.id, key: 'admission', status: 'PUBLISHED' },
-  });
-  if (live) {
-    const schema = live.schema as unknown as {
-      sections: { id: string; fields: { id: string; type: string }[] }[];
-    };
-    const hasPhotos = schema.sections.some((s) =>
-      s.fields.some((f) => f.type === 'image'),
-    );
-    if (!hasPhotos && schema.sections.length > 0) {
-      const next = structuredClone(schema);
-      const first =
-        next.sections.find((s) => s.id === 'admission') ?? next.sections[0];
-      first.fields.push(...structuredClone(PHOTO_FIELDS));
-      const last = await prisma.formDefinition.aggregate({
-        where: { schoolId: school.id, key: 'admission' },
-        _max: { version: true },
-      });
-      await prisma.$transaction([
-        prisma.formDefinition.update({
-          where: { id: live.id },
-          data: { status: 'ARCHIVED' },
-        }),
-        prisma.formDefinition.create({
-          data: {
-            schoolId: school.id,
-            key: 'admission',
-            version: (last._max.version ?? live.version) + 1,
-            name: live.name,
-            status: 'PUBLISHED',
-            publishedAt: new Date(),
-            schema: next as unknown as Prisma.InputJsonObject,
-          },
-        }),
-      ]);
-      console.log(
-        'Added photograph boxes to the admission form (new version published).',
-      );
-    }
-  }
+  // Improvements to the admission form reach a database that already has the form as a new
+  // published version, once. Each step does nothing when its change is already there, and a school
+  // that has changed that part of the form in the builder is left alone.
+  type Field = { id: string; type: string; system?: string; newRow?: boolean };
+  type LooseSchema = {
+    sections: { id: string; title?: string; fields: Field[] }[];
+  };
+  async function upgradeAdmissionForm(
+    message: string,
+    change: (schema: LooseSchema) => boolean,
+  ) {
+    const live = await prisma.formDefinition.findFirst({
+      where: { schoolId: school.id, key: 'admission', status: 'PUBLISHED' },
+    });
+    if (!live) return;
+    const schema = structuredClone(live.schema) as unknown as LooseSchema;
+    if (schema.sections.length === 0 || !change(schema)) return;
 
-  // The four photographs start on their own row. Applied once to a published form whose child photo
-  // has no layout choice yet (a school that sets it either way in the form builder is left alone).
-  const current = await prisma.formDefinition.findFirst({
-    where: { schoolId: school.id, key: 'admission', status: 'PUBLISHED' },
-  });
-  if (current) {
-    const schema = structuredClone(current.schema) as unknown as {
-      sections: {
-        fields: { id: string; system?: string; newRow?: boolean }[];
-      }[];
-    };
-    const photo = schema.sections
-      .flatMap((s) => s.fields)
-      .find((f) => f.system === 'student.photo');
-    if (photo && photo.newRow === undefined) {
-      photo.newRow = true;
-      const last = await prisma.formDefinition.aggregate({
-        where: { schoolId: school.id, key: 'admission' },
-        _max: { version: true },
-      });
-      await prisma.$transaction([
-        prisma.formDefinition.update({
-          where: { id: current.id },
-          data: { status: 'ARCHIVED' },
-        }),
-        prisma.formDefinition.create({
-          data: {
-            schoolId: school.id,
-            key: 'admission',
-            version: (last._max.version ?? current.version) + 1,
-            name: current.name,
-            status: 'PUBLISHED',
-            publishedAt: new Date(),
-            schema: schema as unknown as Prisma.InputJsonObject,
-          },
-        }),
-      ]);
-      console.log(
-        'Photographs now start on their own row (new version published).',
-      );
-    }
+    const last = await prisma.formDefinition.aggregate({
+      where: { schoolId: school.id, key: 'admission' },
+      _max: { version: true },
+    });
+    await prisma.$transaction([
+      prisma.formDefinition.update({
+        where: { id: live.id },
+        data: { status: 'ARCHIVED' },
+      }),
+      prisma.formDefinition.create({
+        data: {
+          schoolId: school.id,
+          key: 'admission',
+          version: (last._max.version ?? live.version) + 1,
+          name: live.name,
+          status: 'PUBLISHED',
+          publishedAt: new Date(),
+          schema: schema as unknown as Prisma.InputJsonObject,
+        },
+      }),
+    ]);
+    console.log(`Admission form: ${message} (new version published).`);
   }
+  const everyField = (schema: LooseSchema) =>
+    schema.sections.flatMap((s) => s.fields);
+
+  await upgradeAdmissionForm('added the four photograph boxes', (schema) => {
+    if (everyField(schema).some((f) => f.type === 'image')) return false;
+    const first =
+      schema.sections.find((s) => s.id === 'admission') ?? schema.sections[0];
+    first.fields.push(...structuredClone(PHOTO_FIELDS));
+    return true;
+  });
+
+  await upgradeAdmissionForm('photographs start on their own row', (schema) => {
+    const photo = everyField(schema).find((f) => f.system === 'student.photo');
+    if (!photo || photo.newRow !== undefined) return false;
+    photo.newRow = true;
+    return true;
+  });
+
+  await upgradeAdmissionForm('added the age limits table', (schema) => {
+    if (everyField(schema).some((f) => f.type === 'ageLimits')) return false;
+    const section = DEFAULT_ADMISSION_FORM.sections.find(
+      (s) => s.id === 'ageLimits',
+    );
+    if (!section) return false;
+    // Before the declaration, as on the paper form; at the end if the form has no declaration.
+    const at = schema.sections.findIndex((s) => s.id === 'declaration');
+    schema.sections.splice(
+      at < 0 ? schema.sections.length : at,
+      0,
+      structuredClone(section),
+    );
+    return true;
+  });
 
   // First admin
   const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';

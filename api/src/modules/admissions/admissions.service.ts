@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { AuthContext } from '../../common/auth-context.js';
 import { Page, skipTake } from '../../common/dto/page-query.dto.js';
+import { Eligibility, checkEligibility } from '../../common/age.js';
 import { dateOnly, todayIso } from '../../common/dates.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -44,8 +45,10 @@ const TRANSITIONS: Record<ApplicationStatus, Decision[]> = {
 const EDITABLE: ApplicationStatus[] = ['RECEIVED', 'UNDER_REVIEW'];
 
 const LIST_INCLUDE = {
-  appliedClass: { select: { id: true, name: true } },
-  academicYear: { select: { id: true, name: true } },
+  appliedClass: {
+    select: { id: true, name: true, minAgeYears: true, admissionsOpen: true },
+  },
+  academicYear: { select: { id: true, name: true, ageCutoffDate: true } },
 } satisfies Prisma.ApplicationInclude;
 
 type ListRow = Prisma.ApplicationGetPayload<{ include: typeof LIST_INCLUDE }>;
@@ -58,9 +61,13 @@ const listItem = (a: ListRow) => ({
   studentName: a.studentName,
   dateOfBirth: a.dateOfBirth,
   receivedOn: a.receivedOn,
-  class: a.appliedClass,
-  academicYear: a.academicYear,
+  class: a.appliedClass
+    ? { id: a.appliedClass.id, name: a.appliedClass.name }
+    : null,
+  academicYear: { id: a.academicYear.id, name: a.academicYear.name },
 });
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 @Injectable()
 export class AdmissionsService {
@@ -168,6 +175,15 @@ export class AdmissionsService {
         grantedClass: app.grantedClass,
         grantedDivision: app.grantedDivision,
       },
+      eligibility: app.appliedClass
+        ? checkEligibility({
+            className: app.appliedClass.name,
+            dateOfBirth: app.dateOfBirth ? iso(app.dateOfBirth) : null,
+            asOn: iso(app.academicYear.ageCutoffDate ?? app.receivedOn),
+            minAgeYears: app.appliedClass.minAgeYears,
+            admissionsOpen: app.appliedClass.admissionsOpen,
+          })
+        : null,
       allowedDecisions: TRANSITIONS[app.status],
       editable: EDITABLE.includes(app.status),
       createdAt: app.createdAt,
@@ -279,6 +295,36 @@ export class AdmissionsService {
       ip,
     });
     return { studentId: student.id, admissionNo: student.admissionNo };
+  }
+
+  /**
+   * Is a child of this age eligible for this class? Advice for the office while an
+   * application is being filled in: it never blocks saving.
+   */
+  async eligibility(
+    schoolId: string,
+    classId: string,
+    dateOfBirth: string,
+    receivedOn?: string,
+  ): Promise<Eligibility> {
+    const cls = await this.prisma.schoolClass.findFirst({
+      where: { id: classId, schoolId },
+      select: { name: true, minAgeYears: true, admissionsOpen: true },
+    });
+    if (!cls) throw new NotFoundException('Class not found');
+    const year = await this.prisma.academicYear.findFirst({
+      where: { schoolId, isCurrent: true },
+      select: { ageCutoffDate: true },
+    });
+    return checkEligibility({
+      className: cls.name,
+      dateOfBirth,
+      asOn: year?.ageCutoffDate
+        ? iso(year.ageCutoffDate)
+        : (receivedOn ?? todayIso()),
+      minAgeYears: cls.minAgeYears,
+      admissionsOpen: cls.admissionsOpen,
+    });
   }
 
   async create(auth: AuthContext, dto: CreateApplicationDto, ip?: string) {

@@ -14,9 +14,16 @@ export const FIELD_TYPES = [
   'radio',
   'checkbox',
   'image',
+  'ageLimits',
   'group',
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
+
+/**
+ * Types that show something but take no answer. The age limits table draws itself
+ * from each class's minimum age and whether it is open for admission.
+ */
+export const DISPLAY_ONLY_TYPES: FieldType[] = ['ageLimits'];
 
 /** Types allowed inside a repeating group (one level only). */
 const GROUP_FIELD_TYPES: FieldType[] = [
@@ -222,7 +229,9 @@ function readField(raw: unknown, ctx: ReadContext): FormField | null {
   }
 
   const field: FormField = { id, type, label };
-  if (raw['required'] === true) field.required = true;
+  // A display-only block has nothing to answer, so it can never be required.
+  if (raw['required'] === true && !DISPLAY_ONLY_TYPES.includes(type))
+    field.required = true;
 
   const helpText = str(raw['helpText']);
   if (helpText) {
@@ -477,6 +486,7 @@ function checkField(
   out: Obj,
   errors: Record<string, string>,
 ) {
+  if (DISPLAY_ONLY_TYPES.includes(field.type)) return;
   const key = path.includes('.')
     ? path.slice(path.lastIndexOf('.') + 1)
     : field.id;
