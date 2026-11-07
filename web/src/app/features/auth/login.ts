@@ -22,7 +22,7 @@ import { FormField } from '../../shared/ui/form-field';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="mb-1 text-2xl font-semibold">Sign in</h1>
-    <p class="mb-6 text-sm text-slate-600">Use your email address or mobile number.</p>
+    <p class="mb-6 text-sm text-muted-foreground">Use your email address or mobile number.</p>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4" novalidate>
       @if (error(); as text) {
@@ -53,7 +53,7 @@ import { FormField } from '../../shared/ui/form-field';
       </app-form-field>
       <p-button type="submit" label="Sign in" [loading]="busy()" [fluid]="true" />
     </form>
-    <p class="mt-6 text-center text-xs text-slate-500">
+    <p class="mt-6 text-center text-xs text-muted-foreground">
       Forgot your password? Ask the school office to reset it.
     </p>
   `,

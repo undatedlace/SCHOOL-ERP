@@ -50,6 +50,46 @@ export const routes: Routes = [
           import('./features/academic-setup/academic-setup').then((m) => m.AcademicSetup),
       },
       {
+        path: 'admissions',
+        canActivate: [permissionGuard('admissions.read')],
+        loadComponent: () =>
+          import('./features/admissions/applications').then((m) => m.Applications),
+      },
+      {
+        // Before ':id', so "new" is not read as an id.
+        path: 'admissions/new',
+        canActivate: [permissionGuard('admissions.manage')],
+        loadComponent: () =>
+          import('./features/admissions/application-new').then((m) => m.ApplicationNew),
+      },
+      {
+        path: 'admissions/:id',
+        canActivate: [permissionGuard('admissions.read')],
+        loadComponent: () =>
+          import('./features/admissions/application-page').then((m) => m.ApplicationPage),
+      },
+      {
+        path: 'students',
+        canActivate: [permissionGuard('students.read_all')],
+        loadComponent: () =>
+          import('./features/students/students-list').then((m) => m.StudentsList),
+      },
+      {
+        path: 'students/:id',
+        canActivate: [permissionGuard('students.read_all')],
+        loadComponent: () => import('./features/students/student-page').then((m) => m.StudentPage),
+      },
+      {
+        path: 'settings/forms',
+        canActivate: [permissionGuard('forms.manage')],
+        loadComponent: () => import('./features/forms/forms-list').then((m) => m.FormsList),
+      },
+      {
+        path: 'settings/forms/:key',
+        canActivate: [permissionGuard('forms.manage')],
+        loadComponent: () => import('./features/forms/form-builder').then((m) => m.FormBuilder),
+      },
+      {
         path: 'settings/school',
         canActivate: [permissionGuard('settings.manage')],
         loadComponent: () =>

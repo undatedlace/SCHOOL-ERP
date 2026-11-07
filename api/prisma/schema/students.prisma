@@ -1,0 +1,110 @@
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  LEFT
+}
+
+enum GuardianRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+/// A pupil. Never hard-deleted: leaving sets status and left_on, so yearly counts stay right.
+/// The class lives on enrollments, not here.
+model Student {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  schoolId    String        @map("school_id") @db.Uuid
+  /// Counts 1, 2, 3 ... within a school, assigned by the server.
+  seq         Int
+  /// What the school calls the admission number (defaults to the sequence number).
+  admissionNo String        @map("admission_no")
+  firstName   String        @map("first_name")
+  fatherName  String?       @map("father_name")
+  surname     String
+  gender      Gender
+  dateOfBirth DateTime      @map("date_of_birth") @db.Date
+  photoFileId String?       @map("photo_file_id") @db.Uuid
+  status      StudentStatus @default(ACTIVE)
+  joinedOn    DateTime      @map("joined_on") @db.Date
+  leftOn      DateTime?     @map("left_on") @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  school      School            @relation(fields: [schoolId], references: [id])
+  guardians   StudentGuardian[]
+  enrollments Enrollment[]
+  application Application?
+
+  @@unique([schoolId, seq])
+  @@unique([schoolId, admissionNo])
+  @@index([schoolId, surname, firstName])
+  @@index([schoolId, status])
+  @@map("students")
+}
+
+/// A parent or guardian. One person can be linked to several students (siblings).
+model Guardian {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  schoolId   String   @map("school_id") @db.Uuid
+  fullName   String   @map("full_name")
+  mobile     String?
+  email      String?
+  occupation String?
+  /// The login account, once the school creates one for this guardian.
+  userId     String?  @unique @map("user_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  school   School            @relation(fields: [schoolId], references: [id])
+  user     User?             @relation(fields: [userId], references: [id])
+  students StudentGuardian[]
+
+  @@index([schoolId, mobile])
+  @@index([schoolId, fullName])
+  @@map("guardians")
+}
+
+model StudentGuardian {
+  studentId    String               @map("student_id") @db.Uuid
+  guardianId   String               @map("guardian_id") @db.Uuid
+  relationship GuardianRelationship
+  /// The person the school contacts first.
+  isPrimary    Boolean              @default(false) @map("is_primary")
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian Guardian @relation(fields: [guardianId], references: [id])
+
+  @@id([studentId, guardianId])
+  @@index([guardianId])
+  @@map("student_guardians")
+}
+
+/// Which division a student is in for one academic year. Promotion adds a new row
+/// and never changes an old one.
+model Enrollment {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  schoolId       String    @map("school_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  academicYearId String    @map("academic_year_id") @db.Uuid
+  divisionId     String    @map("division_id") @db.Uuid
+  rollNo         Int?      @map("roll_no")
+  startedOn      DateTime  @map("started_on") @db.Date
+  endedOn        DateTime? @map("ended_on") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  student      Student      @relation(fields: [studentId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+
+  @@unique([studentId, academicYearId])
+  @@index([schoolId, academicYearId, divisionId])
+  @@map("enrollments")
+}

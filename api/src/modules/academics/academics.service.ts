@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { AuthContext } from '../../common/auth-context.js';
+import { dateOnly } from '../../common/dates.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import {
@@ -57,6 +58,7 @@ export class AcademicsService {
           startDate,
           endDate,
           isCurrent: dto.isCurrent ?? false,
+          ageCutoffDate: dto.ageCutoffDate ? dateOnly(dto.ageCutoffDate) : null,
         },
       });
     });
@@ -85,7 +87,19 @@ export class AcademicsService {
       }
       return tx.academicYear.update({
         where: { id },
-        data: { name: dto.name, startDate, endDate, isCurrent: dto.isCurrent },
+        data: {
+          name: dto.name,
+          startDate,
+          endDate,
+          isCurrent: dto.isCurrent,
+          // undefined leaves it alone; null clears it.
+          ageCutoffDate:
+            dto.ageCutoffDate === undefined
+              ? undefined
+              : dto.ageCutoffDate === null
+                ? null
+                : dateOnly(dto.ageCutoffDate),
+        },
       });
     });
     await this.record(auth, 'academic_year.updated', 'academic_year', id);
@@ -139,7 +153,13 @@ export class AcademicsService {
       sortOrder = (last._max.sortOrder ?? 0) + 1;
     }
     const created = await this.prisma.schoolClass.create({
-      data: { schoolId: auth.schoolId, name: dto.name, sortOrder },
+      data: {
+        schoolId: auth.schoolId,
+        name: dto.name,
+        sortOrder,
+        minAgeYears: dto.minAgeYears ?? null,
+        admissionsOpen: dto.admissionsOpen ?? true,
+      },
     });
     await this.record(auth, 'class.created', 'class', created.id);
     return created;

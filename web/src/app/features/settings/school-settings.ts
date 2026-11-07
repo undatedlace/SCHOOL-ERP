@@ -22,12 +22,12 @@ import { PageHeader } from '../../shared/ui/page-header';
     />
 
     @if (school.error()) {
-      <p class="text-red-600">Could not load the school profile.</p>
+      <p class="text-destructive">Could not load the school profile.</p>
     } @else {
       <form
         [formGroup]="form"
         (ngSubmit)="save()"
-        class="grid max-w-3xl gap-4 rounded-lg border bg-white p-6 sm:grid-cols-2"
+        class="grid max-w-3xl gap-4 rounded-lg border bg-card p-6 sm:grid-cols-2"
         novalidate
       >
         <app-form-field

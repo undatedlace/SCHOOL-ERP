@@ -1,0 +1,57 @@
+enum ApplicationStatus {
+  RECEIVED
+  UNDER_REVIEW
+  GRANTED
+  REFUSED
+  WITHDRAWN
+}
+
+/// One admission application, filled in against a specific published form version.
+model Application {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  schoolId       String            @map("school_id") @db.Uuid
+  academicYearId String            @map("academic_year_id") @db.Uuid
+  formId         String            @map("form_id") @db.Uuid
+  /// Counts 1, 2, 3 ... within a school and academic year, assigned by the server.
+  seq            Int
+  /// What is printed on the paper form (defaults to the sequence number).
+  formNo         String            @map("form_no")
+  status         ApplicationStatus @default(RECEIVED)
+  receivedOn     DateTime          @map("received_on") @db.Date
+
+  /// Copied out of the answers so lists can search and sort without reading JSON.
+  studentName String    @map("student_name")
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+  classId     String?   @map("class_id") @db.Uuid
+
+  /// { [fieldId]: value }, checked against the form version above.
+  answers Json
+
+  grantedClassId    String?   @map("granted_class_id") @db.Uuid
+  grantedDivisionId String?   @map("granted_division_id") @db.Uuid
+  decidedAt         DateTime? @map("decided_at")
+  decidedById       String?   @map("decided_by_id") @db.Uuid
+  decisionNote      String?   @map("decision_note")
+
+  /// Set when the granted application has been turned into a student.
+  studentId  String?   @unique @map("student_id") @db.Uuid
+  admittedAt DateTime? @map("admitted_at")
+
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school          School         @relation(fields: [schoolId], references: [id])
+  academicYear    AcademicYear   @relation(fields: [academicYearId], references: [id])
+  form            FormDefinition @relation(fields: [formId], references: [id])
+  appliedClass    SchoolClass?   @relation("AppliedClass", fields: [classId], references: [id])
+  grantedClass    SchoolClass?   @relation("GrantedClass", fields: [grantedClassId], references: [id])
+  grantedDivision Division?      @relation(fields: [grantedDivisionId], references: [id])
+  student         Student?       @relation(fields: [studentId], references: [id])
+
+  @@unique([schoolId, academicYearId, seq])
+  @@unique([schoolId, academicYearId, formNo])
+  @@index([schoolId, status])
+  @@index([schoolId, studentName])
+  @@map("applications")
+}

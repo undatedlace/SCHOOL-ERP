@@ -35,6 +35,11 @@ export class CreateAcademicYearDto {
   @IsOptional()
   @IsBoolean()
   isCurrent?: boolean;
+
+  /** Ages are counted as on this date ("YYYY-MM-DD"). Send null to clear it. */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  ageCutoffDate?: string | null;
 }
 
 export class UpdateAcademicYearDto extends PartialType(CreateAcademicYearDto) {}
@@ -55,6 +60,17 @@ export class CreateClassDto {
   @Min(0)
   @Max(1000)
   sortOrder?: number;
+
+  /** The youngest age, in whole years, a child may be admitted at. Send null to remove the rule. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(25)
+  minAgeYears?: number | null;
+
+  @IsOptional()
+  @IsBoolean()
+  admissionsOpen?: boolean;
 }
 
 export class UpdateClassDto extends PartialType(CreateClassDto) {}

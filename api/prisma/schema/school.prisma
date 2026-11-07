@@ -15,6 +15,12 @@ model School {
   divisions     Division[]
   subjects      Subject[]
   auditLogs     AuditLog[]
+  forms         FormDefinition[]
+  applications  Application[]
+  files         StoredFile[]
+  students      Student[]
+  guardians     Guardian[]
+  enrollments   Enrollment[]
 
   @@map("schools")
 }

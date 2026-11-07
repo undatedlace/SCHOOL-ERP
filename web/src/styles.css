@@ -1,5 +1,65 @@
 @import 'tailwindcss';
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+/* Dark mode is on when <html> has the "app-dark" class (the default; see index.html). */
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+/* Design tokens: neutral (zinc) palette, shadcn-style. Light values first, dark below. */
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --border: #e4e4e7;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --ring: #a1a1aa;
+  --destructive: #dc2626;
+  --success: #16a34a;
+  --radius: 0.5rem;
+}
+
+.app-dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #0f0f12;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #1f1f23;
+  --border: #27272a;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --ring: #52525b;
+  --destructive: #f87171;
+  --success: #4ade80;
+  color-scheme: dark;
+}
+
+/* Lets us write bg-background, text-muted-foreground, border-border and so on. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --radius-lg: var(--radius);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased;
+  }
 }

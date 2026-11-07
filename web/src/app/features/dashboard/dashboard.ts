@@ -15,19 +15,19 @@ import { PageHeader } from '../../shared/ui/page-header';
       @for (item of shortcuts(); track item.path) {
         <a
           [routerLink]="item.path"
-          class="rounded-lg border bg-white p-5 shadow-sm transition hover:border-slate-400"
+          class="rounded-lg border bg-card p-5 shadow-sm transition hover:border-ring"
         >
           <h2 class="font-medium">{{ item.label }}</h2>
-          <p class="mt-1 text-sm text-slate-600">{{ item.description }}</p>
+          <p class="mt-1 text-sm text-muted-foreground">{{ item.description }}</p>
         </a>
       } @empty {
-        <p class="text-sm text-slate-600">
+        <p class="text-sm text-muted-foreground">
           Nothing is set up for your role yet. Ask the school office if you need access.
         </p>
       }
     </div>
 
-    <p class="mt-8 text-sm text-slate-500">
+    <p class="mt-8 text-sm text-muted-foreground">
       School insights (admissions, fees, attendance and results) arrive in a later phase.
     </p>
   `,

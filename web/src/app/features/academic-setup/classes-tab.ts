@@ -3,9 +3,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 import { DialogModule } from '@openng/optimus-ui/dialog';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
+import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { SchoolClass } from '../../core/models';
@@ -20,9 +23,12 @@ type Dialog =
   imports: [
     ReactiveFormsModule,
     ButtonModule,
+    CheckboxModule,
+    InputNumberModule,
     DialogModule,
     InputTextModule,
     TableModule,
+    TagModule,
     FormField,
     HasPermission,
   ],
@@ -36,6 +42,8 @@ type Dialog =
       <ng-template #header>
         <tr>
           <th>Class</th>
+          <th>Minimum age</th>
+          <th>Admissions</th>
           <th>Divisions</th>
           <th><span class="sr-only">Actions</span></th>
         </tr>
@@ -44,16 +52,29 @@ type Dialog =
         <tr>
           <td class="font-medium">{{ cls.name }}</td>
           <td>
+            @if (cls.minAgeYears !== null) {
+              {{ cls.minAgeYears }} {{ cls.minAgeYears === 1 ? 'year' : 'years' }}
+            } @else {
+              <span class="text-muted-foreground">No rule</span>
+            }
+          </td>
+          <td>
+            <p-tag
+              [value]="cls.admissionsOpen ? 'Open' : 'Closed'"
+              [severity]="cls.admissionsOpen ? 'success' : 'secondary'"
+            />
+          </td>
+          <td>
             <div class="flex flex-wrap gap-2">
               @for (d of cls.divisions; track d.id) {
                 <span
-                  class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm"
+                  class="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
                 >
                   {{ d.name }}
                   <button
                     *appHasPermission="'academics.manage'"
                     type="button"
-                    class="text-slate-500 hover:text-red-600"
+                    class="text-muted-foreground hover:text-destructive"
                     [attr.aria-label]="'Remove division ' + d.name + ' from ' + cls.name"
                     (click)="confirmDeleteDivision(cls, d)"
                   >
@@ -61,7 +82,7 @@ type Dialog =
                   </button>
                 </span>
               } @empty {
-                <span class="text-sm text-slate-500">None</span>
+                <span class="text-sm text-muted-foreground">None</span>
               }
             </div>
           </td>
@@ -72,7 +93,7 @@ type Dialog =
               [text]="true"
               (onClick)="openDivision(cls)"
             />
-            <p-button label="Rename" size="small" [text]="true" (onClick)="openClass(cls)" />
+            <p-button label="Edit" size="small" [text]="true" (onClick)="openClass(cls)" />
             <p-button
               label="Delete"
               size="small"
@@ -85,7 +106,7 @@ type Dialog =
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="3" class="p-4 text-center text-slate-500">
+          <td colspan="5" class="p-4 text-center text-muted-foreground">
             No classes yet. Add the first one.
           </td>
         </tr>
@@ -113,6 +134,26 @@ type Dialog =
             [fluid]="true"
           />
         </app-form-field>
+        @if (dialog()?.kind === 'class') {
+          <app-form-field
+            label="Minimum age (years)"
+            for="minAge"
+            hint="The youngest age a child may be admitted at. Leave empty for no age rule."
+          >
+            <p-inputnumber
+              inputId="minAge"
+              formControlName="minAgeYears"
+              [useGrouping]="false"
+              [min]="0"
+              [max]="25"
+              [fluid]="true"
+            />
+          </app-form-field>
+          <div class="flex items-center gap-2">
+            <p-checkbox formControlName="admissionsOpen" [binary]="true" inputId="admOpen" />
+            <label for="admOpen" class="text-sm">Open for admission</label>
+          </div>
+        }
         <div class="flex justify-end gap-2">
           <p-button
             type="button"
@@ -137,6 +178,8 @@ export class ClassesTab {
   protected readonly dialog = signal<Dialog | null>(null);
   protected readonly form = inject(FormBuilder).nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(50)]],
+    minAgeYears: [null as number | null],
+    admissionsOpen: [true],
   });
 
   constructor() {
@@ -147,16 +190,20 @@ export class ClassesTab {
     const d = this.dialog();
     if (!d) return '';
     if (d.kind === 'division') return `Add division to ${d.parent.name}`;
-    return d.editing ? 'Rename class' : 'Add class';
+    return d.editing ? 'Edit class' : 'Add class';
   }
 
   protected openClass(cls: SchoolClass | null) {
-    this.form.reset({ name: cls?.name ?? '' });
+    this.form.reset({
+      name: cls?.name ?? '',
+      minAgeYears: cls?.minAgeYears ?? null,
+      admissionsOpen: cls?.admissionsOpen ?? true,
+    });
     this.dialog.set({ kind: 'class', editing: cls });
   }
 
   protected openDivision(parent: SchoolClass) {
-    this.form.reset({ name: '' });
+    this.form.reset({ name: '', minAgeYears: null, admissionsOpen: true });
     this.dialog.set({ kind: 'division', parent });
   }
 
@@ -165,15 +212,18 @@ export class ClassesTab {
     const dialog = this.dialog();
     if (!dialog || this.form.invalid || this.saving()) return;
 
-    const name = this.form.getRawValue().name.trim();
+    const { name: rawName, minAgeYears, admissionsOpen } = this.form.getRawValue();
+    const name = rawName.trim();
     this.saving.set(true);
     try {
       if (dialog.kind === 'division') {
         await firstValueFrom(this.api.createDivision(dialog.parent.id, name));
       } else if (dialog.editing) {
-        await firstValueFrom(this.api.updateClass(dialog.editing.id, name));
+        await firstValueFrom(
+          this.api.updateClass(dialog.editing.id, { name, minAgeYears, admissionsOpen }),
+        );
       } else {
-        await firstValueFrom(this.api.createClass(name));
+        await firstValueFrom(this.api.createClass({ name, minAgeYears, admissionsOpen }));
       }
       this.toast.add({ severity: 'success', summary: 'Saved' });
       this.dialog.set(null);

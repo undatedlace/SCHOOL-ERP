@@ -56,6 +56,7 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
           <th>Year</th>
           <th>Starts</th>
           <th>Ends</th>
+          <th>Age counted on</th>
           <th>Status</th>
           <th><span class="sr-only">Actions</span></th>
         </tr>
@@ -65,6 +66,13 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
           <td class="font-medium">{{ year.name }}</td>
           <td>{{ format(year.startDate) }}</td>
           <td>{{ format(year.endDate) }}</td>
+          <td>
+            @if (year.ageCutoffDate) {
+              {{ format(year.ageCutoffDate) }}
+            } @else {
+              <span class="text-muted-foreground">Date of the form</span>
+            }
+          </td>
           <td>
             @if (year.isCurrent) {
               <p-tag value="Current" severity="success" />
@@ -85,7 +93,7 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5" class="p-4 text-center text-slate-500">
+          <td colspan="6" class="p-4 text-center text-muted-foreground">
             No academic years yet. Add the first one.
           </td>
         </tr>
@@ -128,8 +136,22 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
             />
           </app-form-field>
         </div>
+        <app-form-field
+          label="Age is counted as on"
+          for="ageCutoff"
+          hint='Optional, like "Age as on" on the paper form. Left empty, a child&apos;s age is counted on the day the form is received.'
+        >
+          <p-datepicker
+            inputId="ageCutoff"
+            formControlName="ageCutoffDate"
+            dateFormat="dd/mm/yy"
+            appendTo="body"
+            [showClear]="true"
+            [fluid]="true"
+          />
+        </app-form-field>
         @if (form.errors?.['mismatch']) {
-          <small class="text-red-600" role="alert">{{ form.errors?.['mismatch'] }}</small>
+          <small class="text-destructive" role="alert">{{ form.errors?.['mismatch'] }}</small>
         }
         <div class="flex items-center gap-2 text-sm">
           <p-checkbox formControlName="isCurrent" [binary]="true" inputId="isCurrent" />
@@ -159,6 +181,7 @@ export class YearsTab {
       name: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(20)]],
       startDate: [null as Date | null, Validators.required],
       endDate: [null as Date | null, Validators.required],
+      ageCutoffDate: [null as Date | null],
       isCurrent: [false],
     },
     { validators: endAfterStart },
@@ -185,6 +208,7 @@ export class YearsTab {
       name: year.name,
       startDate: fromIsoDate(year.startDate),
       endDate: fromIsoDate(year.endDate),
+      ageCutoffDate: year.ageCutoffDate ? fromIsoDate(year.ageCutoffDate) : null,
       isCurrent: year.isCurrent,
     });
     this.open.set(true);
@@ -200,6 +224,8 @@ export class YearsTab {
       startDate: toIsoDate(v.startDate as Date),
       endDate: toIsoDate(v.endDate as Date),
       isCurrent: !!v.isCurrent,
+      // null clears the date; the API leaves a missing value alone.
+      ageCutoffDate: v.ageCutoffDate ? toIsoDate(v.ageCutoffDate) : null,
     };
     const editing = this.editing();
 
