@@ -1,5 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -10,8 +18,8 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { AnswerErrors, FormSchema, SchoolClass } from '../../core/models';
-import { toIsoDate } from '../../shared/dates';
+import { AnswerErrors, Eligibility, FormSchema, SchoolClass } from '../../core/models';
+import { formatDate, toIsoDate } from '../../shared/dates';
 import { FormRenderer } from '../../shared/forms/form-renderer';
 import { FormField } from '../../shared/ui/form-field';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -62,7 +70,34 @@ import { PageHeader } from '../../shared/ui/page-header';
           </app-form-field>
         </div>
 
-        <app-form-renderer [schema]="s" [classes]="classes()" [errors]="errors()" />
+        <app-form-renderer
+          [schema]="s"
+          [classes]="classes()"
+          [errors]="errors()"
+          [ageAsOn]="ageAsOn()"
+          (changed)="onChanged()"
+        />
+
+        @if (advice(); as a) {
+          @if (a.eligible) {
+            @if (a.ageText) {
+              <p class="mb-4 text-sm text-muted-foreground">
+                Age as on {{ format(a.asOn) }}: {{ a.ageText }}.
+              </p>
+            }
+          } @else {
+            <div class="mb-4" role="status">
+              <p-message severity="warn">
+                <div>
+                  @for (issue of a.issues; track issue) {
+                    <p>{{ issue }}</p>
+                  }
+                  <p class="mt-1 text-xs">You can still save this application.</p>
+                </div>
+              </p-message>
+            </div>
+          }
+        }
 
         @if (summary()) {
           <p-message class="mb-4 block" severity="error" [text]="summary()!" />
@@ -90,12 +125,29 @@ export class ApplicationNew {
   protected readonly saving = signal(false);
   protected readonly errors = signal<AnswerErrors>({});
   protected readonly summary = signal<string | null>(null);
+  protected readonly format = formatDate;
+  /** Advice on the child's age for the chosen class. It never blocks saving. */
+  protected readonly advice = signal<Eligibility | null>(null);
+  protected readonly ageAsOn = signal<string | null>(null);
+  private adviceTimer?: ReturnType<typeof setTimeout>;
+  private adviceRun = 0;
   protected readonly header = inject(FormBuilder).group({
     formNo: [''],
     receivedOn: [new Date() as Date | null],
   });
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => clearTimeout(this.adviceTimer));
+    this.header.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.onChanged());
+
+    firstValueFrom(this.api.years())
+      .then((years) => {
+        const cutoff = years.find((y) => y.isCurrent)?.ageCutoffDate;
+        this.ageAsOn.set(cutoff ? formatDate(cutoff) : null);
+      })
+      .catch(() => undefined);
+
     Promise.all([firstValueFrom(this.api.admissionForm()), firstValueFrom(this.api.classes())])
       .then(([form, classes]) => {
         this.formName.set(form.name);
@@ -109,6 +161,42 @@ export class ApplicationNew {
             : apiError(e),
         ),
       );
+  }
+
+  /** Re-checks the child's age a moment after the last change. */
+  protected onChanged() {
+    clearTimeout(this.adviceTimer);
+    this.adviceTimer = setTimeout(() => void this.checkAge(), 400);
+  }
+
+  private async checkAge() {
+    const renderer = this.renderer();
+    const schema = this.schema();
+    if (!renderer || !schema) return;
+
+    const fields = schema.sections.flatMap((s) => s.fields);
+    const answers = renderer.answers();
+    const classId = answers[fields.find((f) => f.system === 'student.class')?.id ?? ''];
+    const dateOfBirth = answers[fields.find((f) => f.system === 'student.dateOfBirth')?.id ?? ''];
+    if (typeof classId !== 'string' || typeof dateOfBirth !== 'string') {
+      this.advice.set(null);
+      return;
+    }
+
+    const run = ++this.adviceRun;
+    const receivedOn = this.header.getRawValue().receivedOn;
+    try {
+      const result = await firstValueFrom(
+        this.api.eligibility({
+          classId,
+          dateOfBirth,
+          ...(receivedOn ? { receivedOn: toIsoDate(receivedOn) } : {}),
+        }),
+      );
+      if (run === this.adviceRun) this.advice.set(result); // ignore answers that arrive late
+    } catch {
+      if (run === this.adviceRun) this.advice.set(null);
+    }
   }
 
   protected async save() {

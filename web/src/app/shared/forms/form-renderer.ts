@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output } from '@angular/core';
 import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { CheckboxModule } from '@openng/optimus-ui/checkbox';
@@ -13,6 +13,14 @@ import { AnswerErrors, FormField as Field, FormSchema } from '../../core/models'
 import { FormField } from '../ui/form-field';
 import { buildGroup, newRow, readAnswers } from './form-values';
 import { ImageUpload } from './image-upload';
+
+export interface ClassInfo {
+  id: string;
+  name: string;
+  sortOrder?: number;
+  minAgeYears?: number | null;
+  admissionsOpen?: boolean;
+}
 
 /**
  * Draws any form definition as a working form. The parent keeps a reference to
@@ -45,7 +53,43 @@ import { ImageUpload } from './image-upload';
         <div class="mt-4 grid grid-cols-12 gap-4">
           @for (field of section.fields; track field.id) {
             <div [class]="span(field)">
-              @if (field.type === 'group') {
+              @if (field.type === 'ageLimits') {
+                <div class="rounded-lg border bg-card p-4">
+                  <h3 class="mb-2 text-sm font-medium">{{ field.label }}</h3>
+                  @if (limits().length) {
+                    <table class="w-full max-w-sm text-sm">
+                      <thead>
+                        <tr class="border-b text-left text-xs text-muted-foreground">
+                          <th class="py-1 font-normal">Class</th>
+                          <th class="py-1 font-normal">Minimum age</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (c of limits(); track c.id) {
+                          <tr class="border-b last:border-b-0">
+                            <td class="py-1.5">{{ c.name }}</td>
+                            <td class="py-1.5">
+                              {{ c.minAgeYears }} {{ c.minAgeYears === 1 ? 'year' : 'years' }}
+                              @if (c.admissionsOpen === false) {
+                                <span class="ml-1 text-xs text-muted-foreground">(not open)</span>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                    @if (ageAsOn(); as date) {
+                      <p class="mt-2 text-xs text-muted-foreground">
+                        Age is counted as on {{ date }}.
+                      </p>
+                    }
+                  } @else {
+                    <p class="text-sm text-muted-foreground">
+                      No age limits have been set yet. They are set per class in Academic setup.
+                    </p>
+                  }
+                </div>
+              } @else if (field.type === 'group') {
                 <div class="rounded-lg border p-4">
                   <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-sm font-medium">{{ field.label }}</h3>
@@ -210,15 +254,34 @@ import { ImageUpload } from './image-upload';
 export class FormRenderer {
   readonly schema = input.required<FormSchema>();
   /** The school's classes, for fields that take their options from them. */
-  readonly classes = input<{ id: string; name: string }[]>([]);
+  readonly classes = input<ClassInfo[]>([]);
+  /** The date ages are counted on, already formatted, shown under the age limits table. */
+  readonly ageAsOn = input<string | null>(null);
   /** The starting answers (for editing). Pass a stable reference. */
   readonly value = input<Record<string, unknown> | null>(null);
   /** Messages from the server, by field id. */
   readonly errors = input<AnswerErrors>({});
 
+  /** Classes that have a minimum age, in the order the school lists them, for the age limits table. */
+  protected readonly limits = computed(() =>
+    this.classes()
+      .filter((c) => c.minAgeYears !== null && c.minAgeYears !== undefined)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+  );
+
+  /** Emits when anything in the form changes, so a page can react (for example to check ages). */
+  readonly changed = output<void>();
+
   private readonly fields = computed(() => this.schema().sections.flatMap((s) => s.fields));
   /** Rebuilt whenever the form definition or the starting answers change. */
   protected readonly form = computed(() => buildGroup(this.fields(), this.value() ?? {}));
+
+  constructor() {
+    effect((onCleanup) => {
+      const subscription = this.form().valueChanges.subscribe(() => this.changed.emit());
+      onCleanup(() => subscription.unsubscribe());
+    });
+  }
 
   answers(): Record<string, unknown> {
     return readAnswers(this.fields(), this.form());

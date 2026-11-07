@@ -33,6 +33,7 @@ export const TYPE_OPTIONS: { value: FieldType; label: string }[] = [
   { value: 'radio', label: 'Choice buttons' },
   { value: 'checkbox', label: 'Tick box' },
   { value: 'image', label: 'Photograph' },
+  { value: 'ageLimits', label: 'Age limits table' },
   { value: 'group', label: 'Repeating rows' },
 ];
 const COLUMN_TYPES = TYPE_OPTIONS.filter((t) =>
@@ -111,19 +112,27 @@ const WIDTHS: { value: FieldWidth; label: string }[] = [
           </app-form-field>
         </div>
 
-        <div class="flex items-center gap-2">
-          <p-checkbox formControlName="required" [binary]="true" inputId="fe_required" />
-          <label for="fe_required" class="text-sm">Required</label>
-          @if (requiredLocked()) {
-            <small class="text-muted-foreground">(always required)</small>
-          }
-        </div>
+        @if (type() !== 'ageLimits') {
+          <div class="flex items-center gap-2">
+            <p-checkbox formControlName="required" [binary]="true" inputId="fe_required" />
+            <label for="fe_required" class="text-sm">Required</label>
+            @if (requiredLocked()) {
+              <small class="text-muted-foreground">(always required)</small>
+            }
+          </div>
+        }
 
         <div class="flex items-center gap-2">
           <p-checkbox formControlName="newRow" [binary]="true" inputId="fe_newrow" />
           <label for="fe_newrow" class="text-sm">Start on a new row</label>
         </div>
 
+        @if (type() === 'ageLimits') {
+          <p class="text-sm text-muted-foreground">
+            This block takes no answer. It shows each class's minimum age, taken from Academic
+            setup, so it always matches the school's settings.
+          </p>
+        }
         <app-form-field label="Help text" for="fe_help" hint="Shown under the question.">
           <input pInputText id="fe_help" formControlName="helpText" [fluid]="true" />
         </app-form-field>

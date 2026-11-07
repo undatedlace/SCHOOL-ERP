@@ -69,7 +69,11 @@ export function buildControl(field: FormField, answer: unknown): AbstractControl
 
 export function buildGroup(fields: FormField[], answers: Record<string, unknown>): FormGroup {
   const group = new FormGroup({});
-  for (const field of fields) group.addControl(field.id, buildControl(field, answers[field.id]));
+  for (const field of fields) {
+    // A display-only block (the age limits table) has nothing to fill in.
+    if (field.type === 'ageLimits') continue;
+    group.addControl(field.id, buildControl(field, answers[field.id]));
+  }
   return group;
 }
 

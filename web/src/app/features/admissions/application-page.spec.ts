@@ -30,6 +30,7 @@ const granted = (): ApplicationDetail => ({
   createdAt: '2026-06-01T10:00:00Z',
   studentId: null,
   admittedAt: null,
+  eligibility: null,
   suggestedGuardians: [
     { fullName: 'Imran Shaikh', relationship: 'FATHER', mobile: '9876543210', isPrimary: true },
     { fullName: 'Ayesha Shaikh', relationship: 'MOTHER', mobile: '9876543210', isPrimary: false },
@@ -188,5 +189,41 @@ describe('ApplicationPage: admitting a granted application', () => {
       );
     await done;
     expect(page.admitError()).toContain('Choose a division');
+  });
+
+  it('shows a warning when the child is not eligible for the class, and nothing when they are', async () => {
+    const warned = await setup({
+      ...granted(),
+      status: 'RECEIVED',
+      suggestedGuardians: [],
+      eligibility: {
+        eligible: false,
+        issues: [
+          'Admissions are not open for Nursery.',
+          'The child is 2 years 11 months old as on 2026-07-31, and Nursery needs at least 3 years.',
+        ],
+        ageMonths: 35,
+        ageText: '2 years 11 months',
+        asOn: '2026-07-31',
+      },
+    });
+    const text = warned.fixture.nativeElement.textContent as string;
+    expect(text).toContain('Admissions are not open for Nursery.');
+    expect(text).toContain('needs at least 3 years');
+
+    TestBed.resetTestingModule();
+    const fine = await setup({
+      ...granted(),
+      status: 'RECEIVED',
+      suggestedGuardians: [],
+      eligibility: {
+        eligible: true,
+        issues: [],
+        ageMonths: 60,
+        ageText: '5 years 0 months',
+        asOn: '2026-07-31',
+      },
+    });
+    expect(fine.fixture.nativeElement.textContent).not.toContain('needs at least');
   });
 });

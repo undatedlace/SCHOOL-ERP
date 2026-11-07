@@ -30,6 +30,22 @@ const fields: FormField[] = [
 
 const siblings = fields.find((f) => f.id === 'siblings')!;
 
+describe('the age limits table', () => {
+  const withTable: FormField[] = [
+    ...fields,
+    { id: 'limits', type: 'ageLimits', label: 'Age limits' },
+  ];
+
+  it('has nothing to fill in: no control, and nothing sent', () => {
+    const g = buildGroup(withTable, {});
+    expect(g.get('limits')).toBeNull();
+    expect(readAnswers(withTable, g)).not.toHaveProperty('limits');
+    expect(g.valid).toBe(false); // the other required fields, not the table
+    const onlyTable = buildGroup([{ id: 'limits', type: 'ageLimits', label: 'L' }], {});
+    expect(onlyTable.valid).toBe(true);
+  });
+});
+
 describe('photograph fields', () => {
   it('start empty, hold a file id, and send it back', () => {
     const g = buildGroup(fields, {});

@@ -47,12 +47,18 @@ export interface AcademicYear {
   startDate: string;
   endDate: string;
   isCurrent: boolean;
+  /** Ages are counted as on this date. Empty = the day the form was received. */
+  ageCutoffDate: string | null;
 }
 
 export interface SchoolClass {
   id: string;
   name: string;
   sortOrder: number;
+  /** The youngest age, in whole years, a child may be admitted at. */
+  minAgeYears: number | null;
+  /** Whether the school is taking applications for this class. */
+  admissionsOpen: boolean;
   divisions: { id: string; name: string }[];
 }
 
@@ -75,7 +81,16 @@ export interface AuditLogItem {
 // ---------- Configurable forms ----------
 
 export type FieldType =
-  'text' | 'textarea' | 'number' | 'date' | 'select' | 'radio' | 'checkbox' | 'image' | 'group';
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'radio'
+  | 'checkbox'
+  | 'image'
+  | 'ageLimits'
+  | 'group';
 export type FieldWidth = 'full' | 'half' | 'third' | 'quarter';
 
 export interface FieldOption {
@@ -177,6 +192,8 @@ export interface ApplicationDetail extends ApplicationListItem {
   admittedAt: string | null;
   /** Guardians read from the answers, offered when admitting. */
   suggestedGuardians: GuardianInput[];
+  /** Null when the application has no class. */
+  eligibility: Eligibility | null;
 }
 
 export interface AdmissionsSummary {
@@ -254,4 +271,13 @@ export interface StudentDetail {
     endedOn: string | null;
   }[];
   application: { id: string; formNo: string } | null;
+}
+
+/** Advice on whether a child's age suits a class. It never blocks saving. */
+export interface Eligibility {
+  eligible: boolean;
+  issues: string[];
+  ageMonths: number | null;
+  ageText: string | null;
+  asOn: string;
 }

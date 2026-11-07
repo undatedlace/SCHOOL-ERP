@@ -101,6 +101,18 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
         <app-status-tag [status]="a.status" />
       </div>
 
+      @if (a.eligibility && !a.eligibility.eligible) {
+        <div class="mb-6" role="status">
+          <p-message severity="warn">
+            <div>
+              @for (issue of a.eligibility.issues; track issue) {
+                <p>{{ issue }}</p>
+              }
+            </div>
+          </p-message>
+        </div>
+      }
+
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
           <div class="rounded-lg border bg-card p-5">

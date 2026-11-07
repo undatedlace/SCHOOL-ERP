@@ -7,6 +7,7 @@ import {
   ApplicationListItem,
   AuditLogItem,
   Decision,
+  Eligibility,
   FormDetail,
   GuardianInput,
   FormSchema,
@@ -66,19 +67,33 @@ export class Api {
 
   // ---------- Academic setup ----------
   years = () => this.http.get<AcademicYear[]>('/api/academic-years');
-  createYear = (body: { name: string; startDate: string; endDate: string; isCurrent: boolean }) =>
-    this.http.post<AcademicYear>('/api/academic-years', body);
+  createYear = (body: {
+    name: string;
+    startDate: string;
+    endDate: string;
+    isCurrent: boolean;
+    ageCutoffDate?: string | null;
+  }) => this.http.post<AcademicYear>('/api/academic-years', body);
   updateYear = (
     id: string,
-    body: { name: string; startDate: string; endDate: string; isCurrent: boolean },
+    body: {
+      name: string;
+      startDate: string;
+      endDate: string;
+      isCurrent: boolean;
+      ageCutoffDate?: string | null;
+    },
   ) => this.http.patch<AcademicYear>(`/api/academic-years/${id}`, body);
   setCurrentYear = (id: string) =>
     this.http.post<AcademicYear>(`/api/academic-years/${id}/set-current`, {});
 
   classes = () => this.http.get<SchoolClass[]>('/api/classes');
-  createClass = (name: string) => this.http.post<SchoolClass>('/api/classes', { name });
-  updateClass = (id: string, name: string) =>
-    this.http.patch<SchoolClass>(`/api/classes/${id}`, { name });
+  createClass = (body: { name: string; minAgeYears?: number | null; admissionsOpen?: boolean }) =>
+    this.http.post<SchoolClass>('/api/classes', body);
+  updateClass = (
+    id: string,
+    body: { name?: string; minAgeYears?: number | null; admissionsOpen?: boolean },
+  ) => this.http.patch<SchoolClass>(`/api/classes/${id}`, body);
   deleteClass = (id: string) => this.http.delete<void>(`/api/classes/${id}`);
   createDivision = (classId: string, name: string) =>
     this.http.post(`/api/classes/${classId}/divisions`, { name });
@@ -103,6 +118,10 @@ export class Api {
     this.http.put<FormVersion>(`/api/forms/${key}/draft`, body);
   discardFormDraft = (key: string) => this.http.delete<void>(`/api/forms/${key}/draft`);
   publishForm = (key: string) => this.http.post<FormVersion>(`/api/forms/${key}/publish`, {});
+
+  // ---------- Admissions: age advice ----------
+  eligibility = (q: { classId: string; dateOfBirth: string; receivedOn?: string }) =>
+    this.http.get<Eligibility>('/api/admissions/eligibility', { params: params(q) });
 
   // ---------- Files ----------
   /** Uploads one image. The result's id is what a photograph answer holds. */
