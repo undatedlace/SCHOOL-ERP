@@ -184,7 +184,7 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
                         <p class="text-xs text-muted-foreground">
                           {{ typeText(f.type) }}
                           @if (f.width && f.width !== 'full') {
-                            &middot; {{ f.width === 'half' ? 'half width' : 'one third' }}
+                            &middot; {{ widthText(f.width) }}
                           }
                         </p>
                       </div>
@@ -270,6 +270,8 @@ export class FormBuilder {
 
   protected readonly date = (iso: string | null) => (iso ? formatDate(iso) : '');
   protected readonly typeText = typeLabel;
+  protected readonly widthText = (w: string) =>
+    ({ half: 'half width', third: 'one third', quarter: 'one quarter' })[w] ?? w;
   protected readonly canRemove = canRemoveSection;
 
   protected readonly detail = signal<FormDetail | null>(null);

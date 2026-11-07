@@ -12,6 +12,7 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { AnswerErrors, FormField as Field, FormSchema } from '../../core/models';
 import { FormField } from '../ui/form-field';
 import { buildGroup, newRow, readAnswers } from './form-values';
+import { ImageUpload } from './image-upload';
 
 /**
  * Draws any form definition as a working form. The parent keeps a reference to
@@ -27,6 +28,7 @@ import { buildGroup, newRow, readAnswers } from './form-values';
     DatePickerModule,
     InputNumberModule,
     InputTextModule,
+    ImageUpload,
     SelectModule,
     SelectButtonModule,
     TextareaModule,
@@ -40,7 +42,7 @@ import { buildGroup, newRow, readAnswers } from './form-values';
         @if (section.description) {
           <p class="mt-1 text-sm text-muted-foreground">{{ section.description }}</p>
         }
-        <div class="mt-4 grid grid-cols-6 gap-4">
+        <div class="mt-4 grid grid-cols-12 gap-4">
           @for (field of section.fields; track field.id) {
             <div [class]="span(field)">
               @if (field.type === 'group') {
@@ -177,6 +179,9 @@ import { buildGroup, newRow, readAnswers } from './form-values';
                 [placeholder]="f.placeholder || 'Select'"
               />
             }
+            @case ('image') {
+              <app-image-upload [formControl]="ctrl" [inputId]="id(path)" [altText]="f.label" />
+            }
             @case ('radio') {
               <p-selectbutton
                 [formControl]="ctrl"
@@ -229,12 +234,14 @@ export class FormRenderer {
 
   protected span(f: Field): string {
     switch (f.width) {
+      case 'quarter':
+        return 'col-span-6 sm:col-span-4 lg:col-span-3';
       case 'third':
-        return 'col-span-6 sm:col-span-3 lg:col-span-2';
+        return 'col-span-12 sm:col-span-6 lg:col-span-4';
       case 'half':
-        return 'col-span-6 sm:col-span-3';
+        return 'col-span-12 sm:col-span-6';
       default:
-        return 'col-span-6';
+        return 'col-span-12';
     }
   }
 

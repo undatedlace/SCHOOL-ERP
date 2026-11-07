@@ -16,6 +16,7 @@ const fields: FormField[] = [
   },
   { id: 'gender', type: 'radio', label: 'Gender', options: [{ value: 'MALE', label: 'Male' }] },
   { id: 'agreed', type: 'checkbox', label: 'Agreed', required: true },
+  { id: 'photo', type: 'image', label: 'Photograph' },
   {
     id: 'siblings',
     type: 'group',
@@ -26,6 +27,26 @@ const fields: FormField[] = [
     ],
   },
 ];
+
+const siblings = fields.find((f) => f.id === 'siblings')!;
+
+describe('photograph fields', () => {
+  it('start empty, hold a file id, and send it back', () => {
+    const g = buildGroup(fields, {});
+    expect(g.get('photo')?.value).toBeNull();
+    g.get('photo')?.setValue('file-1');
+    expect(readAnswers(fields, g)).toMatchObject({ photo: 'file-1' });
+    expect(readAnswers(fields, buildGroup(fields, { photo: 'file-9' }))).toMatchObject({
+      photo: 'file-9',
+    });
+  });
+
+  it('are left out when empty, and can be required', () => {
+    expect(readAnswers(fields, buildGroup(fields, {}))).not.toHaveProperty('photo');
+    const required = buildGroup([{ id: 'p', type: 'image', label: 'P', required: true }], {});
+    expect(required.get('p')?.hasError('required')).toBe(true);
+  });
+});
 
 describe('form values', () => {
   it('starts empty with sensible defaults', () => {
@@ -117,8 +138,8 @@ describe('form values', () => {
     it('sends repeating rows and drops the blank ones', () => {
       const g = buildGroup(fields, {});
       const rows = g.get('siblings') as FormArray;
-      rows.push(newRow(fields[7]));
-      rows.push(newRow(fields[7]));
+      rows.push(newRow(siblings));
+      rows.push(newRow(siblings));
       (rows.at(0) as FormGroup).patchValue({ name: 'Sara', age: 8 });
 
       expect(readAnswers(fields, g)).toEqual({ siblings: [{ name: 'Sara', age: 8 }] });

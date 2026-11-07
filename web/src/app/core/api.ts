@@ -101,6 +101,15 @@ export class Api {
   discardFormDraft = (key: string) => this.http.delete<void>(`/api/forms/${key}/draft`);
   publishForm = (key: string) => this.http.post<FormVersion>(`/api/forms/${key}/publish`, {});
 
+  // ---------- Files ----------
+  /** Uploads one image. The result's id is what a photograph answer holds. */
+  uploadFile = (file: File, purpose: string) => {
+    const body = new FormData();
+    body.append('purpose', purpose);
+    body.append('file', file);
+    return this.http.post<{ id: string; mimeType: string; sizeBytes: number }>('/api/files', body);
+  };
+
   // ---------- Admissions ----------
   admissionForm = () =>
     this.http.get<{ id: string; version: number; name: string; schema: FormSchema }>(

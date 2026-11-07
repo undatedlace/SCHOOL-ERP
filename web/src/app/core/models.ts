@@ -75,8 +75,8 @@ export interface AuditLogItem {
 // ---------- Configurable forms ----------
 
 export type FieldType =
-  'text' | 'textarea' | 'number' | 'date' | 'select' | 'radio' | 'checkbox' | 'group';
-export type FieldWidth = 'full' | 'half' | 'third';
+  'text' | 'textarea' | 'number' | 'date' | 'select' | 'radio' | 'checkbox' | 'image' | 'group';
+export type FieldWidth = 'full' | 'half' | 'third' | 'quarter';
 
 export interface FieldOption {
   value: string;

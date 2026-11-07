@@ -47,6 +47,10 @@ export function buildControl(field: FormField, answer: unknown): AbstractControl
       return new FormControl<Date | null>(typeof answer === 'string' ? fromIsoDate(answer) : null, {
         validators: field.required ? [Validators.required] : [],
       });
+    case 'image':
+      return new FormControl<string | null>(typeof answer === 'string' ? answer : null, {
+        validators: field.required ? [Validators.required] : [],
+      });
     case 'select':
     case 'radio':
       return new FormControl<string | null>(typeof answer === 'string' ? answer : null, {
@@ -98,6 +102,7 @@ function readValue(field: FormField, control: AbstractControl): unknown {
       return v instanceof Date ? toIsoDate(v) : undefined;
     case 'select':
     case 'radio':
+    case 'image':
       return typeof v === 'string' && v !== '' ? v : undefined;
     default: {
       const text = typeof v === 'string' ? v.trim() : '';

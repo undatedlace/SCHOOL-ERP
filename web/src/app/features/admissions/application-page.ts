@@ -66,20 +66,29 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
       <p-message class="mt-4 block" severity="error" [text]="error()!" />
     } @else if (app(); as a) {
       <div class="mt-3 mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-semibold">{{ a.studentName }}</h1>
-          <p class="mt-1 text-sm text-muted-foreground">
-            Form no. {{ a.formNo }} &middot; Received {{ format(a.receivedOn) }} &middot;
-            {{ a.academicYear.name }}
-            @if (a.class) {
-              &middot; Applied for {{ a.class.name }}
-            }
-          </p>
-          @if (a.dateOfBirth) {
-            <p class="text-sm text-muted-foreground">
-              Born {{ format(a.dateOfBirth) }} ({{ age(a.dateOfBirth) }} old)
-            </p>
+        <div class="flex items-start gap-4">
+          @if (photoId(a); as photo) {
+            <img
+              [src]="'/api/files/' + photo"
+              [alt]="'Photograph of ' + a.studentName"
+              class="h-24 w-20 shrink-0 rounded-lg border object-cover"
+            />
           }
+          <div>
+            <h1 class="text-2xl font-semibold">{{ a.studentName }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Form no. {{ a.formNo }} &middot; Received {{ format(a.receivedOn) }} &middot;
+              {{ a.academicYear.name }}
+              @if (a.class) {
+                &middot; Applied for {{ a.class.name }}
+              }
+            </p>
+            @if (a.dateOfBirth) {
+              <p class="text-sm text-muted-foreground">
+                Born {{ format(a.dateOfBirth) }} ({{ age(a.dateOfBirth) }} old)
+              </p>
+            }
+          </div>
         </div>
         <app-status-tag [status]="a.status" />
       </div>
@@ -283,6 +292,15 @@ export class ApplicationPage {
   protected readonly actions = ACTIONS;
   protected readonly format = formatDate;
   protected readonly age = (dob: string) => ageText(dob);
+
+  /** The child's photograph, if the form has one and it was filled in. */
+  protected photoId(a: ApplicationDetail): string | null {
+    const field = a.form.schema.sections
+      .flatMap((s) => s.fields)
+      .find((f) => f.system === 'student.photo');
+    const value = field ? a.answers[field.id] : null;
+    return typeof value === 'string' ? value : null;
+  }
 
   protected readonly app = signal<ApplicationDetail | null>(null);
   protected readonly classes = signal<SchoolClass[]>([]);

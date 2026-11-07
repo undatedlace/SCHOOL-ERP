@@ -32,6 +32,7 @@ export const TYPE_OPTIONS: { value: FieldType; label: string }[] = [
   { value: 'select', label: 'Dropdown list' },
   { value: 'radio', label: 'Choice buttons' },
   { value: 'checkbox', label: 'Tick box' },
+  { value: 'image', label: 'Photograph' },
   { value: 'group', label: 'Repeating rows' },
 ];
 const COLUMN_TYPES = TYPE_OPTIONS.filter((t) =>
@@ -41,6 +42,7 @@ const WIDTHS: { value: FieldWidth; label: string }[] = [
   { value: 'full', label: 'Full width' },
   { value: 'half', label: 'Half width' },
   { value: 'third', label: 'One third' },
+  { value: 'quarter', label: 'One quarter' },
 ];
 
 /** Add or change one question on a form. */

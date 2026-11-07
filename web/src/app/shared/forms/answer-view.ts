@@ -5,6 +5,8 @@ import { formatDate } from '../dates';
 interface Row {
   label: string;
   text?: string;
+  /** For photographs: the id of the uploaded file. */
+  image?: string;
   /** For repeating groups: one entry per row, as label/value pairs. */
   table?: { columns: string[]; rows: string[][] };
 }
@@ -41,6 +43,16 @@ interface Row {
                       }
                     </tbody>
                   </table>
+                </dd>
+              } @else if (row.image) {
+                <dd class="mt-1">
+                  <a [href]="'/api/files/' + row.image" target="_blank" rel="noopener">
+                    <img
+                      [src]="'/api/files/' + row.image"
+                      [alt]="row.label"
+                      class="h-32 w-24 rounded-md border object-cover"
+                    />
+                  </a>
                 </dd>
               } @else {
                 <dd class="text-sm whitespace-pre-line">{{ row.text }}</dd>
@@ -85,6 +97,7 @@ export class AnswerView {
         },
       ];
     }
+    if (field.type === 'image') return [{ label: field.label, image: String(value) }];
     return [{ label: field.label, text: this.display(field, value) }];
   }
 
