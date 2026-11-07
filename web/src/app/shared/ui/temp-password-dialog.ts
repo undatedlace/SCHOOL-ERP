@@ -6,6 +6,8 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 export interface TempPassword {
   name: string;
   password: string;
+  /** What the person types to sign in: a mobile number or an admission number. */
+  loginId?: string | null;
 }
 
 /** Shows a generated temporary password once, with a copy button. */
@@ -26,6 +28,12 @@ export interface TempPassword {
           Give this password to <strong>{{ t.name }}</strong
           >. It is shown only once, and they must change it when they sign in.
         </p>
+        @if (t.loginId) {
+          <p class="mb-2 text-sm">
+            They sign in with <strong class="font-mono">{{ t.loginId }}</strong
+            >.
+          </p>
+        }
         <div
           class="mb-4 rounded-md bg-muted p-3 text-center font-mono text-xl tracking-wider select-all"
         >
