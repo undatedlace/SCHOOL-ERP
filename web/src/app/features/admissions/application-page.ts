@@ -9,8 +9,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
@@ -22,7 +22,15 @@ import { SelectModule } from '@openng/optimus-ui/select';
 import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { AnswerErrors, ApplicationDetail, Decision, SchoolClass } from '../../core/models';
+import {
+  AnswerErrors,
+  ApplicationDetail,
+  Decision,
+  GuardianInput,
+  Relationship,
+  SchoolClass,
+} from '../../core/models';
+import { RELATIONSHIPS } from '../../shared/ui/labels';
 import { ageText, formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { AnswerView } from '../../shared/forms/answer-view';
 import { FormRenderer } from '../../shared/forms/form-renderer';
@@ -154,7 +162,7 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
           </div>
         </div>
 
-        <aside class="lg:col-span-1">
+        <aside class="flex flex-col gap-6 lg:col-span-1">
           <div class="rounded-lg border bg-card p-5">
             <h2 class="mb-3 font-semibold">Decision</h2>
             @if (a.decision.decidedAt) {
@@ -195,8 +203,174 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
               }
             </div>
           </div>
+          @if (a.status === 'GRANTED') {
+            <div class="rounded-lg border bg-card p-5">
+              <h2 class="mb-3 font-semibold">Student record</h2>
+              @if (a.studentId) {
+                <p class="text-sm">Admitted on {{ format(a.admittedAt!) }}.</p>
+                <a
+                  *appHasPermission="'students.read_all'"
+                  class="mt-3 inline-block text-sm font-medium underline-offset-4 hover:underline"
+                  [routerLink]="['/app/students', a.studentId]"
+                  >View student</a
+                >
+              } @else {
+                <p class="text-sm text-muted-foreground">
+                  Admission is granted. Create the student record to put them in a division.
+                </p>
+                <ng-container *appHasPermission="'admissions.manage'">
+                  <div class="mt-4" *appHasPermission="'students.manage'">
+                    <p-button label="Admit as student" [fluid]="true" (onClick)="openAdmit()" />
+                  </div>
+                </ng-container>
+              }
+            </div>
+          }
         </aside>
       </div>
+
+      <p-dialog
+        header="Admit as student"
+        [visible]="admitOpen()"
+        (visibleChange)="!$event && admitOpen.set(false)"
+        [modal]="true"
+        [style]="{ width: '46rem', 'max-width': '96vw' }"
+      >
+        <form [formGroup]="admitForm" (ngSubmit)="admit()" class="flex flex-col gap-5" novalidate>
+          <div class="grid gap-4 sm:grid-cols-3">
+            <app-form-field
+              label="Division"
+              for="admitDivision"
+              [control]="admitForm.controls.divisionId"
+              [required]="true"
+              [hint]="a.decision.grantedClass ? 'Class: ' + a.decision.grantedClass.name : null"
+            >
+              <p-select
+                inputId="admitDivision"
+                formControlName="divisionId"
+                [options]="admitDivisions()"
+                optionLabel="name"
+                optionValue="id"
+                appendTo="body"
+                [fluid]="true"
+                placeholder="Choose"
+              />
+            </app-form-field>
+            <app-form-field
+              label="Admission number"
+              for="admitNo"
+              hint="Empty = next number"
+              [error]="admitFieldError()"
+            >
+              <input pInputText id="admitNo" formControlName="admissionNo" [fluid]="true" />
+            </app-form-field>
+            <app-form-field label="Joined on" for="admitJoined">
+              <p-datepicker
+                inputId="admitJoined"
+                formControlName="joinedOn"
+                dateFormat="dd/mm/yy"
+                appendTo="body"
+                [fluid]="true"
+              />
+            </app-form-field>
+          </div>
+
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-sm font-semibold">Parents and guardians</h3>
+              <p-button
+                type="button"
+                label="Add another"
+                size="small"
+                severity="secondary"
+                (onClick)="addGuardianRow()"
+              />
+            </div>
+            <p class="mb-3 text-xs text-muted-foreground">
+              Taken from the application. Check them and correct anything that is wrong.
+            </p>
+            @for (row of guardianRows.controls; track row; let i = $index) {
+              <div class="mb-3 rounded-md border p-3" [formGroup]="$any(row)">
+                <div class="grid gap-3 sm:grid-cols-6">
+                  <input
+                    pInputText
+                    class="sm:col-span-3"
+                    formControlName="fullName"
+                    placeholder="Full name"
+                    [attr.aria-label]="'Guardian ' + (i + 1) + ' name'"
+                  />
+                  <p-select
+                    class="sm:col-span-3"
+                    formControlName="relationship"
+                    [options]="relationships"
+                    optionLabel="label"
+                    optionValue="value"
+                    appendTo="body"
+                    [fluid]="true"
+                    [ariaLabel]="'Guardian ' + (i + 1) + ' relationship'"
+                  />
+                  <input
+                    pInputText
+                    class="sm:col-span-2"
+                    formControlName="mobile"
+                    inputmode="tel"
+                    placeholder="Mobile"
+                    [attr.aria-label]="'Guardian ' + (i + 1) + ' mobile'"
+                  />
+                  <input
+                    pInputText
+                    class="sm:col-span-2"
+                    formControlName="email"
+                    type="email"
+                    placeholder="Email"
+                    [attr.aria-label]="'Guardian ' + (i + 1) + ' email'"
+                  />
+                  <input
+                    pInputText
+                    class="sm:col-span-2"
+                    formControlName="occupation"
+                    placeholder="Occupation"
+                    [attr.aria-label]="'Guardian ' + (i + 1) + ' occupation'"
+                  />
+                </div>
+                <div class="mt-2 flex items-center justify-between text-sm">
+                  <label class="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="primaryGuardian"
+                      [checked]="primaryIndex() === i"
+                      (change)="primaryIndex.set(i)"
+                    />
+                    Primary contact
+                  </label>
+                  @if (guardianRows.length > 1) {
+                    <button
+                      type="button"
+                      class="text-destructive underline-offset-4 hover:underline"
+                      (click)="removeGuardianRow(i)"
+                    >
+                      Remove
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (admitError()) {
+            <p-message severity="error" [text]="admitError()!" />
+          }
+          <div class="flex justify-end gap-2">
+            <p-button
+              type="button"
+              label="Cancel"
+              severity="secondary"
+              (onClick)="admitOpen.set(false)"
+            />
+            <p-button type="submit" label="Admit student" [loading]="admitting()" />
+          </div>
+        </form>
+      </p-dialog>
 
       <p-dialog
         [header]="dialogTitle()"
@@ -287,6 +461,7 @@ export class ApplicationPage {
 
   private readonly api = inject(Api);
   private readonly toast = inject(MessageService);
+  private readonly fb = inject(FormBuilder);
   private readonly renderer = viewChild(FormRenderer);
 
   protected readonly actions = ACTIONS;
@@ -311,7 +486,7 @@ export class ApplicationPage {
   protected readonly saving = signal(false);
   protected readonly errors = signal<AnswerErrors>({});
   protected readonly summary = signal<string | null>(null);
-  protected readonly header = inject(FormBuilder).group({
+  protected readonly header = this.fb.group({
     formNo: [''],
     receivedOn: [null as Date | null],
   });
@@ -321,7 +496,7 @@ export class ApplicationPage {
   protected readonly deciding = signal(false);
   protected readonly decisionError = signal<string | null>(null);
   protected readonly chosenClass = signal<string | null>(null);
-  protected readonly decisionForm = inject(FormBuilder).group({
+  protected readonly decisionForm = this.fb.group({
     classId: [null as string | null],
     divisionId: [null as string | null],
     note: [''],
@@ -337,6 +512,121 @@ export class ApplicationPage {
         ? 'Refuse application'
         : 'Mark as withdrawn';
   });
+
+  // admitting as a student
+  private readonly router = inject(Router);
+  protected readonly relationships = RELATIONSHIPS;
+  protected readonly admitOpen = signal(false);
+  protected readonly admitting = signal(false);
+  protected readonly admitError = signal<string | null>(null);
+  protected readonly admitFieldError = signal<string | null>(null);
+  protected readonly primaryIndex = signal(0);
+  protected readonly admitForm = this.fb.group({
+    divisionId: ['' as string, Validators.required],
+    admissionNo: [''],
+    joinedOn: [new Date() as Date | null],
+    guardians: new FormArray<ReturnType<ApplicationPage['newGuardianRow']>>([]),
+  });
+  protected readonly guardianRows = this.admitForm.controls.guardians;
+  protected readonly admitDivisions = computed(
+    () =>
+      this.classes().find((c) => c.id === this.app()?.decision.grantedClass?.id)?.divisions ?? [],
+  );
+
+  private newGuardianRow(g?: GuardianInput) {
+    return this.fb.nonNullable.group({
+      fullName: [g?.fullName ?? '', [Validators.required, Validators.minLength(2)]],
+      relationship: [(g?.relationship ?? 'FATHER') as Relationship],
+      mobile: [g?.mobile ?? '', Validators.pattern(/^(\+?[0-9]{10,15})?$/)],
+      email: [g?.email ?? '', Validators.email],
+      occupation: [g?.occupation ?? ''],
+    });
+  }
+
+  protected addGuardianRow() {
+    this.guardianRows.push(this.newGuardianRow());
+  }
+
+  protected removeGuardianRow(i: number) {
+    this.guardianRows.removeAt(i);
+    if (this.primaryIndex() >= this.guardianRows.length) this.primaryIndex.set(0);
+  }
+
+  protected openAdmit() {
+    const a = this.app();
+    if (!a) return;
+    this.admitError.set(null);
+    this.admitFieldError.set(null);
+    this.guardianRows.clear();
+    const suggested = a.suggestedGuardians;
+    (suggested.length ? suggested : [undefined]).forEach((g) =>
+      this.guardianRows.push(this.newGuardianRow(g)),
+    );
+    this.primaryIndex.set(
+      Math.max(
+        0,
+        suggested.findIndex((g) => g.isPrimary),
+      ),
+    );
+    this.admitForm.patchValue({
+      divisionId: a.decision.grantedDivision?.id ?? '',
+      admissionNo: '',
+      joinedOn: new Date(),
+    });
+    this.admitOpen.set(true);
+  }
+
+  protected async admit() {
+    const a = this.app();
+    this.admitForm.markAllAsTouched();
+    if (!a || this.admitForm.invalid || this.admitting()) {
+      this.admitError.set('Choose a division and check the guardians.');
+      return;
+    }
+    const v = this.admitForm.getRawValue();
+    const guardians: GuardianInput[] = this.guardianRows.getRawValue().map((g, i) => ({
+      fullName: g.fullName.trim(),
+      relationship: g.relationship,
+      ...(g.mobile.trim() ? { mobile: g.mobile.trim() } : {}),
+      ...(g.email.trim() ? { email: g.email.trim() } : {}),
+      ...(g.occupation.trim() ? { occupation: g.occupation.trim() } : {}),
+      isPrimary: i === this.primaryIndex(),
+    }));
+
+    this.admitting.set(true);
+    this.admitError.set(null);
+    this.admitFieldError.set(null);
+    try {
+      const result = await firstValueFrom(
+        this.api.admitApplication(a.id, {
+          divisionId: v.divisionId ?? '',
+          ...(v.admissionNo?.trim() ? { admissionNo: v.admissionNo.trim() } : {}),
+          ...(v.joinedOn ? { joinedOn: toIsoDate(v.joinedOn) } : {}),
+          guardians,
+        }),
+      );
+      this.admitOpen.set(false);
+      this.toast.add({
+        severity: 'success',
+        summary: 'Student admitted',
+        detail: `Admission number ${result.admissionNo}`,
+      });
+      await this.router.navigate(['/app/students', result.studentId]);
+    } catch (error) {
+      const message = apiError(error);
+      if (
+        error instanceof HttpErrorResponse &&
+        error.status === 409 &&
+        /admission number/i.test(message)
+      ) {
+        this.admitFieldError.set(message);
+      } else {
+        this.admitError.set(message);
+      }
+    } finally {
+      this.admitting.set(false);
+    }
+  }
 
   constructor() {
     effect(() => {
