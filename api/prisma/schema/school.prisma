@@ -17,6 +17,7 @@ model School {
   auditLogs     AuditLog[]
   forms         FormDefinition[]
   applications  Application[]
+  files         StoredFile[]
 
   @@map("schools")
 }

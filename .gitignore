@@ -12,3 +12,6 @@ dist/
 .windsurf/
 skills-lock.json
 api/.claude/
+
+# Uploaded files in development
+api/storage/

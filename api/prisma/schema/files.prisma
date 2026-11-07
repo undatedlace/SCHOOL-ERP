@@ -1,0 +1,19 @@
+/// Metadata for an uploaded file. The bytes live in file storage (local disk in
+/// development, S3 later), under storage_key.
+model StoredFile {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  schoolId     String   @map("school_id") @db.Uuid
+  /// What the file is for, for example "application-photo". Decides who may see it.
+  purpose      String
+  storageKey   String   @unique @map("storage_key")
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, purpose])
+  @@map("files")
+}
