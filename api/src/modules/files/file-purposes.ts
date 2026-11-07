@@ -14,6 +14,12 @@ const MB = 1024 * 1024;
  * and who may see it. New kinds of file (documents, homework) are added here.
  */
 export const FILE_PURPOSES: Record<string, FilePurpose> = {
+  'staff-photo': {
+    write: 'staff.manage',
+    read: 'staff.read',
+    maxBytes: 5 * MB,
+    kind: 'image',
+  },
   'application-photo': {
     write: 'admissions.manage',
     read: 'admissions.read',
