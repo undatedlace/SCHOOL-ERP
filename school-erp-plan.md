@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians and the admit flow are built. Last updated: 7 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits and staff are built. Last updated: 7 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -258,7 +258,8 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 - **UI:** neutral (zinc) theme, dark by default, with a toggle. Design tokens live in `web/src/styles.css`; the Optimus preset is `web/src/app/theme/optimus-preset.ts`.
 - **Students, guardians, enrolments and the admit flow:** a granted application plus a division and the guardians' details becomes a student, guardians and the first enrolment, in one transaction (all or nothing). A student is never hard-deleted (status and left date) and holds no class: `enrollments` link student, academic year and division, one per year, so promotion will add rows and never rewrite history. A guardian is a person linked to students through `student_guardians` (relationship, primary contact); siblings share one guardian (same name and mobile number), while a father and mother who share a phone stay two people. Guardians can later be linked to a login (`guardians.user_id`). Admission numbers are sequential per school (a typed number is kept) and assigned under a lock; simultaneous admits of one application create exactly one student.
 - **Who sees which students:** `students.read_all` (admin, office, accountant) sees every student. Anyone else with `students.read` sees only students they are a guardian of; teachers and student accounts see none yet, until teaching assignments exist. A student you may not see looks the same as one that does not exist, and a parent does not see the admissions paperwork.
-- **Next in Phase 2:** staff (profiles, joining and exit dates, teaching assignments, which also unlocks teachers seeing their classes), parent and student logins (mobile number or admission number, linked to guardians and students), student documents, and Excel import. Bulk promotion to the next year belongs to Phase 4.
+- **Staff:** a profile (name, designation, contact, joined and left dates, photograph) with an optional login. Never hard-deleted: leaving sets status and a left date, **switches the login off and signs the person out everywhere**, and rejoining switches it back on; an administrator cannot lock themselves out. A login is created together with the person or added later, only by someone with `users.manage`, only with staff roles (not parent or student), with a temporary password shown once. Employee numbers are sequential under a lock, or typed. `staff.read_all` (admin, office) sees everyone; teachers and other staff with `staff.read` see only their own record.
+- **Next in Phase 2:** teaching assignments (a teacher's classes and subjects per year, and class teachers), which also unlocks teachers seeing their own classes' students; parent and student logins (mobile number or admission number, linked to guardians and students), student documents, and Excel import. Bulk promotion to the next year belongs to Phase 4.
 
 
 ### Phase 3: Fees
