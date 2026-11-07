@@ -1,0 +1,41 @@
+/// The teacher in charge of a division for one academic year. One per division per year.
+model ClassTeacher {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  divisionId     String   @map("division_id") @db.Uuid
+  staffId        String   @map("staff_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+  staff        Staff        @relation(fields: [staffId], references: [id])
+
+  @@unique([academicYearId, divisionId])
+  @@index([staffId, academicYearId])
+  @@index([schoolId])
+  @@map("class_teachers")
+}
+
+/// Who teaches a subject to a division in one academic year. One teacher per subject per division per year.
+model SubjectTeacher {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  divisionId     String   @map("division_id") @db.Uuid
+  subjectId      String   @map("subject_id") @db.Uuid
+  staffId        String   @map("staff_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  staff        Staff        @relation(fields: [staffId], references: [id])
+
+  @@unique([academicYearId, divisionId, subjectId])
+  @@index([staffId, academicYearId])
+  @@index([schoolId])
+  @@map("subject_teachers")
+}

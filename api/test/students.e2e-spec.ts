@@ -416,7 +416,7 @@ describe('students and the admit flow (e2e)', () => {
       }
     });
 
-    it('teachers and student accounts see none yet (until teaching assignments exist)', async () => {
+    it('teachers with no classes assigned, and student accounts, see none', async () => {
       for (const role of ['TEACHER', 'STUDENT', 'STAFF']) {
         const user = await createSettledUser(app, admin, role);
         if (role === 'STAFF') {

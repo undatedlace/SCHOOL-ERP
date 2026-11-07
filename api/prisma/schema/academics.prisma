@@ -8,9 +8,11 @@ model AcademicYear {
   /// Ages are counted as on this date (the paper form's "Age as on"). Empty = the day the form was received.
   ageCutoffDate DateTime? @map("age_cutoff_date") @db.Date
 
-  school       School        @relation(fields: [schoolId], references: [id])
-  applications Application[]
-  enrollments  Enrollment[]
+  school          School           @relation(fields: [schoolId], references: [id])
+  applications    Application[]
+  enrollments     Enrollment[]
+  classTeachers   ClassTeacher[]
+  subjectTeachers SubjectTeacher[]
 
   @@unique([schoolId, name])
   @@map("academic_years")
@@ -41,10 +43,12 @@ model Division {
   classId  String @map("class_id") @db.Uuid
   name     String
 
-  school              School        @relation(fields: [schoolId], references: [id])
-  class               SchoolClass   @relation(fields: [classId], references: [id])
+  school              School           @relation(fields: [schoolId], references: [id])
+  class               SchoolClass      @relation(fields: [classId], references: [id])
   grantedApplications Application[]
   enrollments         Enrollment[]
+  classTeachers       ClassTeacher[]
+  subjectTeachers     SubjectTeacher[]
 
   @@unique([classId, name])
   @@index([schoolId])
@@ -57,7 +61,8 @@ model Subject {
   name     String
   code     String?
 
-  school School @relation(fields: [schoolId], references: [id])
+  school          School           @relation(fields: [schoolId], references: [id])
+  subjectTeachers SubjectTeacher[]
 
   @@unique([schoolId, name])
   @@map("subjects")
