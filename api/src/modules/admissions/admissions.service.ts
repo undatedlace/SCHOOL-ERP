@@ -18,8 +18,12 @@ import {
   validateAnswers,
 } from '../forms/form-schema.js';
 import { FilesService } from '../files/files.service.js';
+import { StudentsService } from '../students/students.service.js';
+import { suggestGuardians } from './guardian-suggestions.js';
+import { GENDER_VALUES } from '../forms/form-schema.js';
 import { FormsService } from '../forms/forms.service.js';
 import {
+  AdmitDto,
   CreateApplicationDto,
   Decision,
   DecisionDto,
@@ -65,6 +69,7 @@ export class AdmissionsService {
     private readonly audit: AuditService,
     private readonly forms: FormsService,
     private readonly files: FilesService,
+    private readonly students: StudentsService,
   ) {}
 
   /** The published admission form the office fills in. */
@@ -166,7 +171,114 @@ export class AdmissionsService {
       allowedDecisions: TRANSITIONS[app.status],
       editable: EDITABLE.includes(app.status),
       createdAt: app.createdAt,
+      studentId: app.studentId,
+      admittedAt: app.admittedAt,
+      // A starting point for the guardians, offered only while the application can still be admitted.
+      suggestedGuardians:
+        app.status === 'GRANTED' && !app.studentId
+          ? suggestGuardians(app.answers as Record<string, unknown>)
+          : [],
     };
+  }
+
+  /**
+   * Turns a granted application into a student, with guardians and the first
+   * enrollment. All or nothing: if anything fails, nothing is created.
+   */
+  async admit(auth: AuthContext, id: string, dto: AdmitDto, ip?: string) {
+    const app = await this.prisma.application.findFirst({
+      where: { id, schoolId: auth.schoolId },
+      include: { form: { select: { schema: true } } },
+    });
+    if (!app) throw new NotFoundException('Application not found');
+    if (app.studentId)
+      throw new ConflictException('This application has already been admitted');
+    if (app.status !== 'GRANTED') {
+      throw new BadRequestException(
+        'Only a granted application can be admitted',
+      );
+    }
+
+    const classId = app.grantedClassId ?? app.classId;
+    const division = await this.prisma.division.findFirst({
+      where: {
+        id: dto.divisionId,
+        schoolId: auth.schoolId,
+        ...(classId ? { classId } : {}),
+      },
+      select: { id: true },
+    });
+    if (!division) {
+      throw new BadRequestException(
+        'Choose a division of the class the student was granted',
+      );
+    }
+
+    const schema = app.form.schema as unknown as FormSchema;
+    const answers = app.answers as Record<string, unknown>;
+    const text = (key: Parameters<typeof systemValue>[2]) => {
+      const v = systemValue(schema, answers, key);
+      return typeof v === 'string' ? v : '';
+    };
+    const gender = text('student.gender');
+    if (!GENDER_VALUES.includes(gender) || !app.dateOfBirth) {
+      throw new BadRequestException(
+        'The application is missing the gender or date of birth',
+      );
+    }
+
+    const student = await this.prisma.$transaction(async (tx) => {
+      const created = await this.students.createInTransaction(
+        tx,
+        auth.schoolId,
+        {
+          firstName: text('student.firstName'),
+          fatherName: text('student.fatherName') || null,
+          surname: text('student.surname'),
+          gender: gender as 'MALE' | 'FEMALE' | 'OTHER',
+          dateOfBirth: app.dateOfBirth!.toISOString().slice(0, 10),
+          photoFileId: text('student.photo') || null,
+          admissionNo: dto.admissionNo,
+          joinedOn: dto.joinedOn,
+          academicYearId: app.academicYearId,
+          divisionId: division.id,
+          guardians: dto.guardians,
+        },
+      );
+      // Guards against two people admitting the same application at the same moment.
+      const claimed = await tx.application.updateMany({
+        where: { id, studentId: null },
+        data: {
+          studentId: created.id,
+          admittedAt: new Date(),
+          grantedDivisionId: division.id,
+        },
+      });
+      if (claimed.count !== 1)
+        throw new ConflictException(
+          'This application has already been admitted',
+        );
+      return created;
+    });
+
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'admissions.admitted',
+      entityType: 'application',
+      entityId: id,
+      metadata: { studentId: student.id, admissionNo: student.admissionNo },
+      ip,
+    });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'students.created',
+      entityType: 'student',
+      entityId: student.id,
+      ip,
+    });
+    return { studentId: student.id, admissionNo: student.admissionNo };
   }
 
   async create(auth: AuthContext, dto: CreateApplicationDto, ip?: string) {

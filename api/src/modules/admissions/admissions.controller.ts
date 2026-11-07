@@ -16,6 +16,7 @@ import { CurrentAuth } from '../../common/decorators/current-auth.decorator.js';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
 import { AdmissionsService } from './admissions.service.js';
 import {
+  AdmitDto,
   CreateApplicationDto,
   DecisionDto,
   ListApplicationsQueryDto,
@@ -91,5 +92,18 @@ export class AdmissionsController {
     @Req() req: Request,
   ) {
     return this.admissions.decide(auth, id, dto, req.ip);
+  }
+
+  /** Turns a granted application into a student. Needs both admissions and student management. */
+  @Post('applications/:id/admit')
+  @RequirePermissions('admissions.manage', 'students.manage')
+  @HttpCode(201)
+  admit(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdmitDto,
+    @Req() req: Request,
+  ) {
+    return this.admissions.admit(auth, id, dto, req.ip);
   }
 }

@@ -8,7 +8,15 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { PageQueryDto } from '../../../common/dto/page-query.dto.js';
+import { GuardianInputDto } from '../../students/dto/students.dto.js';
 import { ApplicationStatus } from '../../../generated/prisma/enums.js';
 
 const trim = ({ value }: { value: unknown }) =>
@@ -98,4 +106,30 @@ export class ListApplicationsQueryDto extends PageQueryDto {
   @IsOptional()
   @IsUUID()
   academicYearId?: string;
+}
+
+/** Turns a granted application into a student. */
+export class AdmitDto {
+  /** The division the student joins. It must belong to the class the application was granted for. */
+  @IsUUID()
+  divisionId: string;
+
+  /** Defaults to the next number in the sequence. */
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(30)
+  admissionNo?: string;
+
+  /** The day the student joins, "YYYY-MM-DD". Defaults to today. */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  joinedOn?: string;
+
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Add at least one parent or guardian' })
+  @ArrayMaxSize(6)
+  @ValidateNested({ each: true })
+  @Type(() => GuardianInputDto)
+  guardians: GuardianInputDto[];
 }
