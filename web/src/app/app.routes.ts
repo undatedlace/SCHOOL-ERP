@@ -69,6 +69,17 @@ export const routes: Routes = [
           import('./features/admissions/application-page').then((m) => m.ApplicationPage),
       },
       {
+        path: 'students',
+        canActivate: [permissionGuard('students.read_all')],
+        loadComponent: () =>
+          import('./features/students/students-list').then((m) => m.StudentsList),
+      },
+      {
+        path: 'students/:id',
+        canActivate: [permissionGuard('students.read_all')],
+        loadComponent: () => import('./features/students/student-page').then((m) => m.StudentPage),
+      },
+      {
         path: 'settings/forms',
         canActivate: [permissionGuard('forms.manage')],
         loadComponent: () => import('./features/forms/forms-list').then((m) => m.FormsList),

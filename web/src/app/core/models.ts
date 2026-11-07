@@ -170,6 +170,11 @@ export interface ApplicationDetail extends ApplicationListItem {
   allowedDecisions: Decision[];
   editable: boolean;
   createdAt: string;
+  /** Set once the application has been turned into a student. */
+  studentId: string | null;
+  admittedAt: string | null;
+  /** Guardians read from the answers, offered when admitting. */
+  suggestedGuardians: GuardianInput[];
 }
 
 export interface AdmissionsSummary {
@@ -180,3 +185,71 @@ export interface AdmissionsSummary {
 
 /** Field id (or `group[0].column`) to a message, as returned by the API on a 400. */
 export type AnswerErrors = Record<string, string>;
+
+// ---------- Students ----------
+
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
+export type Relationship = 'FATHER' | 'MOTHER' | 'GUARDIAN' | 'OTHER';
+export type StudentStatus = 'ACTIVE' | 'LEFT';
+
+export interface StudentListItem {
+  id: string;
+  admissionNo: string;
+  fullName: string;
+  firstName: string;
+  surname: string;
+  gender: Gender;
+  dateOfBirth: string;
+  status: StudentStatus;
+  photoFileId: string | null;
+  current: {
+    academicYear: { id: string; name: string };
+    class: { id: string; name: string };
+    division: { id: string; name: string };
+  } | null;
+}
+
+export interface GuardianInput {
+  fullName: string;
+  relationship: Relationship;
+  mobile?: string;
+  email?: string;
+  occupation?: string;
+  isPrimary?: boolean;
+}
+
+export interface StudentGuardian {
+  id: string;
+  fullName: string;
+  relationship: Relationship;
+  isPrimary: boolean;
+  hasLogin: boolean;
+  mobile: string | null;
+  email: string | null;
+  occupation: string | null;
+}
+
+export interface StudentDetail {
+  id: string;
+  admissionNo: string;
+  fullName: string;
+  firstName: string;
+  fatherName: string | null;
+  surname: string;
+  gender: Gender;
+  dateOfBirth: string;
+  status: StudentStatus;
+  joinedOn: string;
+  leftOn: string | null;
+  photoFileId: string | null;
+  guardians: StudentGuardian[];
+  enrollments: {
+    id: string;
+    academicYear: { id: string; name: string };
+    class: { id: string; name: string };
+    division: { id: string; name: string };
+    startedOn: string;
+    endedOn: string | null;
+  }[];
+  application: { id: string; formNo: string } | null;
+}

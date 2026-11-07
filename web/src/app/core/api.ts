@@ -8,6 +8,7 @@ import {
   AuditLogItem,
   Decision,
   FormDetail,
+  GuardianInput,
   FormSchema,
   FormSummary,
   FormVersion,
@@ -15,6 +16,8 @@ import {
   Role,
   School,
   SchoolClass,
+  StudentDetail,
+  StudentListItem,
   Subject,
   UserRow,
 } from './models';
@@ -140,4 +143,50 @@ export class Api {
     id: string,
     body: { decision: Decision; note?: string; classId?: string; divisionId?: string },
   ) => this.http.post<ApplicationDetail>(`/api/admissions/applications/${id}/decision`, body);
+
+  admitApplication = (
+    id: string,
+    body: {
+      divisionId: string;
+      admissionNo?: string;
+      joinedOn?: string;
+      guardians: GuardianInput[];
+    },
+  ) =>
+    this.http.post<{ studentId: string; admissionNo: string }>(
+      `/api/admissions/applications/${id}/admit`,
+      body,
+    );
+
+  // ---------- Students ----------
+  students = (q: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string | null;
+    classId?: string | null;
+    divisionId?: string | null;
+  }) => this.http.get<Page<StudentListItem>>('/api/students', { params: params(q) });
+  student = (id: string) => this.http.get<StudentDetail>(`/api/students/${id}`);
+  updateStudent = (
+    id: string,
+    body: {
+      firstName?: string;
+      fatherName?: string;
+      surname?: string;
+      gender?: string;
+      dateOfBirth?: string;
+      admissionNo?: string;
+      status?: string;
+      leftOn?: string;
+    },
+  ) => this.http.patch<StudentDetail>(`/api/students/${id}`, body);
+  addGuardian = (studentId: string, body: GuardianInput) =>
+    this.http.post<StudentDetail>(`/api/students/${studentId}/guardians`, body);
+  updateGuardian = (
+    id: string,
+    body: { fullName?: string; mobile?: string; email?: string; occupation?: string },
+  ) => this.http.patch(`/api/guardians/${id}`, body);
+  unlinkGuardian = (studentId: string, guardianId: string) =>
+    this.http.delete<void>(`/api/students/${studentId}/guardians/${guardianId}`);
 }

@@ -22,6 +22,12 @@ export const NAV: NavItem[] = [
     permission: 'admissions.read',
   },
   {
+    label: 'Students',
+    path: '/app/students',
+    description: 'Enrolled students, their classes and families',
+    permission: 'students.read_all',
+  },
+  {
     label: 'Users',
     path: '/app/settings/users',
     description: 'Staff and parent accounts, roles and passwords',
