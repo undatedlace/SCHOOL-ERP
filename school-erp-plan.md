@@ -23,8 +23,8 @@ A school management system for **one school**, structured so it can become multi
 1. **School admin:** authority over academic setup, admissions, staff and settings.
 2. **Admissions and yearly insights:** student admissions, plus staff joining and leaving, tracked by year.
 3. **Fees:** per student, by standard and division, with pending balances and part payments.
-4. **Staff:** accounts for teachers and other staff. Teachers handle attendance, homework, exams and results.
-5. **Parent and student portal:** report cards, pending fees, attendance, homework, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
+4. **Staff:** accounts for teachers and other staff. Teachers handle attendance, exams and results.
+5. **Parent and student portal:** report cards, pending fees, attendance, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
 6. **Dashboard:** overall insights.
 
 **Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, staff attendance, native mobile apps, and SMS/WhatsApp notifications.
@@ -111,7 +111,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | `SCHOOL_ADMIN` | Principal, management | Full control |
 | `OFFICE_STAFF` | Front office | Admissions and student records |
 | `ACCOUNTANT` | Accounts office | Fees and payments |
-| `TEACHER` | Teaching staff | Attendance, homework, marks for assigned classes |
+| `TEACHER` | Teaching staff | Attendance and marks for assigned classes |
 | `STAFF` | Other faculty | Own profile and notices |
 | `PARENT` | Guardians | Linked children only |
 | `STUDENT` | Students | Own records, read-only |
@@ -127,7 +127,6 @@ Why it fits: this app holds children's data and money records, and a departing s
 | Student records | Full | Full | Read | Assigned classes (read) | - | Own child (read) | Self (read) |
 | Staff records | Full | Read | - | Self | Self | - | - |
 | Student attendance | Full | Read | - | Assigned classes | - | Own child (read) | Self (read) |
-| Homework | Full | - | - | Assigned classes | - | Own child (read) | Self (read) |
 | Marks entry | Full | - | - | Assigned subjects | - | - | - |
 | Publish results | Full | - | - | - | - | Own child (read) | Self (read) |
 | Fee structures | Full | - | Full | - | - | - | - |
@@ -159,7 +158,6 @@ api/src/
     students/     students, guardians, enrollments, promotion, documents
     staff/        profiles, joining and exit dates, teaching assignments
     attendance/   daily student attendance
-    homework/     homework by division and subject
     exams/        exams, marks, grading, results, report cards
     fees/         structures, invoices, payments, allocations, concessions, receipts, dues
     payments/     Razorpay orders and webhooks (ON HOLD, not built)
@@ -188,13 +186,12 @@ web/src/app/
     students/     list, profile, promotion
     staff/        list, profile, assignments
     attendance/   mark by division, reports
-    homework/
     exams/        exams, marks entry, publish, report cards
     fees/         structures, student ledger, record payment, dues by class
     notices/
     imports/
     settings/     school settings, users and roles
-    portal/       child switcher, attendance, homework, results, fees, notices
+    portal/       child switcher, attendance, results, fees, notices
 ```
 
 - Route guards and a `*hasPermission` directive only control what's visible. The backend enforces access.
@@ -202,7 +199,7 @@ web/src/app/
 
 ## 9. Data rules to get right early
 
-**Core tables:** `schools`, `users`, `sessions`, `roles`, `permissions`, `students`, `guardians`, `student_guardians`, `academic_years`, `classes`, `divisions`, `subjects`, `enrollments`, `staff`, `teaching_assignments`, `applications`, `attendance_records`, `homework`, `exams`, `exam_marks`, `fee_heads`, `fee_structures`, `fee_invoices`, `fee_instalments`, `payments`, `payment_allocations`, `concessions`, `notices`, `audit_logs`.
+**Core tables:** `schools`, `users`, `sessions`, `roles`, `permissions`, `students`, `guardians`, `student_guardians`, `academic_years`, `classes`, `divisions`, `subjects`, `enrollments`, `staff`, `teaching_assignments`, `applications`, `attendance_records`, `exams`, `exam_marks`, `fee_heads`, `fee_structures`, `fee_invoices`, `fee_instalments`, `payments`, `payment_allocations`, `concessions`, `notices`, `audit_logs`.
 
 **Students and years**
 - A student is not tied directly to a class. `enrollments` links student, academic year and division.
@@ -259,7 +256,7 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 - **Students, guardians, enrolments and the admit flow:** a granted application plus a division and the guardians' details becomes a student, guardians and the first enrolment, in one transaction (all or nothing). A student is never hard-deleted (status and left date) and holds no class: `enrollments` link student, academic year and division, one per year, so promotion will add rows and never rewrite history. A guardian is a person linked to students through `student_guardians` (relationship, primary contact); siblings share one guardian (same name and mobile number), while a father and mother who share a phone stay two people. Guardians can later be linked to a login (`guardians.user_id`). Admission numbers are sequential per school (a typed number is kept) and assigned under a lock; simultaneous admits of one application create exactly one student.
 - **Who sees which students:** `students.read_all` (admin, office, accountant) sees every student. Anyone else with `students.read` sees the students they are a guardian of, plus, for a teacher, the students of the divisions they teach this academic year (class teacher or subject teacher), read only; student accounts see none yet. The access ends the moment an assignment is removed, the year changes, or the teacher leaves. A student you may not see looks the same as one that does not exist, and a parent does not see the admissions paperwork.
 - **Staff:** a profile (name, designation, contact, joined and left dates, photograph) with an optional login. Never hard-deleted: leaving sets status and a left date, **switches the login off and signs the person out everywhere**, and rejoining switches it back on; an administrator cannot lock themselves out. A login is created together with the person or added later, only by someone with `users.manage`, only with staff roles (not parent or student), with a temporary password shown once. Employee numbers are sequential under a lock, or typed. `staff.read_all` (admin, office) sees everyone; teachers and other staff with `staff.read` see only their own record.
-- **Teaching assignments:** one class teacher per division per academic year, and one teacher per subject per division per year (two plain tables with unique constraints). Assigned in Academic setup, Teaching tab; changing hands the place to someone else; only current staff can be assigned, and a conflict names who already holds the place. Teachers see their own classes on the dashboard and the students of those divisions in Students. Attendance, homework and marks (Phase 4) will use the same assignments to decide which classes a teacher may work on.
+- **Teaching assignments:** one class teacher per division per academic year, and one teacher per subject per division per year (two plain tables with unique constraints). Assigned in Academic setup, Teaching tab; changing hands the place to someone else; only current staff can be assigned, and a conflict names who already holds the place. Teachers see their own classes on the dashboard and the students of those divisions in Students. Attendance and marks (Phase 4) will use the same assignments to decide which classes a teacher may work on.
 - **Parent and student logins:** office staff and admin (permission `portal.accounts.manage`, a small widening of the access matrix: the admin-only user screen is not needed to hand out a parent login) give a login from the student page. A parent signs in with the guardian's mobile number; a father and mother who share a phone share one login (the second is attached to the first, with no new password); a student signs in with the admission number (stored in `users.username`, case-insensitive). The school issues a temporary password, shown once, and the person must change it at first sign-in; reset is the same call. A parent or student with no staff role gets the 30-day sliding session. A student sees only themself (`students.userId`); marking a student as left disables the login and signs them out, and rejoining restores it. Mobile numbers and admission numbers that already belong to another login are refused with a clear message. The portal screens themselves (child switcher, results, fees) are still Phase 5.
 - **Fixed on the way:** a teacher (or any user whose scope used OR) who searched the student list by name had the scope replaced by the search, so they could see students they do not teach. The scope and the search now combine with AND; covered by a test.
 - **Student documents:** staff keep scanned papers on a student's record (birth certificate, transfer certificate, ID proof, previous report card, medical, other), as a PDF or a photograph of the paper (photographs are cleaned like any photo). Staff only: viewing needs `students.read_all`, changing needs `students.manage`; a parent never sees them. **PDF rules** (`pdf-check.ts`): the file must start with `%PDF-`; it is parsed for real (including objects packed in compressed streams and names written with # escapes) and refused if it contains JavaScript, launch or open-on-load actions, web addresses, attached files, rich media or forms that submit, if it is encrypted or damaged, or has more than 50 pages. A passing PDF is stored exactly as uploaded and served only as a download (`Content-Disposition: attachment`, `nosniff`, a sandboxing Content-Security-Policy). 10 MB limit. This is a structural check, not a virus scanner: **before launch, also scan uploads with ClamAV (or the host's scanner).**
@@ -283,10 +280,12 @@ Fee heads and structures, invoices, instalments, concessions, offline payments, 
 - **Not built yet:** a payments list / daily collection screen (the API exists: `GET /payments`, `GET /payments/collection`); late fees (no rule given); carrying a structure over to a new year in one click; automatic invoice creation at admission (staff run *generate*); online payment (on hold).
 
 ### Phase 4: Academics
-Attendance, homework, exams, marks, grading, publishing, report card PDFs, year-end promotion.
+Attendance, exams, marks, grading, publishing, report card PDFs, year-end promotion.
+
+**Homework is not part of V1** (decided 8 Nov 2026: the school does not need it). It can be added later as its own module without changing anything else.
 **Done when:** a teacher can run attendance and marks for assigned classes, and admin can publish report cards and promote a class.
 
-**Status (8 Nov 2026): attendance is built and tested; not yet clicked through in a browser. Homework, exams, marks, report cards and promotion are not started (report cards wait for the school's format).**
+**Status (8 Nov 2026): attendance is built and tested; not yet clicked through in a browser. Exams, marks, report cards and promotion are not started (report cards wait for the school's format).**
 - **Attendance:** one record per student per day (`attendance_records`, unique on student and date), taken for a whole division at a time. Statuses: present, absent, late, on leave. Percentage = (present + late) / (present + late + absent); approved leave is left out of both sides, so it never counts against a child (`attendance-rules.ts`, with tests). A student's roster for a day is whoever was enrolled in that division on that date (enrolment dates and the date a student left are respected, so history stays whole after promotion or leaving).
 - **Who may do what:** `attendance.read_all` (admin, office) reads every division; `attendance.mark_all` (admin) marks any division on any past date. A teacher, class teacher or subject teacher of a division this year, marks and reads only those divisions, and only for today and the **previous 7 days** (`TEACHER_EDIT_DAYS`); older corrections are the admin's. Parents and students read only their own child (`GET /attendance/students/:id`, same visibility rule as the student record). A division you may not use looks like one that does not exist. No future dates. Dates are counted in India time.
 - **Screens:** *Attendance* page (divisions marked today, pick division and date, Present / Absent / Late / Leave per student with a note, "Mark everyone present", save; a Report tab with totals per student over a range and low attendance, under 75%, called out) and an *Attendance* section on the student page (percentage, counts, days not present), also shown to parents and students.

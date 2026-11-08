@@ -7,8 +7,8 @@ import { AuthService } from '../../core/auth.service';
   template: `
     <h1 class="mb-2 text-xl font-semibold">Welcome, {{ auth.me()?.fullName }}</h1>
     <p class="text-sm text-muted-foreground">
-      Attendance, homework, results, report cards, notices and fees will appear here once the school
-      starts using those features.
+      Attendance, results, report cards, notices and fees will appear here once the school starts
+      using those features.
     </p>
   `,
 })

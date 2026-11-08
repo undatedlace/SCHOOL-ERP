@@ -33,8 +33,6 @@ const PERMISSIONS = [
   'attendance.read_all',
   'attendance.mark',
   'attendance.mark_all',
-  'homework.read',
-  'homework.manage',
   'marks.enter',
   'results.publish',
   'results.read',
@@ -94,8 +92,6 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'staff.read',
       'attendance.read',
       'attendance.mark',
-      'homework.read',
-      'homework.manage',
       'marks.enter',
       'notices.read',
       'notices.create',
@@ -108,7 +104,6 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
     permissions: [
       'students.read',
       'attendance.read',
-      'homework.read',
       'results.read',
       'fees.read',
       'notices.read',
@@ -119,7 +114,6 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
     permissions: [
       'students.read',
       'attendance.read',
-      'homework.read',
       'results.read',
       'fees.read',
       'notices.read',
