@@ -28,6 +28,12 @@ export const NAV: NavItem[] = [
     permission: 'students.read',
   },
   {
+    label: 'Attendance',
+    path: '/app/attendance',
+    description: 'Mark the day for a division, and see attendance totals',
+    permission: 'attendance.read',
+  },
+  {
     label: 'Fee dues',
     path: '/app/fees/dues',
     description: 'Who owes what, by class and student',

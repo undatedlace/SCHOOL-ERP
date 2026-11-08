@@ -494,3 +494,83 @@ export interface DuesReport {
     pageSize: number;
   };
 }
+
+// ---------- Attendance ----------
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE';
+
+export interface AttendanceCounts {
+  present: number;
+  absent: number;
+  late: number;
+  onLeave: number;
+}
+
+export interface AttendanceSummary extends AttendanceCounts {
+  markedDays: number;
+  countedDays: number;
+  attendedDays: number;
+  /** Null until at least one day counts. */
+  percent: number | null;
+}
+
+export interface AttendanceDivision {
+  id: string;
+  name: string;
+  class: { id: string; name: string };
+  canMark: boolean;
+}
+
+export interface AttendanceRosterStudent {
+  studentId: string;
+  admissionNo: string;
+  name: string;
+  rollNo: number | null;
+  status: AttendanceStatus | null;
+  note: string | null;
+}
+
+export interface AttendanceRoster {
+  date: string;
+  academicYear: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  canMark: boolean;
+  marked: boolean;
+  markedBy: string | null;
+  markedAt: string | null;
+  counts: AttendanceSummary;
+  students: AttendanceRosterStudent[];
+}
+
+export interface AttendanceOverview {
+  date: string;
+  divisions: {
+    id: string;
+    name: string;
+    class: { id: string; name: string };
+    enrolled: number;
+    marked: number;
+    counts: AttendanceCounts;
+    done: boolean;
+  }[];
+}
+
+export interface AttendanceDivisionReport {
+  from: string;
+  to: string;
+  daysMarked: number;
+  students: (AttendanceSummary & {
+    studentId: string;
+    admissionNo: string;
+    name: string;
+    rollNo: number | null;
+  })[];
+}
+
+export interface StudentAttendance {
+  studentId: string;
+  from: string;
+  to: string;
+  summary: AttendanceSummary;
+  records: { date: string; status: AttendanceStatus; note: string | null }[];
+}

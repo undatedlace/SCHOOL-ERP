@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Last updated: 7 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started with attendance. Last updated: 8 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -286,6 +286,12 @@ Fee heads and structures, invoices, instalments, concessions, offline payments, 
 Attendance, homework, exams, marks, grading, publishing, report card PDFs, year-end promotion.
 **Done when:** a teacher can run attendance and marks for assigned classes, and admin can publish report cards and promote a class.
 
+**Status (8 Nov 2026): attendance is built and tested; not yet clicked through in a browser. Homework, exams, marks, report cards and promotion are not started (report cards wait for the school's format).**
+- **Attendance:** one record per student per day (`attendance_records`, unique on student and date), taken for a whole division at a time. Statuses: present, absent, late, on leave. Percentage = (present + late) / (present + late + absent); approved leave is left out of both sides, so it never counts against a child (`attendance-rules.ts`, with tests). A student's roster for a day is whoever was enrolled in that division on that date (enrolment dates and the date a student left are respected, so history stays whole after promotion or leaving).
+- **Who may do what:** `attendance.read_all` (admin, office) reads every division; `attendance.mark_all` (admin) marks any division on any past date. A teacher, class teacher or subject teacher of a division this year, marks and reads only those divisions, and only for today and the **previous 7 days** (`TEACHER_EDIT_DAYS`); older corrections are the admin's. Parents and students read only their own child (`GET /attendance/students/:id`, same visibility rule as the student record). A division you may not use looks like one that does not exist. No future dates. Dates are counted in India time.
+- **Screens:** *Attendance* page (divisions marked today, pick division and date, Present / Absent / Late / Leave per student with a note, "Mark everyone present", save; a Report tab with totals per student over a range and low attendance, under 75%, called out) and an *Attendance* section on the student page (percentage, counts, days not present), also shown to parents and students.
+- **Assumptions to confirm with the school (open decision 16):** daily attendance, not per period; any teacher of the division may take it; the 7-day window; the 75% "low" line; the percentage rule above.
+
 ### Phase 5: Parent and student portal
 Portal screens, notices, PWA setup. (Razorpay online payment is **on hold**; parents see dues and download receipts, and pay at the school.)
 **Done when:** a parent can see each child's records, download a report card, and see dues and download fee receipts. (Paying part of a fee online is on hold.)
@@ -315,6 +321,7 @@ Insights, security review, backups, deployment, staff training data.
 | 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
 | 14 | Online payment through Razorpay? | **On hold** (8 Nov 2026). Offline payments only; the ledger is ready for it | Phase 5 |
 | 15 | Fee rules the school has not given yet: instalments, late fee, who approves concessions | Assumed: instalments are a percentage plan per class; no late fee; concessions are approved by the admin only (`fees.concession.manage`); the accountant records payments | Phase 3 |
+| 16 | How the school takes attendance: daily or per period, who may take it, how far back it can be corrected, the minimum percentage, and how leave is counted? | Daily for the whole division; any teacher of the division (class or subject); teachers correct up to 7 days back, the admin any time; 75% is called low; approved leave is not counted against the child | Phase 4 |
 
 ## 12. Next step
 

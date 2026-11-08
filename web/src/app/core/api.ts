@@ -2,6 +2,12 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  AttendanceDivision,
+  AttendanceDivisionReport,
+  AttendanceOverview,
+  AttendanceRoster,
+  AttendanceStatus,
+  StudentAttendance,
   AdmissionsSummary,
   ApplicationDetail,
   ApplicationListItem,
@@ -304,4 +310,27 @@ export class Api {
   changeTeacher = (id: string, staffId: string) =>
     this.http.patch<Assignment>(`/api/teaching-assignments/${id}`, { staffId });
   removeAssignment = (id: string) => this.http.delete<void>(`/api/teaching-assignments/${id}`);
+
+  // ---------- Attendance ----------
+  attendanceDivisions = () => this.http.get<AttendanceDivision[]>('/api/attendance/divisions');
+  attendanceOverview = (date?: string) =>
+    this.http.get<AttendanceOverview>('/api/attendance/overview', { params: params({ date }) });
+  attendanceRoster = (divisionId: string, date: string) =>
+    this.http.get<AttendanceRoster>(`/api/attendance/divisions/${divisionId}`, {
+      params: params({ date }),
+    });
+  markAttendance = (
+    divisionId: string,
+    date: string,
+    entries: { studentId: string; status: AttendanceStatus; note?: string }[],
+  ) =>
+    this.http.put<AttendanceRoster>(`/api/attendance/divisions/${divisionId}`, { date, entries });
+  attendanceReport = (divisionId: string, q: { from?: string; to?: string }) =>
+    this.http.get<AttendanceDivisionReport>(`/api/attendance/divisions/${divisionId}/report`, {
+      params: params(q),
+    });
+  studentAttendance = (studentId: string, q: { from?: string; to?: string } = {}) =>
+    this.http.get<StudentAttendance>(`/api/attendance/students/${studentId}`, {
+      params: params(q),
+    });
 }
