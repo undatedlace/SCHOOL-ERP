@@ -45,6 +45,8 @@ model Student {
   enrollments Enrollment[]
   application Application?
   documents   StudentDocument[]
+  feeInvoices FeeInvoice[]
+  payments    Payment[]
 
   @@unique([schoolId, seq])
   @@unique([schoolId, admissionNo])

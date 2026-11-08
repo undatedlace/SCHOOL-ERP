@@ -130,6 +130,15 @@ export class StudentsService {
     };
   }
 
+  /** Throws 404 unless this user may see the student (the same answer as "does not exist"). */
+  async assertVisible(auth: AuthContext, id: string) {
+    const found = await this.prisma.student.findFirst({
+      where: { id, schoolId: auth.schoolId, AND: [await this.visible(auth)] },
+      select: { id: true },
+    });
+    if (!found) throw new NotFoundException('Student not found');
+  }
+
   async list(
     auth: AuthContext,
     q: ListStudentsQueryDto,

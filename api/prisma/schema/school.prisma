@@ -24,6 +24,10 @@ model School {
   staff           Staff[]
   classTeachers   ClassTeacher[]
   subjectTeachers SubjectTeacher[]
+  feeHeads        FeeHead[]
+  feeStructures   FeeStructure[]
+  feeInvoices     FeeInvoice[]
+  payments        Payment[]
 
   @@map("schools")
 }
