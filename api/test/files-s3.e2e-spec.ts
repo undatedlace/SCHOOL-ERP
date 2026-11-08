@@ -1,3 +1,4 @@
+import { sniffImage } from '../src/modules/files/image-sniff.js';
 import { INestApplication } from '@nestjs/common';
 import {
   Agent,
@@ -8,7 +9,7 @@ import {
 import { startFakeS3 } from './support/fake-s3-server.js';
 
 const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWM4UaEBAAN0AWme5/1hAAAAAElFTkSuQmCC',
   'base64',
 );
 
@@ -71,7 +72,7 @@ describe('files stored in S3 (e2e)', () => {
       /^school-erp\/[0-9a-f-]{36}\/\d{4}\/[0-9a-f-]{36}\.png$/,
     );
     const stored = fake.objects.get(keys[0]);
-    expect(stored?.body.equals(PNG)).toBe(true);
+    expect(sniffImage(stored!.body)?.mime).toBe('image/png');
     expect(stored?.contentType).toBe('image/png');
     expect(id).toBeDefined();
   });
@@ -90,7 +91,7 @@ describe('files stored in S3 (e2e)', () => {
     expect(res.headers['content-type']).toMatch(/^image\/png/);
     expect(res.headers['cache-control']).toBe('private, max-age=3600');
     expect(res.headers['x-content-type-options']).toBe('nosniff');
-    expect((res.body as Buffer).equals(PNG)).toBe(true);
+    expect(sniffImage(res.body as Buffer)?.mime).toBe('image/png');
   });
 
   it('the permission checks still apply, and are made before anything is fetched from the bucket', async () => {

@@ -12,6 +12,7 @@ import type { AuthContext } from '../../common/auth-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FILE_PURPOSES } from './file-purposes.js';
+import { cleanImage, UnreadableImageError } from './image-clean.js';
 import { sniffImage } from './image-sniff.js';
 import { FILE_STORAGE, type FileStorage } from './storage/file-storage.js';
 
@@ -55,9 +56,22 @@ export class FilesService {
         'Upload a JPEG, PNG or WebP image',
       );
 
+    // Keep only the picture: no camera or location data, upright, a sensible size.
+    let bytes: Buffer;
+    try {
+      bytes = await cleanImage(file.buffer, image);
+    } catch (error) {
+      if (error instanceof UnreadableImageError) {
+        throw new UnsupportedMediaTypeException(
+          'That image could not be read. Try another photograph',
+        );
+      }
+      throw error;
+    }
+
     const year = new Date().getUTCFullYear();
     const storageKey = `${auth.schoolId}/${year}/${randomUUID()}.${image.ext}`;
-    await this.storage.put(storageKey, file.buffer, image.mime);
+    await this.storage.put(storageKey, bytes, image.mime);
 
     const record = await this.prisma.storedFile.create({
       data: {
@@ -66,7 +80,7 @@ export class FilesService {
         storageKey,
         originalName: cleanName(file.originalname),
         mimeType: image.mime,
-        sizeBytes: file.size,
+        sizeBytes: bytes.length,
         uploadedById: auth.userId,
       },
     });
@@ -76,7 +90,7 @@ export class FilesService {
       action: 'files.uploaded',
       entityType: 'file',
       entityId: record.id,
-      metadata: { purpose, bytes: file.size },
+      metadata: { purpose, bytes: bytes.length },
       ip,
     });
     return {
@@ -99,6 +113,49 @@ export class FilesService {
       throw new NotFoundException('File not found');
 
     return { file, stream: await this.storage.read(file.storageKey) };
+  }
+
+  /**
+   * Deletes uploads that were never attached to anything: a photograph chosen on a form
+   * that was then abandoned. A file counts as attached when a student, a member of staff
+   * or an application refers to it. Files younger than `olderThanHours` are kept, so a
+   * form someone is still filling in is not affected. With S3, every such file costs storage.
+   */
+  async purgeUnattached(olderThanHours = 24): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanHours * 3_600_000);
+    const orphans = await this.prisma.$queryRaw<
+      { id: string; school_id: string; storage_key: string }[]
+    >`
+      SELECT f.id, f.school_id, f.storage_key
+      FROM files f
+      WHERE f.created_at < ${cutoff}
+        AND NOT EXISTS (SELECT 1 FROM students s WHERE s.photo_file_id = f.id)
+        AND NOT EXISTS (SELECT 1 FROM staff s WHERE s.photo_file_id = f.id)
+        AND NOT EXISTS (
+          SELECT 1 FROM applications a
+          WHERE a.school_id = f.school_id AND a.answers::text LIKE '%' || f.id::text || '%'
+        )
+      ORDER BY f.created_at
+      LIMIT 1000`;
+
+    const perSchool = new Map<string, number>();
+    let removed = 0;
+    for (const file of orphans) {
+      // The record goes first: a file with no record cannot be reached, while a record
+      // with no bytes would show a broken picture.
+      await this.prisma.storedFile.delete({ where: { id: file.id } });
+      await this.storage.delete(file.storage_key);
+      removed++;
+      perSchool.set(file.school_id, (perSchool.get(file.school_id) ?? 0) + 1);
+    }
+    for (const [schoolId, count] of perSchool) {
+      await this.audit.log({
+        schoolId,
+        action: 'files.purged_unattached',
+        metadata: { count },
+      });
+    }
+    return removed;
   }
 
   /** Which of these ids are real files of this purpose in this school? Used to check answers. */
