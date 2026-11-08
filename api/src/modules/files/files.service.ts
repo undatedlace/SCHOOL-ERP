@@ -14,6 +14,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { FILE_PURPOSES } from './file-purposes.js';
 import { cleanImage, UnreadableImageError } from './image-clean.js';
 import { sniffImage } from './image-sniff.js';
+import { checkPdf, UnsafePdfError } from './pdf-check.js';
 import { FILE_STORAGE, type FileStorage } from './storage/file-storage.js';
 
 /** The multipart part, as far as this service needs to know. */
@@ -50,24 +51,44 @@ export class FilesService {
     }
 
     // Judge the file by its content, never by its name or the type the browser claims.
-    const image = sniffImage(file.buffer);
-    if (!image)
-      throw new UnsupportedMediaTypeException(
-        'Upload a JPEG, PNG or WebP image',
-      );
-
-    // Keep only the picture: no camera or location data, upright, a sensible size.
-    let bytes: Buffer;
-    try {
-      bytes = await cleanImage(file.buffer, image);
-    } catch (error) {
-      if (error instanceof UnreadableImageError) {
+    let stored: { bytes: Buffer; mime: string; ext: string };
+    if (rules.kind === 'document' && isPdf(file.buffer)) {
+      try {
+        await checkPdf(file.buffer);
+      } catch (error) {
+        if (error instanceof UnsafePdfError)
+          throw new UnsupportedMediaTypeException(error.message);
+        throw error;
+      }
+      // A checked PDF is kept exactly as uploaded.
+      stored = { bytes: file.buffer, mime: 'application/pdf', ext: 'pdf' };
+    } else {
+      const image = sniffImage(file.buffer);
+      if (!image) {
         throw new UnsupportedMediaTypeException(
-          'That image could not be read. Try another photograph',
+          rules.kind === 'document'
+            ? 'Upload a PDF, or a JPEG, PNG or WebP picture'
+            : 'Upload a JPEG, PNG or WebP image',
         );
       }
-      throw error;
+      // Keep only the picture: no camera or location data, upright, a sensible size.
+      try {
+        stored = {
+          bytes: await cleanImage(file.buffer, image),
+          mime: image.mime,
+          ext: image.ext,
+        };
+      } catch (error) {
+        if (error instanceof UnreadableImageError) {
+          throw new UnsupportedMediaTypeException(
+            'That image could not be read. Try another photograph',
+          );
+        }
+        throw error;
+      }
     }
+    const bytes = stored.bytes;
+    const image = { mime: stored.mime, ext: stored.ext };
 
     const year = new Date().getUTCFullYear();
     const storageKey = `${auth.schoolId}/${year}/${randomUUID()}.${image.ext}`;
@@ -115,6 +136,16 @@ export class FilesService {
     return { file, stream: await this.storage.read(file.storageKey) };
   }
 
+  /** Removes a stored file: the record first, then the bytes. */
+  async remove(schoolId: string, id: string) {
+    const file = await this.prisma.storedFile.findFirst({
+      where: { id, schoolId },
+    });
+    if (!file) return;
+    await this.prisma.storedFile.delete({ where: { id } });
+    await this.storage.delete(file.storageKey);
+  }
+
   /**
    * Deletes uploads that were never attached to anything: a photograph chosen on a form
    * that was then abandoned. A file counts as attached when a student, a member of staff
@@ -131,6 +162,7 @@ export class FilesService {
       WHERE f.created_at < ${cutoff}
         AND NOT EXISTS (SELECT 1 FROM students s WHERE s.photo_file_id = f.id)
         AND NOT EXISTS (SELECT 1 FROM staff s WHERE s.photo_file_id = f.id)
+        AND NOT EXISTS (SELECT 1 FROM student_documents d WHERE d.file_id = f.id)
         AND NOT EXISTS (
           SELECT 1 FROM applications a
           WHERE a.school_id = f.school_id AND a.answers::text LIKE '%' || f.id::text || '%'
@@ -172,6 +204,10 @@ export class FilesService {
     return new Set(rows.map((r) => r.id));
   }
 }
+
+/** PDFs start with %PDF- at the very first byte. */
+const isPdf = (data: Buffer) =>
+  data.subarray(0, 5).toString('latin1') === '%PDF-';
 
 /** A name that is safe to show and to put in a header. */
 function cleanName(name: string): string {

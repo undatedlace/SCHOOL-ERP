@@ -23,6 +23,7 @@ import {
 } from '../../core/models';
 import { ageText, formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { StudentDocuments } from './student-documents';
 import { FormField } from '../../shared/ui/form-field';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../shared/ui/labels';
@@ -43,6 +44,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
     FormField,
     HasPermission,
     TempPasswordDialog,
+    StudentDocuments,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -170,6 +172,8 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
         </section>
 
         <aside class="flex flex-col gap-6">
+          <app-student-documents [studentId]="s.id" />
+
           <section
             class="rounded-lg border bg-card p-5"
             *appHasPermission="'portal.accounts.manage'"
