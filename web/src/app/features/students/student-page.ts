@@ -24,6 +24,7 @@ import {
 import { ageText, formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { StudentDocuments } from './student-documents';
+import { StudentFees } from './student-fees';
 import { FormField } from '../../shared/ui/form-field';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../shared/ui/labels';
@@ -45,6 +46,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
     HasPermission,
     TempPasswordDialog,
     StudentDocuments,
+    StudentFees,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -170,6 +172,8 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
             </ng-template>
           </p-table>
         </section>
+
+        <app-student-fees [studentId]="s.id" />
 
         <aside class="flex flex-col gap-6">
           <app-student-documents [studentId]="s.id" />

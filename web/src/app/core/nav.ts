@@ -28,6 +28,18 @@ export const NAV: NavItem[] = [
     permission: 'students.read',
   },
   {
+    label: 'Fee dues',
+    path: '/app/fees/dues',
+    description: 'Who owes what, by class and student',
+    permission: 'fees.read_all',
+  },
+  {
+    label: 'Fee setup',
+    path: '/app/fees/setup',
+    description: 'Kinds of fee, what each class pays, and when',
+    permission: 'fees.read_all',
+  },
+  {
     label: 'Staff',
     path: '/app/staff',
     description: 'Teachers and other staff, their joining and leaving dates',

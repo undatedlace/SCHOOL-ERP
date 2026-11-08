@@ -270,7 +270,7 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 Fee heads and structures, invoices, instalments, concessions, offline payments, allocations, reversals, PDF receipts, dues by standard and division.
 **Done when:** a part payment produces a receipt and the correct balance at student, division and standard level.
 
-**Status (8 Nov 2026): the API is built and tested; the screens are not started.**
+**Status (8 Nov 2026): the API and the main screens are built and tested; not yet clicked through in a browser.**
 - **Rules kept:** the balance is never stored: invoiced - concessions (not taken back) - payments that were not reversed. All money maths is in whole paise by pure functions (`api/src/modules/fees/ledger.ts`, with its own tests); amounts reach the API as text with at most two decimals. Payments and concessions are append-only: a payment is cancelled by a reversal (whole payment, reason required, admin only), a concession by revoking it (reason required). Nothing is edited or deleted.
 - **Fee heads and structures:** heads are switched off, never deleted. A structure is the template for one class in one year: amounts per head plus an instalment plan (percentages that add up to 100, with due dates). Saving it again replaces it, and invoices already made are copies, so they do not change. Instalment amounts are split to the paisa, the remainder going on the last one.
 - **Invoices:** `generate` makes the year's invoice for every active student enrolled that year (safe to repeat; reports classes with no structure). An *opening balance* invoice carries dues from before the system or from an earlier year.
@@ -279,7 +279,8 @@ Fee heads and structures, invoices, instalments, concessions, offline payments, 
 - **Concessions:** admin only (`fees.concession.manage`), in rupees, with a reason; never more than what is still unpaid on the invoice.
 - **Dues report:** by student, division and class for a year, adding up everything each student owes in all years, so earlier-year dues stay visible after promotion, with the overdue part (instalment date passed). Plus money collected between two dates by mode (reversed payments left out).
 - **Access:** `fees.read_all` (admin, accountant) sees everything; a parent or student with `fees.read` sees only their own child's ledger and receipts (anything else looks like it does not exist). Teachers and office staff have no access to fees.
-- **Not built yet:** the fee screens (setup, student ledger, record payment, dues); late fees (no rule given); carrying a structure over to a new year in one click; automatic invoice creation at admission (staff run *generate*); online payment (on hold).
+- **Screens:** *Fee setup* (kinds of fee; what each class pays and when, with a live total and a check that the shares make 100%; "Bill this year's fees"), *Fee dues* (totals, by class and division, by student, search, only-owing filter) and a *Fees* section on the student page (balance, what is due when with overdue marked, payments with receipt download, record payment, previous dues, concession, reverse with a reason). Parents and students see the same section without the buttons for changing anything. Money is shown in rupees with Indian digit grouping and is sent to the API as text.
+- **Not built yet:** a payments list / daily collection screen (the API exists: `GET /payments`, `GET /payments/collection`); late fees (no rule given); carrying a structure over to a new year in one click; automatic invoice creation at admission (staff run *generate*); online payment (on hold).
 
 ### Phase 4: Academics
 Attendance, homework, exams, marks, grading, publishing, report card PDFs, year-end promotion.

@@ -369,3 +369,128 @@ export interface Assignment {
   subject: { id: string; name: string } | null;
   staff: { id: string; fullName: string; status: StaffStatus };
 }
+
+// ---------- Fees ----------
+
+/** Money always travels as text with two decimals, for example "1500.00". */
+export type Money = string;
+
+export type PaymentMode = 'CASH' | 'CHEQUE' | 'UPI' | 'BANK_TRANSFER' | 'ONLINE';
+
+export interface FeeHead {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface FeeStructure {
+  id: string;
+  academicYear: { id: string; name: string };
+  class: { id: string; name: string };
+  total: Money;
+  items: { feeHeadId: string; feeHead: string; amount: Money }[];
+  instalments: { seq: number; label: string; dueDate: string; percent: number }[];
+  invoices: number;
+}
+
+export interface SaveStructure {
+  academicYearId: string;
+  classId: string;
+  items: { feeHeadId: string; amount: Money }[];
+  instalments: { label: string; dueDate: string; percent: number }[];
+}
+
+export interface GenerateResult {
+  created: number;
+  alreadyHad: number;
+  noStructure: { classId: string; className: string; students: number }[];
+}
+
+export interface LedgerInstalment {
+  seq: number;
+  label: string;
+  dueDate: string;
+  due: Money;
+  paid: Money;
+  pending: Money;
+  overdue: boolean;
+}
+
+export interface LedgerInvoice {
+  id: string;
+  kind: 'FEE_STRUCTURE' | 'OPENING_BALANCE';
+  note: string | null;
+  academicYear: { id: string; name: string };
+  lines: { description: string; amount: Money }[];
+  concessions: {
+    id: string;
+    amount: Money;
+    reason: string;
+    createdAt: string;
+    revoked: boolean;
+    revokedReason: string | null;
+  }[];
+  instalments: LedgerInstalment[];
+  gross: Money;
+  concessionTotal: Money;
+  paid: Money;
+  pending: Money;
+}
+
+export interface LedgerPayment {
+  id: string;
+  receiptNo: string;
+  amount: Money;
+  mode: PaymentMode;
+  reference: string | null;
+  bank: string | null;
+  paidOn: string;
+  note: string | null;
+  reversed: { reason: string; on: string } | null;
+  allocations: { invoiceId: string; amount: Money }[];
+}
+
+export interface StudentLedger {
+  student: { id: string; admissionNo: string; fullName: string };
+  totals: { gross: Money; concessions: Money; paid: Money; pending: Money };
+  invoices: LedgerInvoice[];
+  payments: LedgerPayment[];
+}
+
+export interface RecordPayment {
+  amount: Money;
+  mode: PaymentMode;
+  reference?: string;
+  bank?: string;
+  paidOn?: string;
+  note?: string;
+  allocations?: { invoiceId: string; amount: Money }[];
+}
+
+export interface DuesSums {
+  billed: Money;
+  collected: Money;
+  pending: Money;
+  overdue: Money;
+}
+
+export interface DuesReport {
+  academicYearId: string | null;
+  totals: DuesSums & { students: number; owing: number };
+  byClass: (DuesSums & { id: string; label: string; students: number; owing: number })[];
+  byDivision: (DuesSums & { id: string; label: string; students: number; owing: number })[];
+  students: {
+    items: (DuesSums & {
+      studentId: string;
+      admissionNo: string;
+      fullName: string;
+      class: string;
+      division: string;
+      previousYearsPending: Money;
+    })[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+}
