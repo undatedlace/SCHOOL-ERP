@@ -17,6 +17,14 @@ import {
   FormSummary,
   FormVersion,
   DocumentType,
+  DuesReport,
+  FeeHead,
+  FeeStructure,
+  GenerateResult,
+  LedgerPayment,
+  RecordPayment,
+  SaveStructure,
+  StudentLedger,
   Page,
   PortalAccount,
   Role,
@@ -220,6 +228,50 @@ export class Api {
   ) => this.http.post(`/api/students/${studentId}/documents`, body);
   removeStudentDocument = (studentId: string, documentId: string) =>
     this.http.delete<void>(`/api/students/${studentId}/documents/${documentId}`);
+
+  // ---------- Fees ----------
+  feeHeads = () => this.http.get<FeeHead[]>('/api/fee-heads');
+  createFeeHead = (body: { name: string }) => this.http.post<FeeHead>('/api/fee-heads', body);
+  updateFeeHead = (id: string, body: { name?: string; isActive?: boolean }) =>
+    this.http.patch<FeeHead>(`/api/fee-heads/${id}`, body);
+  feeStructures = (academicYearId: string) =>
+    this.http.get<FeeStructure[]>('/api/fee-structures', { params: { academicYearId } });
+  saveFeeStructure = (body: SaveStructure) =>
+    this.http.put<FeeStructure>('/api/fee-structures', body);
+  generateInvoices = (body: { academicYearId?: string; classId?: string; studentIds?: string[] }) =>
+    this.http.post<GenerateResult>('/api/fee-invoices/generate', body);
+  studentFees = (studentId: string) =>
+    this.http.get<StudentLedger>(`/api/students/${studentId}/fees`);
+  recordPayment = (studentId: string, body: RecordPayment) =>
+    this.http.post<LedgerPayment>(`/api/students/${studentId}/payments`, body);
+  reversePayment = (id: string, reason: string) =>
+    this.http.post(`/api/payments/${id}/reverse`, { reason });
+  addConcession = (invoiceId: string, body: { amount: string; reason: string }) =>
+    this.http.post(`/api/fee-invoices/${invoiceId}/concessions`, body);
+  revokeConcession = (id: string, reason: string) =>
+    this.http.delete<void>(`/api/concessions/${id}`, { body: { reason } });
+  addOpeningBalance = (body: {
+    studentId: string;
+    academicYearId: string;
+    amount: string;
+    dueDate: string;
+    note?: string;
+  }) => this.http.post('/api/fee-invoices/opening-balance', body);
+  dues = (q: {
+    page: number;
+    pageSize: number;
+    academicYearId?: string | null;
+    classId?: string | null;
+    search?: string;
+    onlyOwing?: boolean;
+  }) => {
+    let params = new HttpParams().set('page', q.page).set('pageSize', q.pageSize);
+    if (q.academicYearId) params = params.set('academicYearId', q.academicYearId);
+    if (q.classId) params = params.set('classId', q.classId);
+    if (q.search) params = params.set('search', q.search);
+    if (q.onlyOwing) params = params.set('onlyOwing', 'true');
+    return this.http.get<DuesReport>('/api/fees/dues', { params });
+  };
   guardianAccount = (guardianId: string) =>
     this.http.post<PortalAccount>(`/api/guardians/${guardianId}/account`, {});
   resetGuardianPassword = (guardianId: string) =>

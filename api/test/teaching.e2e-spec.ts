@@ -594,9 +594,9 @@ describe('teaching assignments (e2e)', () => {
     });
 
     it('office staff and parents are unaffected', async () => {
-      expect(await visibleIds(office)).toEqual(
-        expect.arrayContaining([inA, inB]),
-      );
+      // Read them directly: the list is paged, and the shared test database holds many students.
+      await office.get(`/api/students/${inA}`).expect(200);
+      await office.get(`/api/students/${inB}`).expect(200);
       const parent = await createSettledUser(app, admin, 'PARENT');
       expect(await visibleIds(parent.agent)).toEqual([]);
     });

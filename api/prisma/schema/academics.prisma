@@ -13,6 +13,9 @@ model AcademicYear {
   enrollments     Enrollment[]
   classTeachers   ClassTeacher[]
   subjectTeachers SubjectTeacher[]
+  feeStructures   FeeStructure[]
+  feeInvoices     FeeInvoice[]
+  payments        Payment[]
 
   @@unique([schoolId, name])
   @@map("academic_years")
@@ -28,10 +31,11 @@ model SchoolClass {
   /// Whether the school is taking applications for this class.
   admissionsOpen Boolean @default(true) @map("admissions_open")
 
-  school              School        @relation(fields: [schoolId], references: [id])
+  school              School         @relation(fields: [schoolId], references: [id])
   divisions           Division[]
-  applications        Application[] @relation("AppliedClass")
-  grantedApplications Application[] @relation("GrantedClass")
+  applications        Application[]  @relation("AppliedClass")
+  grantedApplications Application[]  @relation("GrantedClass")
+  feeStructures       FeeStructure[]
 
   @@unique([schoolId, name])
   @@map("classes")

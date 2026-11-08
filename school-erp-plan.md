@@ -24,7 +24,7 @@ A school management system for **one school**, structured so it can become multi
 2. **Admissions and yearly insights:** student admissions, plus staff joining and leaving, tracked by year.
 3. **Fees:** per student, by standard and division, with pending balances and part payments.
 4. **Staff:** accounts for teachers and other staff. Teachers handle attendance, homework, exams and results.
-5. **Parent and student portal:** report cards, pending fees, attendance, homework, results, notices and fee payment.
+5. **Parent and student portal:** report cards, pending fees, attendance, homework, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
 6. **Dashboard:** overall insights.
 
 **Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, staff attendance, native mobile apps, and SMS/WhatsApp notifications.
@@ -40,7 +40,7 @@ A school management system for **one school**, structured so it can become multi
 | Database | PostgreSQL + Prisma | |
 | Jobs | Redis + BullMQ | PDFs and notifications. Add when first needed |
 | Files | S3-compatible storage | Student and staff documents, generated PDFs |
-| Payments | Razorpay | Phase 5 |
+| Payments | Razorpay | **On hold** (decided 8 Nov 2026: not needed for now). Fees are recorded by the accountant (cash, cheque, UPI, bank transfer) |
 | Parent access | Mobile-friendly web app (PWA) | **Assumption, see section 11** |
 | Hosting | Docker on AWS Mumbai or equivalent | |
 
@@ -133,7 +133,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | Fee structures | Full | - | Full | - | - | - | - |
 | Record payments, receipts | Full | - | Full | - | - | - | - |
 | Reverse a payment | Full | - | - | - | - | - | - |
-| Own fees, pay online | - | - | - | - | - | Own child | Read |
+| Own fees (view dues, download receipts) | - | - | - | - | - | Own child | Read |
 | Notices | Full | Create | Create | Own classes | Read | Read | Read |
 | Dashboard | Full | Admissions | Fees | Assigned classes | - | - | - |
 
@@ -162,7 +162,7 @@ api/src/
     homework/     homework by division and subject
     exams/        exams, marks, grading, results, report cards
     fees/         structures, invoices, payments, allocations, concessions, receipts, dues
-    payments/     Razorpay orders and webhooks
+    payments/     Razorpay orders and webhooks (ON HOLD, not built)
     notices/      notices and audience targeting
     imports/      Excel import with validation
     insights/     dashboard queries
@@ -222,7 +222,7 @@ web/src/app/
 - Support cash, cheque, UPI, bank transfer and online. Cheque bounces are reversals.
 - Receipt numbers are sequential per academic year and unique.
 - Money: `Decimal(12,2)`, never JS floating-point arithmetic.
-- Razorpay: verify webhook signatures and make processing idempotent.
+- Razorpay (**on hold**): when it is built, verify webhook signatures and make processing idempotent. The `ONLINE` payment mode exists in the data but is refused for now.
 - Write automated tests for ledger logic. This is the code that must not be wrong.
 
 **Audit:** log logins, permission changes, payments, reversals, marks changes and result publishing.
@@ -270,13 +270,25 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 Fee heads and structures, invoices, instalments, concessions, offline payments, allocations, reversals, PDF receipts, dues by standard and division.
 **Done when:** a part payment produces a receipt and the correct balance at student, division and standard level.
 
+**Status (8 Nov 2026): the API and the main screens are built and tested; not yet clicked through in a browser.**
+- **Rules kept:** the balance is never stored: invoiced - concessions (not taken back) - payments that were not reversed. All money maths is in whole paise by pure functions (`api/src/modules/fees/ledger.ts`, with its own tests); amounts reach the API as text with at most two decimals. Payments and concessions are append-only: a payment is cancelled by a reversal (whole payment, reason required, admin only), a concession by revoking it (reason required). Nothing is edited or deleted.
+- **Fee heads and structures:** heads are switched off, never deleted. A structure is the template for one class in one year: amounts per head plus an instalment plan (percentages that add up to 100, with due dates). Saving it again replaces it, and invoices already made are copies, so they do not change. Instalment amounts are split to the paisa, the remainder going on the last one.
+- **Invoices:** `generate` makes the year's invoice for every active student enrolled that year (safe to repeat; reports classes with no structure). An *opening balance* invoice carries dues from before the system or from an earlier year.
+- **Payments:** the accountant records cash, cheque, UPI or bank transfer (cheque number or reference required; date not in the future; never more than is owed). By default a payment pays the oldest dues first (earlier years, then this year); the accountant may split it over chosen invoices. A payment covers part of an instalment or several. Receipts are numbered sequentially per academic year (`2026-27/00012`), and a one-page PDF receipt is available to staff and to the parent or student the fees belong to. Payments for one student are serialised under a lock, so two cashiers cannot both pay the same dues, and receipt numbers cannot repeat (both tested with simultaneous requests).
+- **Decision (changes the plan's table list):** allocations point at an **invoice**, not at an instalment. What each instalment still owes is worked out on the fly by paying instalments in date order from the invoice's total paid; this stays correct when a concession changes the instalment amounts, which stored per-instalment allocations would not. The `fee_instalments` rows hold the amounts before concessions; concessions are shared across instalments in proportion.
+- **Concessions:** admin only (`fees.concession.manage`), in rupees, with a reason; never more than what is still unpaid on the invoice.
+- **Dues report:** by student, division and class for a year, adding up everything each student owes in all years, so earlier-year dues stay visible after promotion, with the overdue part (instalment date passed). Plus money collected between two dates by mode (reversed payments left out).
+- **Access:** `fees.read_all` (admin, accountant) sees everything; a parent or student with `fees.read` sees only their own child's ledger and receipts (anything else looks like it does not exist). Teachers and office staff have no access to fees.
+- **Screens:** *Fee setup* (kinds of fee; what each class pays and when, with a live total and a check that the shares make 100%; "Bill this year's fees"), *Fee dues* (totals, by class and division, by student, search, only-owing filter) and a *Fees* section on the student page (balance, what is due when with overdue marked, payments with receipt download, record payment, previous dues, concession, reverse with a reason). Parents and students see the same section without the buttons for changing anything. Money is shown in rupees with Indian digit grouping and is sent to the API as text.
+- **Not built yet:** a payments list / daily collection screen (the API exists: `GET /payments`, `GET /payments/collection`); late fees (no rule given); carrying a structure over to a new year in one click; automatic invoice creation at admission (staff run *generate*); online payment (on hold).
+
 ### Phase 4: Academics
 Attendance, homework, exams, marks, grading, publishing, report card PDFs, year-end promotion.
 **Done when:** a teacher can run attendance and marks for assigned classes, and admin can publish report cards and promote a class.
 
 ### Phase 5: Parent and student portal
-Portal screens, notices, Razorpay online payment, PWA setup.
-**Done when:** a parent can see each child's records, download a report card and pay part of a fee online, and the ledger updates correctly.
+Portal screens, notices, PWA setup. (Razorpay online payment is **on hold**; parents see dues and download receipts, and pay at the school.)
+**Done when:** a parent can see each child's records, download a report card, and see dues and download fee receipts. (Paying part of a fee online is on hold.)
 
 ### Phase 6: Dashboard and launch
 Insights, security review, backups, deployment, staff training data.
@@ -301,6 +313,8 @@ Insights, security review, backups, deployment, staff training data.
 | 11 | Is a fee or registration payment taken at admission? | No. The paper form has "Fees paid on" and "Fee receipt no."; these link to fees in Phase 3 | Phase 3 |
 | 12 | Form number format and who may enter a number by hand? | Anyone entering may type the paper number; otherwise sequential per year | Admissions |
 | 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
+| 14 | Online payment through Razorpay? | **On hold** (8 Nov 2026). Offline payments only; the ledger is ready for it | Phase 5 |
+| 15 | Fee rules the school has not given yet: instalments, late fee, who approves concessions | Assumed: instalments are a percentage plan per class; no late fee; concessions are approved by the admin only (`fees.concession.manage`); the accountant records payments | Phase 3 |
 
 ## 12. Next step
 

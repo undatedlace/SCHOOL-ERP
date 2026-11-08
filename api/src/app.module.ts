@@ -15,6 +15,7 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
 import { SchoolModule } from './modules/school/school.module.js';
 import { StaffModule } from './modules/staff/staff.module.js';
+import { FeesModule } from './modules/fees/fees.module.js';
 import { StudentsModule } from './modules/students/students.module.js';
 import { TeachingModule } from './modules/teaching/teaching.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -40,6 +41,7 @@ import { UsersModule } from './modules/users/users.module.js';
     FormsModule,
     FilesModule,
     StudentsModule,
+    FeesModule,
     StaffModule,
     TeachingModule,
     AdmissionsModule,

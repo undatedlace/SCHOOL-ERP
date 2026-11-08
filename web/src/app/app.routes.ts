@@ -69,6 +69,16 @@ export const routes: Routes = [
           import('./features/admissions/application-page').then((m) => m.ApplicationPage),
       },
       {
+        path: 'fees/dues',
+        canActivate: [permissionGuard('fees.read_all')],
+        loadComponent: () => import('./features/fees/dues-page').then((m) => m.DuesPage),
+      },
+      {
+        path: 'fees/setup',
+        canActivate: [permissionGuard('fees.read_all')],
+        loadComponent: () => import('./features/fees/fees-setup').then((m) => m.FeesSetup),
+      },
+      {
         path: 'students',
         canActivate: [permissionGuard('students.read')],
         loadComponent: () =>
