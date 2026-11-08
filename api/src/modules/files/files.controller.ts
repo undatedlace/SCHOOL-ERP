@@ -55,11 +55,17 @@ export class FilesController {
       'Cache-Control': 'private, max-age=3600',
       // The browser must treat the bytes as the declared image, never sniff them as something else.
       'X-Content-Type-Options': 'nosniff',
+      // If a file is ever opened as a page, it may not run anything or load anything.
+      'Content-Security-Policy': "default-src 'none'; sandbox",
     });
+    const isImage = file.mimeType.startsWith('image/');
     return new StreamableFile(stream, {
       type: file.mimeType,
       length: file.sizeBytes,
-      disposition: 'inline',
+      // Pictures show in the page; papers are downloaded and opened in the person's own viewer.
+      disposition: isImage
+        ? 'inline'
+        : `attachment; filename="${file.originalName.replace(/"/g, '')}"`,
     });
   }
 }

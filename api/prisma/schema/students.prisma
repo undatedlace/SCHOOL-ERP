@@ -41,6 +41,7 @@ model Student {
   guardians   StudentGuardian[]
   enrollments Enrollment[]
   application Application?
+  documents   StudentDocument[]
 
   @@unique([schoolId, seq])
   @@unique([schoolId, admissionNo])
@@ -107,4 +108,31 @@ model Enrollment {
   @@unique([studentId, academicYearId])
   @@index([schoolId, academicYearId, divisionId])
   @@map("enrollments")
+}
+
+enum StudentDocumentType {
+  BIRTH_CERTIFICATE
+  TRANSFER_CERTIFICATE
+  ID_PROOF
+  PREVIOUS_REPORT_CARD
+  MEDICAL
+  OTHER
+}
+
+/// A scanned paper kept on a student's record (a PDF or a photograph of it).
+/// The bytes are in file storage; staff only, never shown to parents.
+model StudentDocument {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  schoolId     String              @map("school_id") @db.Uuid
+  studentId    String              @map("student_id") @db.Uuid
+  fileId       String              @unique @map("file_id") @db.Uuid
+  type         StudentDocumentType
+  title        String?
+  uploadedById String              @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("student_documents")
 }
