@@ -19,6 +19,7 @@ model School {
   applications    Application[]
   files           StoredFile[]
   students        Student[]
+  attendance      AttendanceRecord[]
   guardians       Guardian[]
   enrollments     Enrollment[]
   staff           Staff[]

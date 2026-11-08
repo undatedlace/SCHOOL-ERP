@@ -6,6 +6,7 @@ import { AppController } from './app.controller.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AcademicsModule } from './modules/academics/academics.module.js';
 import { AdmissionsModule } from './modules/admissions/admissions.module.js';
+import { AttendanceModule } from './modules/attendance/attendance.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { FilesModule } from './modules/files/files.module.js';
@@ -44,6 +45,7 @@ import { UsersModule } from './modules/users/users.module.js';
     FeesModule,
     StaffModule,
     TeachingModule,
+    AttendanceModule,
     AdmissionsModule,
   ],
   controllers: [AppController],
