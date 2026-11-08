@@ -237,6 +237,14 @@ export interface GuardianInput {
   isPrimary?: boolean;
 }
 
+/** What the school hands over when it gives a parent or student a login. */
+export interface PortalAccount {
+  loginId: string | null;
+  /** Absent when a parent was added to a login that already existed. */
+  temporaryPassword?: string;
+  shared?: boolean;
+}
+
 export interface StudentGuardian {
   id: string;
   fullName: string;
@@ -261,6 +269,7 @@ export interface StudentDetail {
   joinedOn: string;
   leftOn: string | null;
   photoFileId: string | null;
+  hasLogin: boolean;
   guardians: StudentGuardian[];
   enrollments: {
     id: string;

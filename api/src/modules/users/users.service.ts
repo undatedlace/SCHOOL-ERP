@@ -133,11 +133,13 @@ export class UsersService {
       fullName: string;
       email?: string;
       mobile?: string;
+      /** A sign-in name instead of an email or mobile number (students use their admission number). */
+      username?: string;
       roleCodes: string[];
       password?: string;
     },
   ): Promise<{ id: string; temporaryPassword?: string }> {
-    if (!input.email && !input.mobile) {
+    if (!input.email && !input.mobile && !input.username) {
       throw new BadRequestException('Provide an email or a mobile number');
     }
     const roleIds = await this.resolveRoles(input.roleCodes);
@@ -150,6 +152,7 @@ export class UsersService {
         fullName: input.fullName,
         email: input.email,
         mobile: input.mobile,
+        username: input.username,
         passwordHash: await hashPassword(
           input.password ?? (temporaryPassword as string),
         ),

@@ -43,7 +43,14 @@ export class AuthService {
     const id = identifier.trim();
 
     const user = await this.prisma.user.findFirst({
-      where: { schoolId, OR: [{ email: id.toLowerCase() }, { mobile: id }] },
+      where: {
+        schoolId,
+        OR: [
+          { email: id.toLowerCase() },
+          { mobile: id },
+          { username: id.toLowerCase() },
+        ],
+      },
       include: { roles: { include: { role: { select: { code: true } } } } },
     });
 

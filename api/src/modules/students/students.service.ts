@@ -105,7 +105,10 @@ export class StudentsService {
     if (auth.permissions.includes('students.read_all')) return {};
 
     const own: Prisma.StudentWhereInput = {
-      guardians: { some: { guardian: { userId: auth.userId } } },
+      OR: [
+        { guardians: { some: { guardian: { userId: auth.userId } } } },
+        { userId: auth.userId }, // a student sees themself
+      ],
     };
     const academicYearId = await this.currentYearId(auth.schoolId);
     if (!academicYearId) return own;
@@ -140,7 +143,8 @@ export class StudentsService {
     };
     const where: Prisma.StudentWhereInput = {
       schoolId: auth.schoolId,
-      ...(await this.visible(auth)),
+      // In an AND of its own: the scope and the search both use OR, and one must not replace the other.
+      AND: [await this.visible(auth)],
       ...(q.status ? { status: q.status } : {}),
       ...(q.divisionId || q.classId
         ? { enrollments: { some: classFilter } }
@@ -214,6 +218,7 @@ export class StudentsService {
       joinedOn: s.joinedOn,
       leftOn: s.leftOn,
       photoFileId: s.photoFileId,
+      hasLogin: !!s.userId,
       guardians: s.guardians.map((g) => ({
         id: g.guardian.id,
         fullName: g.guardian.fullName,
@@ -265,7 +270,18 @@ export class StudentsService {
     }
 
     try {
-      await this.prisma.student.update({ where: { id }, data });
+      await this.prisma.$transaction(async (tx) => {
+        const student = await tx.student.update({ where: { id }, data });
+        // A student who leaves loses access at once; coming back restores it.
+        if (status && student.userId) {
+          await tx.user.update({
+            where: { id: student.userId },
+            data: { status: status === 'LEFT' ? 'DISABLED' : 'ACTIVE' },
+          });
+          if (status === 'LEFT')
+            await tx.session.deleteMany({ where: { userId: student.userId } });
+        }
+      });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
