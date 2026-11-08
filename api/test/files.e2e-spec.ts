@@ -1,7 +1,13 @@
 import { INestApplication } from '@nestjs/common';
+import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import request from 'supertest';
+import sharp from 'sharp';
+import { FilesService } from '../src/modules/files/files.service.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { sniffImage } from '../src/modules/files/image-sniff.js';
+import { makeImage } from './support/images.js';
 import {
   Agent,
   adminAgent,
@@ -12,20 +18,20 @@ import {
 
 // A real 1x1 PNG.
 const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWM4UaEBAAN0AWme5/1hAAAAAElFTkSuQmCC',
   'base64',
 );
-const JPEG = Buffer.concat([
-  Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
-  Buffer.from('JFIF'),
-  Buffer.alloc(32),
-]);
+let JPEG: Buffer;
 
 describe('files (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let admin: Agent;
   let office: Agent;
+
+  /** Is there still a file on disk under this key? (The e2e suite uses local storage.) */
+  const storageHas = (key: string) =>
+    existsSync(join(process.env.FILES_DIR!, key));
 
   const upload = (
     who: Agent,
@@ -39,6 +45,7 @@ describe('files (e2e)', () => {
   };
 
   beforeAll(async () => {
+    JPEG = await makeImage('jpeg');
     ({ app, prisma } = await createTestApp());
     admin = await adminAgent(app);
     office = (await createSettledUser(app, admin, 'OFFICE_STAFF')).agent;
@@ -51,7 +58,7 @@ describe('files (e2e)', () => {
       expect(res.body).toMatchObject({
         purpose: 'application-photo',
         mimeType: 'image/png',
-        sizeBytes: PNG.length,
+        sizeBytes: expect.any(Number),
       });
       expect(res.body.id).toMatch(/^[0-9a-f-]{36}$/);
     });
@@ -108,6 +115,38 @@ describe('files (e2e)', () => {
       await upload(office, data, filename).expect(415);
     });
 
+    it('stores only the picture: no location data, upright, and a sensible size', async () => {
+      const photo = await makeImage('jpeg', 3000, 2000, {
+        IFD0: { Copyright: 'SECRET-OWNER' },
+      });
+      const { id } = (await upload(office, photo, 'holiday.jpg').expect(201))
+        .body;
+      const res = await office
+        .get(`/api/files/${id}`)
+        .buffer(true)
+        .parse((r, cb) => {
+          const chunks: Buffer[] = [];
+          r.on('data', (c: Buffer) => chunks.push(c));
+          r.on('end', () => cb(null, Buffer.concat(chunks)));
+        })
+        .expect(200);
+      const stored = res.body as Buffer;
+      expect(stored.toString('latin1')).not.toContain('SECRET-OWNER');
+      const meta = await sharp(stored).metadata();
+      expect([meta.width, meta.height]).toEqual([1600, 1067]);
+      const row = await prisma.storedFile.findUniqueOrThrow({ where: { id } });
+      expect(row.sizeBytes).toBe(stored.length);
+    });
+
+    it('refuses a file that has an image header but is not a picture', async () => {
+      const fake = Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+        Buffer.alloc(64),
+      ]);
+      const res = await upload(office, fake, 'fake.jpg').expect(415);
+      expect(res.body.message).toMatch(/could not be read/);
+    });
+
     it('rejects a file that is too large', async () => {
       const big = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]);
       await upload(office, big).expect(413);
@@ -143,7 +182,7 @@ describe('files (e2e)', () => {
       expect(res.headers['cache-control']).toBe('private, max-age=3600');
       expect(res.headers['x-content-type-options']).toBe('nosniff');
       expect(res.headers['content-disposition']).toMatch(/^inline/);
-      expect((res.body as Buffer).equals(PNG)).toBe(true);
+      expect(sniffImage(res.body as Buffer)?.mime).toBe('image/png');
 
       const accountant = await createSettledUser(app, admin, 'ACCOUNTANT');
       await accountant.agent.get(`/api/files/${id}`).expect(200); // may read admissions
@@ -219,6 +258,41 @@ describe('files (e2e)', () => {
           .send({ name: unique('Nursery') })
           .expect(201)
       ).body.id;
+    });
+
+    it('cleans up old uploads that were never attached, and only those', async () => {
+      const files = app.get(FilesService);
+      const mk = async () => (await upload(office, PNG).expect(201)).body.id;
+      const attached = await mk();
+      const abandoned = await mk();
+      const fresh = await mk();
+      await office
+        .post('/api/admissions/applications')
+        .send({ answers: answers({ childPhoto: attached }) })
+        .expect(201);
+
+      const old = new Date(Date.now() - 48 * 3_600_000);
+      await prisma.storedFile.updateMany({
+        where: { id: { in: [attached, abandoned] } },
+        data: { createdAt: old },
+      });
+      const key = (
+        await prisma.storedFile.findUniqueOrThrow({ where: { id: abandoned } })
+      ).storageKey;
+
+      const removed = await files.purgeUnattached(24);
+      expect(removed).toBeGreaterThanOrEqual(1);
+
+      const left = await prisma.storedFile.findMany({
+        where: { id: { in: [attached, abandoned, fresh] } },
+        select: { id: true },
+      });
+      expect(left.map((f) => f.id).sort((a, b) => a.localeCompare(b))).toEqual(
+        [attached, fresh].sort((a, b) => a.localeCompare(b)),
+      );
+      await office.get(`/api/files/${abandoned}`).expect(404);
+      await office.get(`/api/files/${attached}`).expect(200);
+      expect(storageHas(key)).toBe(false);
     });
 
     it('the published admission form has the four photograph boxes', async () => {

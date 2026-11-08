@@ -11,6 +11,7 @@
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "s3:check": "tsx scripts/s3-check.ts",
+    "files:cleanup": "node dist/cli/files-cleanup.js",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -39,7 +40,8 @@
     "cookie-parser": "1.4.7",
     "dotenv": "18.0.9",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.0",
