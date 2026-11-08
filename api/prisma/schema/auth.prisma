@@ -9,6 +9,8 @@ model User {
   fullName           String     @map("full_name")
   email              String?
   mobile             String?
+  /// A sign-in name for people with no email or mobile number of their own: a student signs in with their admission number.
+  username           String?
   passwordHash       String     @map("password_hash")
   mustChangePassword Boolean    @default(true) @map("must_change_password")
   status             UserStatus @default(ACTIVE)
@@ -18,11 +20,14 @@ model User {
   school   School     @relation(fields: [schoolId], references: [id])
   roles    UserRole[]
   sessions Session[]
-  guardian Guardian?
-  staff    Staff?
+  /// A shared phone gives two guardians (father and mother) one login.
+  guardians Guardian[]
+  student   Student?
+  staff     Staff?
 
   @@unique([schoolId, email])
   @@unique([schoolId, mobile])
+  @@unique([schoolId, username])
   @@index([schoolId])
   @@map("users")
 }

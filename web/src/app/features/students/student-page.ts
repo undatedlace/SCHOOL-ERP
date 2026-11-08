@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DatePickerModule } from '@openng/optimus-ui/datepicker';
@@ -14,10 +14,17 @@ import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { Gender, Relationship, StudentDetail, StudentGuardian } from '../../core/models';
+import {
+  Gender,
+  PortalAccount,
+  Relationship,
+  StudentDetail,
+  StudentGuardian,
+} from '../../core/models';
 import { ageText, formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
+import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../shared/ui/labels';
 
 @Component({
@@ -35,6 +42,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
     TagModule,
     FormField,
     HasPermission,
+    TempPasswordDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -125,8 +133,28 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
                 <td class="text-sm">
                   <div>{{ g.mobile }}</div>
                   <div class="text-muted-foreground">{{ g.email }}</div>
+                  @if (g.hasLogin) {
+                    <p-tag class="mt-1" value="Can sign in" severity="secondary" />
+                  }
                 </td>
                 <td class="whitespace-nowrap text-right" *appHasPermission="'students.manage'">
+                  <ng-container *appHasPermission="'portal.accounts.manage'">
+                    @if (g.hasLogin) {
+                      <p-button
+                        label="Reset password"
+                        size="small"
+                        [text]="true"
+                        (onClick)="resetGuardian(s, g)"
+                      />
+                    } @else if (g.mobile) {
+                      <p-button
+                        label="Give login"
+                        size="small"
+                        [text]="true"
+                        (onClick)="giveLogin(s, g)"
+                      />
+                    }
+                  </ng-container>
                   <p-button label="Edit" size="small" [text]="true" (onClick)="openGuardian(g)" />
                   <p-button
                     label="Remove"
@@ -142,6 +170,35 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
         </section>
 
         <aside class="flex flex-col gap-6">
+          <section
+            class="rounded-lg border bg-card p-5"
+            *appHasPermission="'portal.accounts.manage'"
+          >
+            <h2 class="mb-1 font-semibold">Student login</h2>
+            <p class="mb-3 text-sm text-muted-foreground">
+              The student signs in with the admission number ({{ s.admissionNo }}) and can only see
+              their own records.
+            </p>
+            @if (s.hasLogin) {
+              <p-button
+                label="Reset password"
+                size="small"
+                severity="secondary"
+                (onClick)="resetStudent(s)"
+              />
+            } @else if (s.status === 'ACTIVE') {
+              <p-button
+                label="Give login"
+                size="small"
+                severity="secondary"
+                [loading]="saving()"
+                (onClick)="giveStudentLogin(s)"
+              />
+            } @else {
+              <p class="text-sm text-muted-foreground">A student who has left has no login.</p>
+            }
+          </section>
+
           <section class="rounded-lg border bg-card p-5">
             <h2 class="mb-3 font-semibold">Details</h2>
             <dl class="grid gap-3 text-sm">
@@ -331,6 +388,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
           </div>
         </form>
       </p-dialog>
+      <app-temp-password-dialog [info]="temp()" (closed)="temp.set(null)" />
     } @else {
       <p class="mt-4 text-muted-foreground">Loading...</p>
     }
@@ -355,6 +413,7 @@ export class StudentPage {
   protected readonly student = signal<StudentDetail | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
+  protected readonly temp = signal<TempPassword | null>(null);
 
   protected readonly editOpen = signal(false);
   protected readonly editError = signal<string | null>(null);
@@ -522,6 +581,61 @@ export class StudentPage {
       this.guardianOpen.set(false);
     } catch (error) {
       this.guardianError.set(apiError(error));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  // ---------- logins ----------
+
+  protected async giveLogin(s: StudentDetail, g: StudentGuardian) {
+    await this.issue(s, g.fullName, () => this.api.guardianAccount(g.id));
+  }
+
+  protected async giveStudentLogin(s: StudentDetail) {
+    await this.issue(s, s.fullName, () => this.api.studentAccount(s.id));
+  }
+
+  protected resetGuardian(s: StudentDetail, g: StudentGuardian) {
+    this.confirmReset(s, g.fullName, () => this.api.resetGuardianPassword(g.id));
+  }
+
+  protected resetStudent(s: StudentDetail) {
+    this.confirmReset(s, s.fullName, () => this.api.resetStudentPassword(s.id));
+  }
+
+  private confirmReset(s: StudentDetail, name: string, call: () => Observable<PortalAccount>) {
+    this.confirmation.confirm({
+      header: 'Reset password',
+      message: `Give ${name} a new temporary password? Their current password stops working and they are signed out.`,
+      acceptLabel: 'Reset',
+      rejectLabel: 'Cancel',
+      accept: () => this.issue(s, name, call),
+    });
+  }
+
+  /** Runs a login call, then shows the temporary password once (or says the login was shared). */
+  private async issue(s: StudentDetail, name: string, call: () => Observable<PortalAccount>) {
+    if (this.saving()) return;
+    this.saving.set(true);
+    try {
+      const result = await firstValueFrom(call());
+      this.student.set(await firstValueFrom(this.api.student(s.id)));
+      if (result.temporaryPassword) {
+        this.temp.set({ name, password: result.temporaryPassword, loginId: result.loginId });
+      } else {
+        this.toast.add({
+          severity: 'success',
+          summary: 'Login shared',
+          detail: `${name} signs in with the same mobile number and password as the other parent.`,
+        });
+      }
+    } catch (error) {
+      this.toast.add({
+        severity: 'error',
+        summary: 'Could not give a login',
+        detail: apiError(error),
+      });
     } finally {
       this.saving.set(false);
     }

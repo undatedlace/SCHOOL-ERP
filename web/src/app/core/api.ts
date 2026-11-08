@@ -17,6 +17,7 @@ import {
   FormSummary,
   FormVersion,
   Page,
+  PortalAccount,
   Role,
   School,
   SchoolClass,
@@ -209,6 +210,14 @@ export class Api {
     id: string,
     body: { fullName?: string; mobile?: string; email?: string; occupation?: string },
   ) => this.http.patch(`/api/guardians/${id}`, body);
+  guardianAccount = (guardianId: string) =>
+    this.http.post<PortalAccount>(`/api/guardians/${guardianId}/account`, {});
+  resetGuardianPassword = (guardianId: string) =>
+    this.http.post<PortalAccount>(`/api/guardians/${guardianId}/account/reset-password`, {});
+  studentAccount = (studentId: string) =>
+    this.http.post<PortalAccount>(`/api/students/${studentId}/account`, {});
+  resetStudentPassword = (studentId: string) =>
+    this.http.post<PortalAccount>(`/api/students/${studentId}/account/reset-password`, {});
   unlinkGuardian = (studentId: string, guardianId: string) =>
     this.http.delete<void>(`/api/students/${studentId}/guardians/${guardianId}`);
 

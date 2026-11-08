@@ -31,6 +31,8 @@ model Student {
   gender      Gender
   dateOfBirth DateTime      @map("date_of_birth") @db.Date
   photoFileId String?       @map("photo_file_id") @db.Uuid
+  /// The student's own login (read-only access), once the school creates one.
+  userId      String?       @unique @map("user_id") @db.Uuid
   status      StudentStatus @default(ACTIVE)
   joinedOn    DateTime      @map("joined_on") @db.Date
   leftOn      DateTime?     @map("left_on") @db.Date
@@ -38,6 +40,7 @@ model Student {
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
   school      School            @relation(fields: [schoolId], references: [id])
+  user        User?             @relation(fields: [userId], references: [id])
   guardians   StudentGuardian[]
   enrollments Enrollment[]
   application Application?
@@ -59,7 +62,7 @@ model Guardian {
   email      String?
   occupation String?
   /// The login account, once the school creates one for this guardian.
-  userId     String?  @unique @map("user_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -67,6 +70,7 @@ model Guardian {
   user     User?             @relation(fields: [userId], references: [id])
   students StudentGuardian[]
 
+  @@index([userId])
   @@index([schoolId, mobile])
   @@index([schoolId, fullName])
   @@map("guardians")
