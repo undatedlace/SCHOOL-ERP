@@ -237,6 +237,25 @@ export interface GuardianInput {
   isPrimary?: boolean;
 }
 
+export type DocumentType =
+  | 'BIRTH_CERTIFICATE'
+  | 'TRANSFER_CERTIFICATE'
+  | 'ID_PROOF'
+  | 'PREVIOUS_REPORT_CARD'
+  | 'MEDICAL'
+  | 'OTHER';
+
+export interface StudentDocument {
+  id: string;
+  type: DocumentType;
+  title: string | null;
+  createdAt: string;
+  fileId: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  fileName: string | null;
+}
+
 /** What the school hands over when it gives a parent or student a login. */
 export interface PortalAccount {
   loginId: string | null;

@@ -16,12 +16,14 @@ import {
   FormSchema,
   FormSummary,
   FormVersion,
+  DocumentType,
   Page,
   PortalAccount,
   Role,
   School,
   SchoolClass,
   StudentDetail,
+  StudentDocument,
   StudentListItem,
   Subject,
   UserRow,
@@ -210,6 +212,14 @@ export class Api {
     id: string,
     body: { fullName?: string; mobile?: string; email?: string; occupation?: string },
   ) => this.http.patch(`/api/guardians/${id}`, body);
+  studentDocuments = (studentId: string) =>
+    this.http.get<StudentDocument[]>(`/api/students/${studentId}/documents`);
+  addStudentDocument = (
+    studentId: string,
+    body: { fileId: string; type: DocumentType; title?: string },
+  ) => this.http.post(`/api/students/${studentId}/documents`, body);
+  removeStudentDocument = (studentId: string, documentId: string) =>
+    this.http.delete<void>(`/api/students/${studentId}/documents/${documentId}`);
   guardianAccount = (guardianId: string) =>
     this.http.post<PortalAccount>(`/api/guardians/${guardianId}/account`, {});
   resetGuardianPassword = (guardianId: string) =>
