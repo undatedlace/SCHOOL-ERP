@@ -92,7 +92,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
       </div>
 
       <div class="grid gap-6 lg:grid-cols-2">
-        <section class="rounded-lg border bg-card p-5">
+        <section class="rounded-xl border-0 bg-card shadow-sm p-5">
           <h2 class="mb-3 font-semibold">Details</h2>
           <dl class="grid gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -137,7 +137,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
         </section>
 
         @if (teaching().length) {
-          <section class="rounded-lg border bg-card p-5 lg:col-span-2">
+          <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">
             <h2 class="mb-3 font-semibold">Teaching this year</h2>
             <ul class="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
               @for (a of teaching(); track a.id) {
@@ -152,7 +152,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           </section>
         }
 
-        <section class="rounded-lg border bg-card p-5">
+        <section class="rounded-xl border-0 bg-card shadow-sm p-5">
           <h2 class="mb-3 font-semibold">Login</h2>
           @if (s.account; as a) {
             <div class="flex flex-wrap items-center gap-2">

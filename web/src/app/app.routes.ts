@@ -74,6 +74,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/notices/notices-page').then((m) => m.NoticesPage),
       },
       {
+        path: 'calendar',
+        canActivate: [permissionGuard('calendar.read')],
+        loadComponent: () =>
+          import('./features/calendar/calendar-page').then((m) => m.CalendarPage),
+      },
+      {
         path: 'promotion',
         canActivate: [permissionGuard('students.promote')],
         loadComponent: () =>
@@ -171,6 +177,11 @@ export const routes: Routes = [
         data: { kind: 'fees' },
         loadComponent: () =>
           import('./features/portal/portal-child-page').then((m) => m.PortalChildPage),
+      },
+      {
+        path: 'calendar',
+        loadComponent: () =>
+          import('./features/calendar/calendar-page').then((m) => m.CalendarPage),
       },
       {
         path: 'notices',

@@ -115,7 +115,7 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
-          <div class="rounded-lg border bg-card p-5">
+          <div class="rounded-xl border-0 bg-card shadow-sm p-5">
             <div class="mb-4 flex items-center justify-between gap-2">
               <h2 class="font-semibold">Application</h2>
               @if (a.editable && !editing()) {
@@ -175,7 +175,7 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
         </div>
 
         <aside class="flex flex-col gap-6 lg:col-span-1">
-          <div class="rounded-lg border bg-card p-5">
+          <div class="rounded-xl border-0 bg-card shadow-sm p-5">
             <h2 class="mb-3 font-semibold">Decision</h2>
             @if (a.decision.decidedAt) {
               <p class="text-sm">Decided on {{ format(a.decision.decidedAt) }}</p>
@@ -216,7 +216,7 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
             </div>
           </div>
           @if (a.status === 'GRANTED') {
-            <div class="rounded-lg border bg-card p-5">
+            <div class="rounded-xl border-0 bg-card shadow-sm p-5">
               <h2 class="mb-3 font-semibold">Student record</h2>
               @if (a.studentId) {
                 <p class="text-sm">Admitted on {{ format(a.admittedAt!) }}.</p>

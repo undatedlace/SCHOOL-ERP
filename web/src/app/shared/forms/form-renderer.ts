@@ -54,7 +54,7 @@ export interface ClassInfo {
           @for (field of section.fields; track field.id) {
             <div [class]="span(field)">
               @if (field.type === 'ageLimits') {
-                <div class="rounded-lg border bg-card p-4">
+                <div class="rounded-xl border-0 bg-card shadow-sm p-4">
                   <h3 class="mb-2 text-sm font-medium">{{ field.label }}</h3>
                   @if (limits().length) {
                     <table class="w-full max-w-sm text-sm">

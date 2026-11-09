@@ -39,7 +39,7 @@ const INCLUDE = {
 } satisfies Prisma.NoticeInclude;
 type Row = Prisma.NoticeGetPayload<{ include: typeof INCLUDE }>;
 
-interface Scope {
+export interface Scope {
   /** A parent or student who is not also a member of staff. */
   portalOnly: boolean;
   classIds: string[];
@@ -61,7 +61,8 @@ export class NoticesService {
 
   // ---------- who belongs to which audience ----------
 
-  private async scope(auth: AuthContext): Promise<Scope> {
+  /** Which classes and divisions this person belongs to (also used by the calendar). */
+  async scope(auth: AuthContext): Promise<Scope> {
     const year = await this.prisma.academicYear.findFirst({
       where: { schoolId: auth.schoolId, isCurrent: true },
       select: { id: true },
@@ -375,7 +376,8 @@ export class NoticesService {
   }
 
   /** Checks the audience and returns the targets to save. */
-  private async checkAudience(
+  /** Also used by the calendar, which has the same audiences. */
+  async checkAudience(
     auth: AuthContext,
     audience: NoticeAudience,
     ids: { classIds?: string[]; divisionIds?: string[] },

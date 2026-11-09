@@ -649,6 +649,41 @@ export interface NoticeInput {
   expiresOn?: string | null;
 }
 
+// ---------- Calendar ----------
+
+export type CalendarCategory = 'EVENT' | 'HOLIDAY' | 'EXAM' | 'MEETING';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  category: CalendarCategory;
+  startsOn: string;
+  endsOn: string;
+  startTime: string | null;
+  endTime: string | null;
+  audience: NoticeAudience;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; label: string }[];
+  /** A notice about it was sent to the same audience. */
+  announced: boolean;
+  canChange: boolean;
+}
+
+export interface CalendarEventInput {
+  title: string;
+  description?: string | null;
+  category: CalendarCategory;
+  startsOn: string;
+  endsOn?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  audience: NoticeAudience;
+  classIds?: string[];
+  divisionIds?: string[];
+  announce?: boolean;
+}
+
 // ---------- Dashboard insights ----------
 
 export interface AdmissionsInsight {

@@ -49,6 +49,8 @@ const PERMISSIONS = [
   'notices.create',
   'notices.read_all',
   'notices.manage_all',
+  'calendar.read',
+  'calendar.manage',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -70,8 +72,10 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'attendance.read_all',
       'insights.admissions',
       'notices.read',
+      'calendar.read',
       'notices.read_all',
       'notices.create',
+      'calendar.manage',
       'dashboard.view',
     ],
   },
@@ -87,6 +91,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'fees.structure.manage',
       'fees.payment.create',
       'notices.read',
+      'calendar.read',
       'notices.read_all',
       'notices.create',
       'dashboard.view',
@@ -102,11 +107,15 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'attendance.mark',
       'marks.enter',
       'notices.read',
+      'calendar.read',
       'notices.create',
       'dashboard.view',
     ],
   },
-  STAFF: { name: 'Staff', permissions: ['staff.read', 'notices.read'] },
+  STAFF: {
+    name: 'Staff',
+    permissions: ['staff.read', 'notices.read', 'calendar.read'],
+  },
   PARENT: {
     name: 'Parent',
     permissions: [
@@ -115,6 +124,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'results.read',
       'fees.read',
       'notices.read',
+      'calendar.read',
     ],
   },
   STUDENT: {
@@ -125,6 +135,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'results.read',
       'fees.read',
       'notices.read',
+      'calendar.read',
     ],
   },
 };

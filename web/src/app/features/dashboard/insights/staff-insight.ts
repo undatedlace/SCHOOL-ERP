@@ -8,7 +8,7 @@ import { StaffInsight } from '../../../core/models';
   selector: 'app-staff-insight',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5" aria-labelledby="ins-staff">
+    <section class="rounded-xl border-0 bg-card shadow-sm p-5" aria-labelledby="ins-staff">
       <h2 id="ins-staff" class="mb-1 font-semibold">Staff by year</h2>
       <p class="mb-3 text-sm text-muted-foreground">
         @if (data(); as d) {

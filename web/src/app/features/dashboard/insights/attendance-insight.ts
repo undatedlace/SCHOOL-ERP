@@ -16,7 +16,7 @@ const H = 80;
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5" aria-labelledby="ins-att">
+    <section class="rounded-xl border-0 bg-card shadow-sm p-5" aria-labelledby="ins-att">
       <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="ins-att" class="font-semibold">Attendance, last {{ data()?.days ?? 30 }} days</h2>
         <a routerLink="/app/attendance" class="text-sm underline">Take attendance</a>

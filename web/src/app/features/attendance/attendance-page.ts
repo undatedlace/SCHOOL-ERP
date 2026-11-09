@@ -179,7 +179,7 @@ type Tab = 'take' | 'report';
             />
           }
 
-          <ul class="divide-y rounded-lg border bg-card">
+          <ul class="divide-y rounded-xl border-0 bg-card shadow-sm">
             @for (s of r.students; track s.studentId) {
               <li class="flex flex-wrap items-center gap-3 p-3">
                 <div class="min-w-40 flex-1">

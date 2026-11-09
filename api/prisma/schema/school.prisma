@@ -21,6 +21,7 @@ model School {
   students        Student[]
   attendance      AttendanceRecord[]
   notices         Notice[]
+  calendarEvents  CalendarEvent[]
   guardians       Guardian[]
   enrollments     Enrollment[]
   staff           Staff[]

@@ -32,7 +32,10 @@ const size = (bytes: number | null) =>
   imports: [FormsModule, ButtonModule, SelectModule, HasPermission],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5" *appHasPermission="'students.read_all'">
+    <section
+      class="rounded-xl border-0 bg-card shadow-sm p-5"
+      *appHasPermission="'students.read_all'"
+    >
       <h2 class="mb-1 font-semibold">Documents</h2>
       <p class="mb-3 text-sm text-muted-foreground">
         Scanned papers kept on the record. Only staff can see them.

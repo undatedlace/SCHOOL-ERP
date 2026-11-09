@@ -9,6 +9,8 @@ import {
   AttendanceInsight,
   FeesInsight,
   StaffInsight,
+  CalendarEvent,
+  CalendarEventInput,
   Notice,
   NoticeAudiences,
   NoticeInput,
@@ -363,6 +365,16 @@ export class Api {
     divisionId: string;
     entries: { studentId: string; action: PromotionAction; divisionId?: string }[];
   }) => this.http.post<PromotionResult>('/api/promotion/run', body);
+
+  // ---------- Calendar ----------
+  calendarEvents = (from: string, to: string) =>
+    this.http.get<CalendarEvent[]>('/api/calendar', { params: { from, to } });
+  calendarAudiences = () => this.http.get<NoticeAudiences>('/api/calendar/audiences');
+  createCalendarEvent = (body: CalendarEventInput) =>
+    this.http.post<CalendarEvent>('/api/calendar', body);
+  updateCalendarEvent = (id: string, body: Partial<CalendarEventInput>) =>
+    this.http.patch<CalendarEvent>(`/api/calendar/${id}`, body);
+  archiveCalendarEvent = (id: string) => this.http.delete<void>(`/api/calendar/${id}`);
 
   // ---------- Notices ----------
   notices = (q: { page: number; pageSize: number; status?: 'active' | 'expired' | 'all' }) =>
