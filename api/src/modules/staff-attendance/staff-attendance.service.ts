@@ -290,7 +290,7 @@ export class StaffAttendanceService {
     for (const r of records) {
       const iso = toIso(r.date);
       taken.add(iso);
-      days.set(r.staffId, { ...(days.get(r.staffId) ?? {}), [iso]: r.status });
+      days.set(r.staffId, { ...days.get(r.staffId), [iso]: r.status });
       list.set(r.staffId, [...(list.get(r.staffId) ?? []), r.status]);
     }
     return {
