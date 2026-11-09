@@ -2,6 +2,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  Notice,
+  NoticeAudiences,
+  NoticeInput,
   PromotionAction,
   PromotionPlan,
   PromotionResult,
@@ -353,4 +356,13 @@ export class Api {
     divisionId: string;
     entries: { studentId: string; action: PromotionAction; divisionId?: string }[];
   }) => this.http.post<PromotionResult>('/api/promotion/run', body);
+
+  // ---------- Notices ----------
+  notices = (q: { page: number; pageSize: number; status?: 'active' | 'expired' | 'all' }) =>
+    this.http.get<Page<Notice>>('/api/notices', { params: params(q) });
+  noticeAudiences = () => this.http.get<NoticeAudiences>('/api/notices/audiences');
+  createNotice = (body: NoticeInput) => this.http.post<Notice>('/api/notices', body);
+  updateNotice = (id: string, body: Partial<NoticeInput>) =>
+    this.http.patch<Notice>(`/api/notices/${id}`, body);
+  archiveNotice = (id: string) => this.http.delete<void>(`/api/notices/${id}`);
 }

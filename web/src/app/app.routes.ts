@@ -69,6 +69,11 @@ export const routes: Routes = [
           import('./features/admissions/application-page').then((m) => m.ApplicationPage),
       },
       {
+        path: 'notices',
+        canActivate: [permissionGuard('notices.read')],
+        loadComponent: () => import('./features/notices/notices-page').then((m) => m.NoticesPage),
+      },
+      {
         path: 'promotion',
         canActivate: [permissionGuard('students.promote')],
         loadComponent: () =>
@@ -148,6 +153,23 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./features/portal/portal-home').then((m) => m.PortalHome),
+      },
+      {
+        path: 'attendance',
+        data: { kind: 'attendance' },
+        loadComponent: () =>
+          import('./features/portal/portal-child-page').then((m) => m.PortalChildPage),
+      },
+      {
+        path: 'fees',
+        data: { kind: 'fees' },
+        loadComponent: () =>
+          import('./features/portal/portal-child-page').then((m) => m.PortalChildPage),
+      },
+      {
+        path: 'notices',
+        loadComponent: () =>
+          import('./features/portal/portal-notices').then((m) => m.PortalNotices),
       },
     ],
   },

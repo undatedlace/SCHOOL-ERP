@@ -615,3 +615,36 @@ export interface PromotionResult {
   left: number;
   skipped: { studentId: string; name: string; reason: string }[];
 }
+
+// ---------- Notices ----------
+
+export type NoticeAudience = 'ALL' | 'STAFF' | 'CLASSES' | 'DIVISIONS';
+
+export interface Notice {
+  id: string;
+  title: string;
+  body: string;
+  audience: NoticeAudience;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; label: string }[];
+  createdBy: { id: string; fullName: string };
+  createdAt: string;
+  expiresOn: string | null;
+  expired: boolean;
+  canChange: boolean;
+}
+
+export interface NoticeAudiences {
+  canAddressAnyone: boolean;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; classId: string; label: string }[];
+}
+
+export interface NoticeInput {
+  title: string;
+  body: string;
+  audience: NoticeAudience;
+  classIds?: string[];
+  divisionIds?: string[];
+  expiresOn?: string | null;
+}

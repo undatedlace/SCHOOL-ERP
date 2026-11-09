@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Last updated: 9 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices and the portal screens are built (results and report cards wait for Phase 4). Last updated: 9 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -295,6 +295,11 @@ Attendance, exams, marks, grading, publishing, report card PDFs, year-end promot
 ### Phase 5: Parent and student portal
 Portal screens, notices, PWA setup. (Razorpay online payment is **on hold**; parents see dues and download receipts, and pay at the school.)
 **Done when:** a parent can see each child's records, download a report card, and see dues and download fee receipts. (Paying part of a fee online is on hold.)
+
+**Status (9 Nov 2026): notices and the portal screens are built and tested; not yet clicked through in a browser. Results and report cards (waiting for Phase 4) and the PWA setup are not done.**
+- **Notices:** plain text only (shown exactly as written, never as HTML), a title, a message of up to 5,000 characters, an audience and an optional last day. Audiences: *Everyone*, *Staff only*, *Classes* and *Divisions*. Parents and students receive class and division notices through their child's enrolment this year (a child who has left stops receiving them); teachers receive the notices of classes they teach; "staff only" never reaches a person who is only a parent or student. Admin, office and accountant (`notices.read_all`) see every notice and may write to any audience. A teacher (`notices.create` without `read_all`) may write only to the divisions they teach this year, and cannot widen it later. Only the author, or the admin (`notices.manage_all`), can change or remove a notice; a person who cannot see a notice gets "not found". After its last day a notice disappears for readers and stays visible to those who may change it. Removing archives it (never deleted). Audited: `notice.created`, `notice.updated`, `notice.archived`.
+- **Portal (parent and student, mobile first):** tabs Home, Attendance, Fees and Notices. A parent with several children switches between them (the choice is only remembered on that device; the API still decides what may be seen, and it is forgotten on sign out). Home shows attendance for the year, what is owed ("pay at the school office"), and the latest notices. Attendance and Fees reuse the student page sections without any buttons for changing anything; fees include receipt download.
+- **Not built:** read receipts, scheduled publishing, attachments on notices, push notifications, the PWA manifest and service worker, and report cards and results in the portal (they follow Phase 4).
 
 ### Phase 6: Dashboard and launch
 Insights, security review, backups, deployment, staff training data.
