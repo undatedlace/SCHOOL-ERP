@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices and the portal screens are built (results and report cards wait for Phase 4). Last updated: 9 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices, the portal screens and the installable app are built (results and report cards wait for Phase 4). Phase 6 has started: dashboard insights are built. Last updated: 9 Nov 2026.
 
 ## 1. How we work (read this first)
 
@@ -306,6 +306,10 @@ Portal screens, notices, PWA setup. (Razorpay online payment is **on hold**; par
 Insights, security review, backups, deployment, staff training data.
 
 **Insights:** admissions per year (with comparison), staff joined and left per year, fees collected vs pending by standard and division, attendance trends, and result summaries.
+
+**Status (9 Nov 2026): dashboard insights are built and tested (except result summaries); not yet clicked through in a browser. Security review, backups and deployment are not started.**
+- **Insights (read-only, `api/src/modules/insights`):** each card appears only to people who may see it, and the API enforces it (`GET /insights/...`). *Admissions by year* (`insights.admissions`: admin, office): applications received, granted, refused, withdrawn, admitted and students enrolled for each of the last five academic years, with the change on the year before. *Staff by year* (`insights.staff`: admin only): who joined and left each year and the strength at year end. *Fees* (`fees.read_all`: admin, accountant): billed, collected, pending and overdue, collected against billed by class, and money received in each month of the year (reversed payments left out). *Attendance* (`attendance.read`, limited to the divisions the person may see): how many divisions were marked today, a trend line for the last 30 days (7 to 90 allowed) with the 75% line, and the lowest divisions. Admin and office see every division; a teacher sees their own; a parent or student sees nothing here. Charts are plain HTML and SVG with the numbers written beside them (no chart library, no colour used alone).
+- **Not built:** result summaries (they need exams and marks), per-division fee drill-down on the dashboard (the *Fee dues* page has it), and security review, backups and deployment.
 **Done when:** the school can run on the system with restore-tested backups.
 
 ## 11. Open decisions

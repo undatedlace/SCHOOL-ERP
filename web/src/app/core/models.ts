@@ -648,3 +648,48 @@ export interface NoticeInput {
   divisionIds?: string[];
   expiresOn?: string | null;
 }
+
+// ---------- Dashboard insights ----------
+
+export interface AdmissionsInsight {
+  years: {
+    id: string;
+    name: string;
+    isCurrent: boolean;
+    applications: number;
+    received: number;
+    granted: number;
+    refused: number;
+    withdrawn: number;
+    admitted: number;
+    enrolled: number;
+  }[];
+}
+
+export interface StaffInsight {
+  years: { id: string; name: string; joined: number; left: number; atYearEnd: number }[];
+  currentlyWorking: number;
+}
+
+export interface FeesInsight {
+  academicYear: { id: string; name: string };
+  totals: DuesReport['totals'];
+  byClass: DuesReport['byClass'];
+  collectedByMonth: { month: string; total: Money; payments: number }[];
+}
+
+export interface AttendanceInsight {
+  from: string;
+  to: string;
+  days: number;
+  today: { divisions: number; marked: number };
+  trend: {
+    date: string;
+    percent: number | null;
+    present: number;
+    late: number;
+    absent: number;
+    onLeave: number;
+  }[];
+  divisions: { id: string; label: string; percent: number | null; markedDays: number }[];
+}

@@ -2,6 +2,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  AdmissionsInsight,
+  AttendanceInsight,
+  FeesInsight,
+  StaffInsight,
   Notice,
   NoticeAudiences,
   NoticeInput,
@@ -365,4 +369,11 @@ export class Api {
   updateNotice = (id: string, body: Partial<NoticeInput>) =>
     this.http.patch<Notice>(`/api/notices/${id}`, body);
   archiveNotice = (id: string) => this.http.delete<void>(`/api/notices/${id}`);
+
+  // ---------- Dashboard insights ----------
+  admissionsInsight = () => this.http.get<AdmissionsInsight>('/api/insights/admissions');
+  staffInsight = () => this.http.get<StaffInsight>('/api/insights/staff');
+  feesInsight = () => this.http.get<FeesInsight | null>('/api/insights/fees');
+  attendanceInsight = (days = 30) =>
+    this.http.get<AttendanceInsight>('/api/insights/attendance', { params: params({ days }) });
 }
