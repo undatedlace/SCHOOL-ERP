@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -13,7 +15,7 @@ import { MessageModule } from '@openng/optimus-ui/message';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { CalendarEvent } from '../../core/models';
-import { toIsoDate } from '../../shared/dates';
+import { fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { Icon } from '../../shared/ui/icon';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -21,22 +23,46 @@ import { audienceText } from '../notices/notice-utils';
 import {
   CATEGORY_CLASS,
   CATEGORY_LABEL,
+  CalendarView,
+  VIEW_LABEL,
   dateRangeText,
   eventsOn,
-  gridRange,
-  monthGrid,
-  monthTitle,
-  shiftMonth,
+  shiftView,
   timeRangeText,
+  viewRange,
+  viewTitle,
+  weekDays,
 } from './calendar-utils';
 import { EventDialog } from './event-dialog';
+import { MonthGrid } from './month-grid';
+import { TimeGrid } from './time-grid';
+import { YearGrid } from './year-grid';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const VIEWS: CalendarView[] = ['day', 'week', 'month', 'year'];
+const VIEW_KEY = 'calendar-view';
 
-/** A month at a glance with the day's agenda beside it. Staff who manage it can add events. */
+function savedView(): CalendarView {
+  try {
+    const v = localStorage.getItem(VIEW_KEY) as CalendarView | null;
+    return v && VIEWS.includes(v) ? v : 'month';
+  } catch {
+    return 'month';
+  }
+}
+
 @Component({
   selector: 'app-calendar-page',
-  imports: [ButtonModule, MessageModule, HasPermission, PageHeader, Icon, EventDialog],
+  imports: [
+    ButtonModule,
+    MessageModule,
+    HasPermission,
+    PageHeader,
+    Icon,
+    EventDialog,
+    MonthGrid,
+    TimeGrid,
+    YearGrid,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header title="Calendar" subtitle="School events, holidays, exams and meetings.">
@@ -52,18 +78,35 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
 
     <div class="grid gap-4 lg:grid-cols-[1fr_20rem]">
-      <section class="rounded-xl border-0 bg-card p-4 shadow-sm" aria-label="Month">
-        <div class="mb-4 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            class="inline-flex size-9 items-center justify-center rounded-full border hover:bg-accent"
-            aria-label="Previous month"
-            (click)="move(-1)"
-          >
-            <span class="rotate-180"><app-icon name="chevron" /></span>
-          </button>
-          <h2 class="text-lg font-semibold">{{ title() }}</h2>
+      <section class="min-w-0 rounded-xl border-0 bg-card p-4 shadow-sm" aria-label="Calendar">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex gap-1 rounded-full bg-muted p-1" role="group" aria-label="View">
+            @for (v of views; track v) {
+              <button
+                type="button"
+                class="rounded-full px-3.5 py-1.5 text-sm transition"
+                [class.bg-card]="view() === v"
+                [class.shadow-sm]="view() === v"
+                [class.font-semibold]="view() === v"
+                [attr.aria-pressed]="view() === v"
+                (click)="setView(v)"
+              >
+                {{ viewLabel[v] }}
+              </button>
+            }
+          </div>
+          <h2 class="order-last w-full text-center text-lg font-semibold sm:order-none sm:w-auto">
+            {{ title() }}
+          </h2>
           <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex size-9 items-center justify-center rounded-full border hover:bg-accent"
+              aria-label="Previous"
+              (click)="move(-1)"
+            >
+              <span class="rotate-180"><app-icon name="chevron" /></span>
+            </button>
             <button
               type="button"
               class="rounded-full border px-3 py-1.5 text-sm hover:bg-accent"
@@ -74,7 +117,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             <button
               type="button"
               class="inline-flex size-9 items-center justify-center rounded-full border hover:bg-accent"
-              aria-label="Next month"
+              aria-label="Next"
               (click)="move(1)"
             >
               <app-icon name="chevron" />
@@ -82,52 +125,44 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           </div>
         </div>
 
-        <div
-          class="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground"
-          aria-hidden="true"
-        >
-          @for (d of weekdays; track d) {
-            <span class="py-1">{{ d }}</span>
+        @switch (view()) {
+          @case ('day') {
+            <app-time-grid
+              [days]="[selected()]"
+              [events]="events()"
+              [selected]="selected()"
+              [today]="today"
+              (pick)="selected.set($event)"
+            />
           }
-        </div>
-        <div class="grid grid-cols-7 gap-1">
-          @for (week of weeks(); track $index) {
-            @for (cell of week; track cell.iso) {
-              <button
-                type="button"
-                class="flex min-h-14 flex-col items-start gap-1 rounded-lg p-1.5 text-left text-sm transition hover:bg-accent sm:min-h-20"
-                [class.opacity-40]="!cell.inMonth"
-                [class.bg-accent]="cell.iso === selected()"
-                [class.ring-2]="cell.iso === today"
-                [class.ring-ring]="cell.iso === today"
-                [attr.aria-pressed]="cell.iso === selected()"
-                [attr.aria-label]="cell.iso + ', ' + countText(cell.iso)"
-                (click)="selected.set(cell.iso)"
-              >
-                <span class="font-medium">{{ cell.day }}</span>
-                @for (e of cellEvents(cell.iso); track e.id; let i = $index) {
-                  @if (i < 2) {
-                    <span
-                      class="hidden w-full truncate rounded px-1 text-xs sm:block"
-                      [class]="categoryClass[e.category]"
-                      >{{ e.title }}</span
-                    >
-                  }
-                }
-                @if (cellEvents(cell.iso).length) {
-                  <span class="text-xs text-muted-foreground sm:hidden"
-                    >&bull; {{ cellEvents(cell.iso).length }}</span
-                  >
-                }
-                @if (cellEvents(cell.iso).length > 2) {
-                  <span class="hidden text-xs text-muted-foreground sm:block"
-                    >+{{ cellEvents(cell.iso).length - 2 }} more</span
-                  >
-                }
-              </button>
-            }
+          @case ('week') {
+            <app-time-grid
+              [days]="week()"
+              [events]="events()"
+              [selected]="selected()"
+              [today]="today"
+              (pick)="selected.set($event)"
+            />
           }
-        </div>
+          @case ('month') {
+            <app-month-grid
+              [anchor]="selected()"
+              [events]="events()"
+              [selected]="selected()"
+              [today]="today"
+              (pick)="selected.set($event)"
+            />
+          }
+          @case ('year') {
+            <app-year-grid
+              [year]="yearOf()"
+              [events]="events()"
+              [today]="today"
+              (pickMonth)="openMonth($event)"
+              (pickDay)="openDay($event)"
+            />
+          }
+        }
 
         <ul class="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground" aria-label="Key">
           @for (c of categoryKeys; track c) {
@@ -194,7 +229,8 @@ export class CalendarPage {
   protected readonly dialog = viewChild.required(EventDialog);
 
   protected readonly today = toIsoDate(new Date());
-  protected readonly weekdays = WEEKDAYS;
+  protected readonly views = VIEWS;
+  protected readonly viewLabel = VIEW_LABEL;
   protected readonly categoryClass = CATEGORY_CLASS;
   protected readonly categoryLabel = CATEGORY_LABEL;
   protected readonly categoryKeys = ['EVENT', 'HOLIDAY', 'EXAM', 'MEETING'] as const;
@@ -202,19 +238,20 @@ export class CalendarPage {
   protected readonly timeRange = timeRangeText;
   protected readonly audienceOf = audienceText;
 
-  private readonly now = new Date();
-  protected readonly year = signal(this.now.getFullYear());
-  protected readonly month = signal(this.now.getMonth());
+  protected readonly view = signal<CalendarView>(savedView());
+  /** The day in focus: the one the agenda shows, and the one the view is built around. */
   protected readonly selected = signal(this.today);
   protected readonly events = signal<CalendarEvent[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 
-  protected readonly weeks = computed(() => monthGrid(this.year(), this.month()));
-  protected readonly title = computed(() => monthTitle(this.year(), this.month()));
+  private readonly range = computed(() => viewRange(this.view(), this.selected()));
+  protected readonly title = computed(() => viewTitle(this.view(), this.selected()));
+  protected readonly week = computed(() => weekDays(this.selected()));
+  protected readonly yearOf = computed(() => fromIsoDate(this.selected()).getFullYear());
   protected readonly dayEvents = computed(() => eventsOn(this.events(), this.selected()));
   protected readonly selectedText = computed(() =>
-    new Date(`${this.selected()}T00:00:00`).toLocaleDateString('en-IN', {
+    fromIsoDate(this.selected()).toLocaleDateString('en-IN', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -222,36 +259,49 @@ export class CalendarPage {
   );
 
   constructor() {
-    void this.reload();
+    // Fetch again whenever the days on show change (a new month, a new view, and so on).
+    effect(() => {
+      const { from, to } = this.range();
+      untracked(() => void this.load(from, to));
+    });
   }
 
-  protected cellEvents(iso: string) {
-    return eventsOn(this.events(), iso);
-  }
-
-  protected countText(iso: string): string {
-    const n = this.cellEvents(iso).length;
-    return n === 0 ? 'nothing planned' : `${n} ${n === 1 ? 'event' : 'events'}`;
+  protected setView(v: CalendarView) {
+    this.view.set(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // The choice just will not be remembered.
+    }
   }
 
   protected move(by: number) {
-    const next = shiftMonth(this.year(), this.month(), by);
-    this.year.set(next.year);
-    this.month.set(next.month);
-    this.selected.set(toIsoDate(new Date(next.year, next.month, 1)));
-    void this.reload();
+    this.selected.set(shiftView(this.view(), this.selected(), by));
   }
 
   protected goToday() {
-    const d = new Date();
-    this.year.set(d.getFullYear());
-    this.month.set(d.getMonth());
     this.selected.set(this.today);
-    void this.reload();
   }
 
-  protected async reload() {
-    const { from, to } = gridRange(this.year(), this.month());
+  /** From the year view: a month's name opens that month. */
+  protected openMonth(month: number) {
+    const year = this.yearOf();
+    this.selected.set(toIsoDate(new Date(year, month, 1)));
+    this.setView('month');
+  }
+
+  /** From the year view: a day opens that day. */
+  protected openDay(iso: string) {
+    this.selected.set(iso);
+    this.setView('day');
+  }
+
+  protected reload() {
+    const { from, to } = this.range();
+    return this.load(from, to);
+  }
+
+  private async load(from: string, to: string) {
     this.loading.set(true);
     this.error.set(null);
     try {

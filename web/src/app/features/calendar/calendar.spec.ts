@@ -44,6 +44,8 @@ function setup(permissions: string[]) {
 }
 
 describe('CalendarPage', () => {
+  beforeEach(() => localStorage.clear());
+
   it('asks for the days on the grid and shows the day agenda', async () => {
     const http = setup(['calendar.read']);
     const fixture = TestBed.createComponent(CalendarPage);
@@ -102,9 +104,10 @@ describe('CalendarPage', () => {
     http.expectOne((r) => r.url === '/api/calendar').flush([]);
     await fixture.whenStable();
     const next = (fixture.nativeElement as HTMLElement).querySelector(
-      'button[aria-label="Next month"]',
+      'button[aria-label="Next"]',
     ) as HTMLButtonElement;
     next.click();
+    fixture.detectChanges();
     http.expectOne((r) => r.url === '/api/calendar').flush([]);
     await fixture.whenStable();
     http.verify();
@@ -121,6 +124,113 @@ describe('CalendarPage', () => {
     await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Nope');
+  });
+});
+
+describe('CalendarPage views', () => {
+  beforeEach(() => localStorage.clear());
+
+  async function open(permissions = ['calendar.read']) {
+    const http = setup(permissions);
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/calendar').flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const choose = async (label: string, events: CalendarEvent[] = []) => {
+      const button = Array.from(el.querySelectorAll('[aria-label="View"] button')).find(
+        (b) => b.textContent?.trim() === label,
+      ) as HTMLButtonElement;
+      button.click();
+      fixture.detectChanges();
+      const req = http.expectOne((r) => r.url === '/api/calendar');
+      req.flush(events);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return req.request.params;
+    };
+    return { http, fixture, el, choose };
+  }
+
+  it('starts on the month and offers day, week, month and year', async () => {
+    const { el } = await open();
+    const labels = Array.from(el.querySelectorAll('[aria-label="View"] button')).map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(labels).toEqual(['Day', 'Week', 'Month', 'Year']);
+    expect(el.querySelector('app-month-grid')).not.toBeNull();
+  });
+
+  it('week view asks for seven days and draws a timed event on the hourly grid', async () => {
+    const { el, choose } = await open();
+    const p = await choose('Week', [event({ startTime: '09:00', endTime: '10:30' })]);
+    const from = new Date(`${p.get('from')}T00:00:00`);
+    expect(from.getDay()).toBe(0);
+    expect(p.get('to')).toBe(
+      toIsoDate(new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6)),
+    );
+    const block = el.querySelector('app-time-grid button[aria-label^="Annual Day"]')!;
+    expect(block.getAttribute('aria-label')).toContain('9:00 am - 10:30 am');
+    expect(el.querySelectorAll('app-time-grid [aria-pressed]').length).toBe(7);
+  });
+
+  it('day view asks for one day and puts an untimed event in the all-day band', async () => {
+    const { el, choose } = await open();
+    const p = await choose('Day', [event({ startTime: null })]);
+    expect(p.get('from')).toBe(today);
+    expect(p.get('to')).toBe(today);
+    expect(
+      el.querySelector('app-time-grid button[aria-label="Annual Day, all day"]'),
+    ).not.toBeNull();
+  });
+
+  it('year view asks for the whole year, shows twelve months, and a day opens the day view', async () => {
+    const { http, fixture, el, choose } = await open();
+    const p = await choose('Year', [event()]);
+    const year = new Date().getFullYear();
+    expect(p.get('from')).toBe(`${year}-01-01`);
+    expect(p.get('to')).toBe(`${year}-12-31`);
+    expect(el.querySelectorAll('app-year-grid section').length).toBe(12);
+    const busy = el.querySelector(
+      `app-year-grid button[aria-label="${today}, has events"]`,
+    ) as HTMLButtonElement;
+    expect(busy).not.toBeNull();
+    busy.click();
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/calendar').flush([event()]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('app-time-grid')).not.toBeNull();
+  });
+
+  it('remembers the view on this device', async () => {
+    const first = await open();
+    await first.choose('Week');
+    expect(localStorage.getItem('calendar-view')).toBe('week');
+    TestBed.resetTestingModule();
+    const again = await (async () => {
+      const http = setup(['calendar.read']);
+      const fixture = TestBed.createComponent(CalendarPage);
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === '/api/calendar').flush([]);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    })();
+    expect(again.querySelector('app-time-grid')).not.toBeNull();
+  });
+
+  it('steps back and forward by the view', async () => {
+    const { el, http, fixture } = await open();
+    const title = () => el.querySelector('h2')!.textContent!.trim();
+    const before = title();
+    (el.querySelector('button[aria-label="Previous"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/calendar').flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(title()).not.toBe(before);
   });
 });
 
