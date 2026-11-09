@@ -55,14 +55,13 @@ import { StaffInsightCard } from './insights/staff-insight';
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      @for (item of shortcuts(); track item.path; let i = $index) {
+      @for (item of shortcuts(); track item.path) {
         <a
           [routerLink]="item.path"
-          class="rounded-xl p-5 transition hover:shadow-md"
-          [class]="tiles[i % tiles.length]"
+          class="rounded-xl bg-card p-5 shadow-sm transition hover:shadow-md"
         >
           <h2 class="font-medium">{{ item.label }}</h2>
-          <p class="mt-1 text-sm opacity-80">{{ item.description }}</p>
+          <p class="mt-1 text-sm text-muted-foreground">{{ item.description }}</p>
         </a>
       } @empty {
         <p class="text-sm text-muted-foreground">
@@ -77,7 +76,6 @@ import { StaffInsightCard } from './insights/staff-insight';
   `,
 })
 export class Dashboard {
-  protected readonly tiles = ['bg-lavender', 'bg-sun', 'bg-sky'];
   private readonly auth = inject(AuthService);
   private readonly api = inject(Api);
 
