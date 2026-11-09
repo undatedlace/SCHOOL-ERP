@@ -45,7 +45,7 @@ import { GRID_MAX_DAYS, MARKS, gridDays, isLow, percentText } from './attendance
               scope="col"
               class="sticky left-0 z-10 min-w-44 bg-accent px-4 py-3 text-left font-medium"
             >
-              Student name
+              {{ nameHeader() }}
             </th>
             @for (d of days(); track d.iso) {
               <th
@@ -67,7 +67,9 @@ import { GRID_MAX_DAYS, MARKS, gridDays, isLow, percentText } from './attendance
             <tr class="border-t">
               <th scope="row" class="sticky left-0 z-10 bg-card px-4 py-3 text-left font-normal">
                 {{ s.name }}
-                <span class="block text-xs text-muted-foreground">No. {{ s.admissionNo }}</span>
+                <span class="block text-xs text-muted-foreground"
+                  >{{ numberLabel() }} {{ s.admissionNo }}</span
+                >
               </th>
               @for (d of days(); track d.iso) {
                 <td class="px-1 py-2 text-center" [class.bg-muted]="d.sunday">
@@ -113,6 +115,9 @@ import { GRID_MAX_DAYS, MARKS, gridDays, isLow, percentText } from './attendance
 })
 export class AttendanceGrid {
   readonly report = input.required<AttendanceDivisionReport>();
+  /** What the first column is called, and what each person's number is called. */
+  readonly nameHeader = input('Student name');
+  readonly numberLabel = input('No.');
 
   protected readonly marks = MARKS;
   protected readonly key = Object.values(MARKS);

@@ -4,6 +4,8 @@ export interface NavItem {
   description: string;
   /** Hidden unless the user holds this permission. */
   permission?: string;
+  /** Hidden from anyone who holds this permission (for pages meant only for the people it does not cover). */
+  hiddenWith?: string;
 }
 
 /** A sidebar entry: a single link (`item`) or a group that opens to show its pages (`items`). */
@@ -65,10 +67,23 @@ const staff: NavItem = {
   permission: 'staff.read_all',
 };
 const attendance: NavItem = {
-  label: 'Attendance',
+  label: 'Students',
   path: '/app/attendance',
   description: 'Mark the day for a division, and see attendance totals',
   permission: 'attendance.read',
+};
+const staffAttendance: NavItem = {
+  label: 'Staff',
+  path: '/app/staff-attendance',
+  description: 'Mark and review the attendance of teachers and other staff',
+  permission: 'staff_attendance.read_all',
+};
+const myAttendance: NavItem = {
+  label: 'My attendance',
+  path: '/app/my-attendance',
+  description: 'Your own attendance, day by day',
+  permission: 'staff_attendance.read',
+  hiddenWith: 'staff_attendance.read_all',
 };
 const feeDues: NavItem = {
   label: 'Fee dues',
@@ -120,7 +135,12 @@ export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Admissions', icon: 'clipboard', section: 'menu', items: [admissions, forms] },
   { label: 'Students', icon: 'students', section: 'menu', items: [students, promotion] },
   { label: 'Staff', icon: 'teachers', section: 'menu', items: [staff] },
-  { label: 'Attendance', icon: 'attendance', section: 'menu', item: attendance },
+  {
+    label: 'Attendance',
+    icon: 'attendance',
+    section: 'menu',
+    items: [attendance, staffAttendance, myAttendance],
+  },
   { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup] },
   { label: 'Finance', icon: 'finance', section: 'menu', items: [feeDues, feeCollection, feeSetup] },
   { label: 'Notices', icon: 'notice', section: 'menu', item: notices },
@@ -140,7 +160,8 @@ export function visibleEntries(
   entries: NavEntry[],
   has: (permission: string) => boolean,
 ): NavEntry[] {
-  const ok = (i: NavItem) => !i.permission || has(i.permission);
+  const ok = (i: NavItem) =>
+    (!i.permission || has(i.permission)) && !(i.hiddenWith && has(i.hiddenWith));
   return entries.flatMap((e) => {
     if (e.item) return ok(e.item) ? [e] : [];
     const items = (e.items ?? []).filter(ok);

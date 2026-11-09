@@ -14,6 +14,7 @@ import { FormsModule } from './modules/forms/forms.module.js';
 import { SessionGuard } from './modules/auth/session.guard.js';
 import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
 import { InsightsModule } from './modules/insights/insights.module.js';
+import { StaffAttendanceModule } from './modules/staff-attendance/staff-attendance.module.js';
 import { CalendarModule } from './modules/calendar/calendar.module.js';
 import { NoticesModule } from './modules/notices/notices.module.js';
 import { PromotionModule } from './modules/promotion/promotion.module.js';
@@ -53,6 +54,7 @@ import { UsersModule } from './modules/users/users.module.js';
     PromotionModule,
     NoticesModule,
     CalendarModule,
+    StaffAttendanceModule,
     InsightsModule,
     AdmissionsModule,
   ],

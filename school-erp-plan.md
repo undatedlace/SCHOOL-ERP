@@ -27,7 +27,7 @@ A school management system for **one school**, structured so it can become multi
 5. **Parent and student portal:** report cards, pending fees, attendance, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
 6. **Dashboard:** overall insights.
 
-**Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, staff attendance, native mobile apps, and SMS/WhatsApp notifications.
+**Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, native mobile apps, and SMS/WhatsApp notifications.
 
 ## 3. Tech stack
 
@@ -126,7 +126,8 @@ Why it fits: this app holds children's data and money records, and a departing s
 | Admissions | Full | Full | Read | - | - | - | - |
 | Student records | Full | Full | Read | Assigned classes (read) | - | Own child (read) | Self (read) |
 | Staff records | Full | Read | - | Self | Self | - | - |
-| Student attendance | Full | Read | - | Assigned classes | - | Own child (read) | Self (read) |
+| Student attendance | Full (mark, change, remove) | Read | - | Assigned classes (mark, change) | - | Own child (read) | Self (read) |
+| Staff attendance | Full (mark, change, remove, leave) | Read | - | Own (read) | Own (read) | - | - |
 | Marks entry | Full | - | - | Assigned subjects | - | - | - |
 | Publish results | Full | - | - | - | - | Own child (read) | Self (read) |
 | Fee structures | Full | - | Full | - | - | - | - |
@@ -159,6 +160,7 @@ api/src/
     students/     students, guardians, enrollments, promotion, documents
     staff/        profiles, joining and exit dates, teaching assignments
     attendance/   daily student attendance
+    staff-attendance/  attendance of teachers and other staff
     exams/        exams, marks, grading, results, report cards
     fees/         structures, invoices, payments, allocations, concessions, receipts, dues
     payments/     Razorpay orders and webhooks (ON HOLD, not built)
@@ -316,6 +318,9 @@ A look taken from the "SchoolHub" Figma template, plus a calendar. **This change
 - **Telling people:** when an event is created with "Also send a notice about it", a notice is posted to the same audience (through the notice rules), shown until the event ends, and the event remembers it. **In V1 this is an in-app notice only**: there is no push, SMS, WhatsApp or e-mail (still "not in V1"). Changing or removing the event afterwards does not change a notice already sent. It cannot be used for an event already over.
 - **Screens:** *Calendar* with four views chosen from a Day / Week / Month / Year switch (the choice is remembered on that device): **Month** (bordered grid, up to two events a day and "N more"), **Week** and **Day** (hours down the side, an "all-day" band for untimed and multi-day events, overlapping events side by side, opens scrolled to 7 am), and **Year** (twelve small months, a dot under days with events; a month's name opens that month and a day opens that day). Today is a red circle, Previous / Today / Next step by the current view, and an agenda for the chosen day sits beside it (add, change and remove for people who manage it), an *Upcoming* card on the staff dashboard and the portal home, and a *Calendar* tab in the portal (read only).
 - **Attendance grid:** the Report tab on *Attendance* is now a grid like the template: students down the side, one column per day (every day for a range up to 31 days, otherwise only the days taken), a mark in each box (tick present, cross absent, L late, Lv on leave; the letter and a label carry the meaning, not colour alone), a dash where nothing was taken, Sundays greyed, and the attendance percentage with "Low" under 75% at the end. *This month* and *Last month* shortcuts sit beside the From and To dates. `GET /attendance/divisions/:id/report` now also returns `markedDates` and each student's `days` (date to status); the same visibility rules apply. Taking attendance is unchanged.
+- **Student attendance, admin powers (added 10 Nov 2026):** besides marking any division on any past date, the admin can now **remove** a saved mark (`DELETE /attendance/divisions/:id/students/:studentId?date=`, `attendance.mark_all` only, audited as `attendance.mark_removed`); the student then shows as not marked. "On leave" is how leave is recorded, with a note. Teachers still mark and change only their own divisions, for the last 7 days, and cannot remove a mark.
+- **Staff attendance (new, decided 10 Nov 2026; moves "staff attendance" into V1):** the attendance of teachers and other staff, in `staff_attendance_records` (one per person per day; statuses present, absent, late, on leave; a note such as the reason). **The admin marks, changes and removes it for any past date** (`staff_attendance.manage`); office staff can look (`staff_attendance.read_all`); a teacher or other staff member sees only their own (`staff_attendance.read`, *My attendance*). Who is listed on a day: staff who had joined by then and had not left, so leavers stay in the past grid. Audited: `staff_attendance.marked`, `staff_attendance.mark_removed`. Screens: *Attendance* is now a group in the menu with *Students*, *Staff* (take and report grid, remove, mark everyone present) and *My attendance* (hidden for admin and office, who hold the wider permission). **Method of capture is not decided yet** (how teachers will log in and out): every record is `source = MANUAL`, and the table already has `check_in_at` and `check_out_at` (empty) so a login/logout, biometric or QR method can be added later without changing it.
+- **Not built (attendance):** leave **requests and approval** (a parent or teacher applies, the admin approves; today the admin simply marks "on leave"), half days, holidays that excuse everyone, check-in and check-out times.
 - **Not built:** recurring events, a global search box in the top bar (it would have been a dead control), unread counts on the bell, drag to move events.
 
 ### Phase 6: Dashboard and launch
@@ -349,6 +354,7 @@ Insights, security review, backups, deployment, staff training data.
 | 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
 | 14 | Online payment through Razorpay? | **On hold** (8 Nov 2026). Offline payments only; the ledger is ready for it | Phase 5 |
 | 15 | Fee rules the school has not given yet: instalments, late fee, who approves concessions | Assumed: instalments are a percentage plan per class; no late fee; concessions are approved by the admin only (`fees.concession.manage`); the accountant records payments | Phase 3 |
+| 17 | How teachers' attendance is captured (login/logout, biometric, QR, or the admin marking by hand), and whether leave needs requests and approval? | Admin marks by hand for now; leave is the admin marking "on leave"; the data model is ready for check-in/out | Phase 4 |
 | 16 | How the school takes attendance: daily or per period, who may take it, how far back it can be corrected, the minimum percentage, and how leave is counted? | Daily for the whole division; any teacher of the division (class or subject); teachers correct up to 7 days back, the admin any time; 75% is called low; approved leave is not counted against the child | Phase 4 |
 
 ## 12. Next step

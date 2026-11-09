@@ -7,6 +7,7 @@ import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { Api } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { apiError } from '../../core/api-error';
 import {
   AttendanceDivision,
@@ -248,6 +249,16 @@ type Tab = 'take' | 'report';
                     </button>
                   }
                 </div>
+                @if (s.status && r.canMark && auth.has('attendance.mark_all')) {
+                  <button
+                    type="button"
+                    class="h-9 rounded-md border px-3 text-sm text-destructive hover:bg-accent"
+                    [attr.aria-label]="'Remove the saved mark for ' + s.name"
+                    (click)="remove(s.studentId, s.name)"
+                  >
+                    Remove mark
+                  </button>
+                }
                 @if (draft(s.studentId).status && draft(s.studentId).status !== 'PRESENT') {
                   <input
                     class="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-56"
@@ -302,6 +313,7 @@ type Tab = 'take' | 'report';
 })
 export class AttendancePage {
   private readonly api = inject(Api);
+  protected readonly auth = inject(AuthService);
   private readonly toast = inject(MessageService);
 
   protected readonly statuses = STATUSES;
@@ -402,6 +414,20 @@ export class AttendancePage {
       }
       return next;
     });
+  }
+
+  /** The admin only: takes a saved mark away, so the student shows as not marked. */
+  protected async remove(studentId: string, name: string) {
+    const id = this.divisionId();
+    if (!id) return;
+    try {
+      const roster = await firstValueFrom(this.api.clearAttendance(id, studentId, this.date()));
+      this.roster.set(roster);
+      this.drafts.set(draftsFrom(roster));
+      this.toast.add({ severity: 'success', summary: `Mark removed for ${name}` });
+    } catch (error) {
+      this.toast.add({ severity: 'error', summary: 'Could not remove', detail: apiError(error) });
+    }
   }
 
   protected async save() {

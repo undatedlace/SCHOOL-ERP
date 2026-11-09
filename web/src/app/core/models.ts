@@ -571,6 +571,40 @@ export interface AttendanceDivisionReport {
   })[];
 }
 
+export interface StaffAttendanceRoster {
+  date: string;
+  canMark: boolean;
+  marked: boolean;
+  counts: AttendanceSummary;
+  staff: {
+    staffId: string;
+    employeeNo: string;
+    name: string;
+    designation: string;
+    status: AttendanceStatus | null;
+    note: string | null;
+    markedBy: string | null;
+  }[];
+}
+
+export interface StaffAttendanceReport {
+  from: string;
+  to: string;
+  daysMarked: number;
+  markedDates: string[];
+  people: (AttendanceSummary & {
+    staffId: string;
+    employeeNo: string;
+    name: string;
+    designation: string;
+    days: Record<string, AttendanceStatus>;
+  })[];
+}
+
+export interface MyStaffAttendance extends StaffAttendanceReport {
+  records: { date: string; status: AttendanceStatus; note: string | null }[];
+}
+
 export interface StudentAttendance {
   studentId: string;
   from: string;

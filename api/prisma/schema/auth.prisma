@@ -17,16 +17,17 @@ model User {
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
 
-  school           School             @relation(fields: [schoolId], references: [id])
-  roles            UserRole[]
-  sessions         Session[]
-  attendanceMarked AttendanceRecord[] @relation("AttendanceMarker")
-  noticesWritten   Notice[]           @relation("NoticeAuthor")
-  eventsWritten    CalendarEvent[]    @relation("EventAuthor")
+  school                School                  @relation(fields: [schoolId], references: [id])
+  roles                 UserRole[]
+  sessions              Session[]
+  attendanceMarked      AttendanceRecord[]      @relation("AttendanceMarker")
+  noticesWritten        Notice[]                @relation("NoticeAuthor")
+  eventsWritten         CalendarEvent[]         @relation("EventAuthor")
+  staffAttendanceMarked StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
   /// A shared phone gives two guardians (father and mother) one login.
-  guardians        Guardian[]
-  student          Student?
-  staff            Staff?
+  guardians             Guardian[]
+  student               Student?
+  staff                 Staff?
 
   @@unique([schoolId, email])
   @@unique([schoolId, mobile])

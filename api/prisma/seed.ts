@@ -51,6 +51,9 @@ const PERMISSIONS = [
   'notices.manage_all',
   'calendar.read',
   'calendar.manage',
+  'staff_attendance.read',
+  'staff_attendance.read_all',
+  'staff_attendance.manage',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -70,6 +73,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'staff.read_all',
       'attendance.read',
       'attendance.read_all',
+      'staff_attendance.read_all',
       'insights.admissions',
       'notices.read',
       'calendar.read',
@@ -105,6 +109,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'staff.read',
       'attendance.read',
       'attendance.mark',
+      'staff_attendance.read',
       'marks.enter',
       'notices.read',
       'calendar.read',
@@ -114,7 +119,12 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
   },
   STAFF: {
     name: 'Staff',
-    permissions: ['staff.read', 'notices.read', 'calendar.read'],
+    permissions: [
+      'staff.read',
+      'staff_attendance.read',
+      'notices.read',
+      'calendar.read',
+    ],
   },
   PARENT: {
     name: 'Parent',

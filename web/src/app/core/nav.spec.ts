@@ -24,8 +24,8 @@ describe('visibleEntries', () => {
   });
 
   it('keeps single links as links and groups as groups', () => {
-    const entries = visibleEntries(NAV_ENTRIES, has('attendance.read', 'students.read'));
-    expect(entries.find((e) => e.label === 'Attendance')?.item?.path).toBe('/app/attendance');
+    const entries = visibleEntries(NAV_ENTRIES, has('calendar.read', 'students.read'));
+    expect(entries.find((e) => e.label === 'Calendar')?.item?.path).toBe('/app/calendar');
     const students = entries.find((e) => e.label === 'Students');
     expect(students?.items?.map((i) => i.label)).toEqual(['All students']);
   });
@@ -39,5 +39,23 @@ describe('visibleEntries', () => {
     const paths = NAV.map((i) => i.path);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths).toContain('/app/calendar');
+  });
+
+  it('groups attendance: students for teachers, staff for admin and office, "My attendance" for staff only', () => {
+    const titles = (...p: string[]) =>
+      visibleEntries(NAV_ENTRIES, has(...p))
+        .find((e) => e.label === 'Attendance')
+        ?.items?.map((i) => i.label);
+    // A teacher: students' attendance and their own.
+    expect(titles('attendance.read', 'staff_attendance.read')).toEqual([
+      'Students',
+      'My attendance',
+    ]);
+    // Admin and office hold the wider permission, so their own page is hidden.
+    expect(titles('attendance.read', 'staff_attendance.read', 'staff_attendance.read_all')).toEqual(
+      ['Students', 'Staff'],
+    );
+    // A parent sees the portal, not this menu.
+    expect(titles('calendar.read')).toBeUndefined();
   });
 });

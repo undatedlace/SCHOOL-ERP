@@ -23,6 +23,9 @@ import {
   AttendanceOverview,
   AttendanceRoster,
   AttendanceStatus,
+  MyStaffAttendance,
+  StaffAttendanceReport,
+  StaffAttendanceRoster,
   StudentAttendance,
   AdmissionsSummary,
   ApplicationDetail,
@@ -341,6 +344,11 @@ export class Api {
     entries: { studentId: string; status: AttendanceStatus; note?: string }[],
   ) =>
     this.http.put<AttendanceRoster>(`/api/attendance/divisions/${divisionId}`, { date, entries });
+  clearAttendance = (divisionId: string, studentId: string, date: string) =>
+    this.http.delete<AttendanceRoster>(
+      `/api/attendance/divisions/${divisionId}/students/${studentId}`,
+      { params: { date } },
+    );
   attendanceReport = (divisionId: string, q: { from?: string; to?: string }) =>
     this.http.get<AttendanceDivisionReport>(`/api/attendance/divisions/${divisionId}/report`, {
       params: params(q),
@@ -365,6 +373,24 @@ export class Api {
     divisionId: string;
     entries: { studentId: string; action: PromotionAction; divisionId?: string }[];
   }) => this.http.post<PromotionResult>('/api/promotion/run', body);
+
+  // ---------- Staff attendance ----------
+  staffAttendance = (date: string) =>
+    this.http.get<StaffAttendanceRoster>('/api/staff-attendance', { params: { date } });
+  markStaffAttendance = (
+    date: string,
+    entries: { staffId: string; status: AttendanceStatus; note?: string }[],
+  ) => this.http.put<StaffAttendanceRoster>('/api/staff-attendance', { date, entries });
+  clearStaffAttendance = (staffId: string, date: string) =>
+    this.http.delete<StaffAttendanceRoster>(`/api/staff-attendance/${staffId}`, {
+      params: { date },
+    });
+  staffAttendanceReport = (q: { from?: string; to?: string }) =>
+    this.http.get<StaffAttendanceReport>('/api/staff-attendance/report', {
+      params: params(q),
+    });
+  myStaffAttendance = (q: { from?: string; to?: string }) =>
+    this.http.get<MyStaffAttendance>('/api/staff-attendance/me', { params: params(q) });
 
   // ---------- Calendar ----------
   calendarEvents = (from: string, to: string) =>

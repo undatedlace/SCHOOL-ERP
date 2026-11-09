@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { AuthContext } from '../../common/auth-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { StudentsService } from '../students/students.service.js';
 import {
   Counts,
@@ -33,6 +34,7 @@ export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly students: StudentsService,
+    private readonly audit: AuditService,
   ) {}
 
   // ---------- who may work on which division ----------
@@ -330,6 +332,45 @@ export class AttendanceService {
         }),
       ),
     );
+    return this.roster(auth, divisionId, iso);
+  }
+
+  /** Removes one student's mark for a day (the admin only; a teacher changes a mark instead). */
+  async clear(
+    auth: AuthContext,
+    divisionId: string,
+    studentId: string,
+    dateIso: string | undefined,
+    ip?: string,
+  ) {
+    if (!dateIso)
+      throw new BadRequestException('Say which date (date=YYYY-MM-DD)');
+    const iso = this.day(dateIso);
+    if (iso > todayInIndia()) {
+      throw new BadRequestException('There is no attendance for a future date');
+    }
+    const year = await this.yearOn(auth.schoolId, iso);
+    await this.assertDivision(auth, divisionId, year.id, 'mark');
+    const record = await this.prisma.attendanceRecord.findFirst({
+      where: {
+        schoolId: auth.schoolId,
+        divisionId,
+        studentId,
+        date: toDate(iso),
+      },
+      select: { id: true, status: true },
+    });
+    if (!record) throw new NotFoundException('There is no mark to remove');
+    await this.prisma.attendanceRecord.delete({ where: { id: record.id } });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'attendance.mark_removed',
+      entityType: 'student',
+      entityId: studentId,
+      metadata: { date: iso, was: record.status, divisionId },
+      ip,
+    });
     return this.roster(auth, divisionId, iso);
   }
 
