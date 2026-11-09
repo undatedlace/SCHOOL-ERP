@@ -12,7 +12,7 @@ const MB = 1024 * 1024;
 
 /**
  * Every file is uploaded for a purpose, and the purpose decides who may add
- * and who may see it. New kinds of file (documents, homework) are added here.
+ * and who may see it. New kinds of file (for example, report cards) are added here.
  */
 export const FILE_PURPOSES: Record<string, FilePurpose> = {
   'staff-photo': {

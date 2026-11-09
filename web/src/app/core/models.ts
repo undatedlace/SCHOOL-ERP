@@ -494,3 +494,229 @@ export interface DuesReport {
     pageSize: number;
   };
 }
+
+// ---------- Attendance ----------
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'ON_LEAVE';
+
+export interface AttendanceCounts {
+  present: number;
+  absent: number;
+  late: number;
+  onLeave: number;
+}
+
+export interface AttendanceSummary extends AttendanceCounts {
+  markedDays: number;
+  countedDays: number;
+  attendedDays: number;
+  /** Null until at least one day counts. */
+  percent: number | null;
+}
+
+export interface AttendanceDivision {
+  id: string;
+  name: string;
+  class: { id: string; name: string };
+  canMark: boolean;
+}
+
+export interface AttendanceRosterStudent {
+  studentId: string;
+  admissionNo: string;
+  name: string;
+  rollNo: number | null;
+  status: AttendanceStatus | null;
+  note: string | null;
+}
+
+export interface AttendanceRoster {
+  date: string;
+  academicYear: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  canMark: boolean;
+  marked: boolean;
+  markedBy: string | null;
+  markedAt: string | null;
+  counts: AttendanceSummary;
+  students: AttendanceRosterStudent[];
+}
+
+export interface AttendanceOverview {
+  date: string;
+  divisions: {
+    id: string;
+    name: string;
+    class: { id: string; name: string };
+    enrolled: number;
+    marked: number;
+    counts: AttendanceCounts;
+    done: boolean;
+  }[];
+}
+
+export interface AttendanceDivisionReport {
+  from: string;
+  to: string;
+  daysMarked: number;
+  students: (AttendanceSummary & {
+    studentId: string;
+    admissionNo: string;
+    name: string;
+    rollNo: number | null;
+  })[];
+}
+
+export interface StudentAttendance {
+  studentId: string;
+  from: string;
+  to: string;
+  summary: AttendanceSummary;
+  records: { date: string; status: AttendanceStatus; note: string | null }[];
+}
+
+// ---------- Year-end promotion ----------
+
+export type PromotionAction = 'PROMOTE' | 'REPEAT' | 'LEFT';
+
+export interface PromotionStatus {
+  from: { id: string; name: string };
+  to: { id: string; name: string };
+  divisions: {
+    id: string;
+    name: string;
+    class: { id: string; name: string };
+    total: number;
+    done: number;
+    remaining: number;
+  }[];
+}
+
+export interface PromotionPlan {
+  from: { id: string; name: string };
+  to: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  /** Null when this is the last class. */
+  nextClass: { id: string; name: string; divisions: { id: string; name: string }[] } | null;
+  sameClassDivisions: { id: string; name: string }[];
+  alreadyDone: number;
+  students: {
+    studentId: string;
+    admissionNo: string;
+    name: string;
+    rollNo: number | null;
+    suggested: { action: PromotionAction; divisionId: string | null };
+  }[];
+}
+
+export interface PromotionResult {
+  promoted: number;
+  repeated: number;
+  left: number;
+  skipped: { studentId: string; name: string; reason: string }[];
+}
+
+// ---------- Notices ----------
+
+export type NoticeAudience = 'ALL' | 'STAFF' | 'CLASSES' | 'DIVISIONS';
+
+export interface Notice {
+  id: string;
+  title: string;
+  body: string;
+  audience: NoticeAudience;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; label: string }[];
+  createdBy: { id: string; fullName: string };
+  createdAt: string;
+  expiresOn: string | null;
+  expired: boolean;
+  canChange: boolean;
+}
+
+export interface NoticeAudiences {
+  canAddressAnyone: boolean;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; classId: string; label: string }[];
+}
+
+export interface NoticeInput {
+  title: string;
+  body: string;
+  audience: NoticeAudience;
+  classIds?: string[];
+  divisionIds?: string[];
+  expiresOn?: string | null;
+}
+
+// ---------- Dashboard insights ----------
+
+export interface AdmissionsInsight {
+  years: {
+    id: string;
+    name: string;
+    isCurrent: boolean;
+    applications: number;
+    received: number;
+    granted: number;
+    refused: number;
+    withdrawn: number;
+    admitted: number;
+    enrolled: number;
+  }[];
+}
+
+export interface StaffInsight {
+  years: { id: string; name: string; joined: number; left: number; atYearEnd: number }[];
+  currentlyWorking: number;
+}
+
+export interface FeesInsight {
+  academicYear: { id: string; name: string };
+  totals: DuesReport['totals'];
+  byClass: DuesReport['byClass'];
+  collectedByMonth: { month: string; total: Money; payments: number }[];
+}
+
+export interface AttendanceInsight {
+  from: string;
+  to: string;
+  days: number;
+  today: { divisions: number; marked: number };
+  trend: {
+    date: string;
+    percent: number | null;
+    present: number;
+    late: number;
+    absent: number;
+    onLeave: number;
+  }[];
+  divisions: { id: string; label: string; percent: number | null; markedDays: number }[];
+}
+
+export interface CopyResult {
+  from: string;
+  to: string;
+  copied: string[];
+  skipped: { class: string; reason: string }[];
+}
+
+export interface PaymentRow {
+  id: string;
+  receiptNo: string;
+  studentId: string;
+  admissionNo: string;
+  studentName: string;
+  amount: Money;
+  mode: PaymentMode;
+  reference: string | null;
+  paidOn: string;
+  reversed: boolean;
+}
+
+export interface Collection {
+  from: string;
+  to: string;
+  total: Money;
+  byMode: { mode: PaymentMode; total: Money; count: number }[];
+}

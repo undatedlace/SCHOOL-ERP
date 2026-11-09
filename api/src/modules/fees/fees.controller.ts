@@ -24,6 +24,7 @@ import {
   CollectionQueryDto,
   CreateFeeHeadDto,
   DuesQueryDto,
+  CopyStructuresDto,
   GenerateInvoicesDto,
   ListPaymentsQueryDto,
   ListStructuresQueryDto,
@@ -98,6 +99,18 @@ export class FeesController {
     @Req() req: Request,
   ) {
     return this.setup.saveStructure(auth, dto, req.ip);
+  }
+
+  /** Starts a new year from an old one: copies the fee structures and moves the due dates on. */
+  @Post('fee-structures/copy')
+  @RequirePermissions('fees.structure.manage')
+  @HttpCode(200)
+  copyStructures(
+    @CurrentAuth() auth: AuthContext,
+    @Body() dto: CopyStructuresDto,
+    @Req() req: Request,
+  ) {
+    return this.setup.copyStructures(auth, dto, req.ip);
   }
 
   // ---------- invoices and concessions ----------

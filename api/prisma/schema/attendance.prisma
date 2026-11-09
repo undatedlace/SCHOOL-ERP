@@ -1,0 +1,32 @@
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  /// Away with the school's knowledge (approved leave). Not counted against the student.
+  ON_LEAVE
+}
+
+/// One student's attendance on one day. A day is marked for a whole division at a time.
+model AttendanceRecord {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  schoolId       String           @map("school_id") @db.Uuid
+  academicYearId String           @map("academic_year_id") @db.Uuid
+  divisionId     String           @map("division_id") @db.Uuid
+  studentId      String           @map("student_id") @db.Uuid
+  date           DateTime         @db.Date
+  status         AttendanceStatus
+  note           String?
+  markedById     String           @map("marked_by_id") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+  student      Student      @relation(fields: [studentId], references: [id])
+  markedBy     User         @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([studentId, date])
+  @@index([schoolId, divisionId, date])
+  @@map("attendance_records")
+}

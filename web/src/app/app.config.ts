@@ -1,5 +1,6 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, isDevMode, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { provideOptimus } from '@openng/optimus-ui/config';
@@ -16,5 +17,11 @@ export const appConfig: ApplicationConfig = {
     provideOptimus({ theme: { preset: AppPreset, options: { darkModeSelector: '.app-dark' } } }),
     MessageService,
     ConfirmationService,
+    // Keeps the app's own files (not any data) so it opens fast and can be installed.
+    // Nothing from /api is ever cached; see ngsw-config.json.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };

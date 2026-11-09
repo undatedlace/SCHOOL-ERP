@@ -2,6 +2,26 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  Collection,
+  PaymentRow,
+  CopyResult,
+  AdmissionsInsight,
+  AttendanceInsight,
+  FeesInsight,
+  StaffInsight,
+  Notice,
+  NoticeAudiences,
+  NoticeInput,
+  PromotionAction,
+  PromotionPlan,
+  PromotionResult,
+  PromotionStatus,
+  AttendanceDivision,
+  AttendanceDivisionReport,
+  AttendanceOverview,
+  AttendanceRoster,
+  AttendanceStatus,
+  StudentAttendance,
   AdmissionsSummary,
   ApplicationDetail,
   ApplicationListItem,
@@ -304,4 +324,75 @@ export class Api {
   changeTeacher = (id: string, staffId: string) =>
     this.http.patch<Assignment>(`/api/teaching-assignments/${id}`, { staffId });
   removeAssignment = (id: string) => this.http.delete<void>(`/api/teaching-assignments/${id}`);
+
+  // ---------- Attendance ----------
+  attendanceDivisions = () => this.http.get<AttendanceDivision[]>('/api/attendance/divisions');
+  attendanceOverview = (date?: string) =>
+    this.http.get<AttendanceOverview>('/api/attendance/overview', { params: params({ date }) });
+  attendanceRoster = (divisionId: string, date: string) =>
+    this.http.get<AttendanceRoster>(`/api/attendance/divisions/${divisionId}`, {
+      params: params({ date }),
+    });
+  markAttendance = (
+    divisionId: string,
+    date: string,
+    entries: { studentId: string; status: AttendanceStatus; note?: string }[],
+  ) =>
+    this.http.put<AttendanceRoster>(`/api/attendance/divisions/${divisionId}`, { date, entries });
+  attendanceReport = (divisionId: string, q: { from?: string; to?: string }) =>
+    this.http.get<AttendanceDivisionReport>(`/api/attendance/divisions/${divisionId}/report`, {
+      params: params(q),
+    });
+  studentAttendance = (studentId: string, q: { from?: string; to?: string } = {}) =>
+    this.http.get<StudentAttendance>(`/api/attendance/students/${studentId}`, {
+      params: params(q),
+    });
+
+  // ---------- Year-end promotion ----------
+  promotionStatus = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.get<PromotionStatus>('/api/promotion/status', {
+      params: params({ fromAcademicYearId, toAcademicYearId }),
+    });
+  promotionPlan = (fromAcademicYearId: string, toAcademicYearId: string, divisionId: string) =>
+    this.http.get<PromotionPlan>('/api/promotion/plan', {
+      params: params({ fromAcademicYearId, toAcademicYearId, divisionId }),
+    });
+  runPromotion = (body: {
+    fromAcademicYearId: string;
+    toAcademicYearId: string;
+    divisionId: string;
+    entries: { studentId: string; action: PromotionAction; divisionId?: string }[];
+  }) => this.http.post<PromotionResult>('/api/promotion/run', body);
+
+  // ---------- Notices ----------
+  notices = (q: { page: number; pageSize: number; status?: 'active' | 'expired' | 'all' }) =>
+    this.http.get<Page<Notice>>('/api/notices', { params: params(q) });
+  noticeAudiences = () => this.http.get<NoticeAudiences>('/api/notices/audiences');
+  createNotice = (body: NoticeInput) => this.http.post<Notice>('/api/notices', body);
+  updateNotice = (id: string, body: Partial<NoticeInput>) =>
+    this.http.patch<Notice>(`/api/notices/${id}`, body);
+  archiveNotice = (id: string) => this.http.delete<void>(`/api/notices/${id}`);
+
+  payments = (q: {
+    page: number;
+    pageSize: number;
+    from?: string;
+    to?: string;
+    mode?: string | null;
+    search?: string;
+  }) => this.http.get<Page<PaymentRow>>('/api/payments', { params: params(q) });
+  collection = (from: string, to: string) =>
+    this.http.get<Collection>('/api/payments/collection', { params: params({ from, to }) });
+  copyFeeStructures = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.post<CopyResult>('/api/fee-structures/copy', {
+      fromAcademicYearId,
+      toAcademicYearId,
+    });
+
+  // ---------- Dashboard insights ----------
+  admissionsInsight = () => this.http.get<AdmissionsInsight>('/api/insights/admissions');
+  staffInsight = () => this.http.get<StaffInsight>('/api/insights/staff');
+  feesInsight = () => this.http.get<FeesInsight | null>('/api/insights/fees');
+  attendanceInsight = (days = 30) =>
+    this.http.get<AttendanceInsight>('/api/insights/attendance', { params: params({ days }) });
 }

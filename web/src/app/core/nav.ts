@@ -28,9 +28,33 @@ export const NAV: NavItem[] = [
     permission: 'students.read',
   },
   {
+    label: 'Notices',
+    path: '/app/notices',
+    description: 'Messages from the school to staff, parents and students',
+    permission: 'notices.read',
+  },
+  {
+    label: 'Year-end promotion',
+    path: '/app/promotion',
+    description: 'Move each class into the next academic year',
+    permission: 'students.promote',
+  },
+  {
+    label: 'Attendance',
+    path: '/app/attendance',
+    description: 'Mark the day for a division, and see attendance totals',
+    permission: 'attendance.read',
+  },
+  {
     label: 'Fee dues',
     path: '/app/fees/dues',
     description: 'Who owes what, by class and student',
+    permission: 'fees.read_all',
+  },
+  {
+    label: 'Fee collection',
+    path: '/app/fees/collection',
+    description: 'Money received today or between two dates, with receipts',
     permission: 'fees.read_all',
   },
   {

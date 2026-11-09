@@ -5,11 +5,24 @@ import { Api } from '../../core/api';
 import { AuthService } from '../../core/auth.service';
 import { Assignment } from '../../core/models';
 import { NAV } from '../../core/nav';
+import { HasPermission } from '../../shared/has-permission.directive';
 import { PageHeader } from '../../shared/ui/page-header';
+import { AdmissionsInsightCard } from './insights/admissions-insight';
+import { AttendanceInsightCard } from './insights/attendance-insight';
+import { FeesInsightCard } from './insights/fees-insight';
+import { StaffInsightCard } from './insights/staff-insight';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, PageHeader],
+  imports: [
+    RouterLink,
+    PageHeader,
+    HasPermission,
+    AdmissionsInsightCard,
+    AttendanceInsightCard,
+    FeesInsightCard,
+    StaffInsightCard,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header [title]="'Welcome, ' + firstName()" subtitle="Here is what you can do." />
@@ -31,6 +44,13 @@ import { PageHeader } from '../../shared/ui/page-header';
       </section>
     }
 
+    <div class="mb-8 grid gap-4 lg:grid-cols-2">
+      <app-fees-insight *appHasPermission="'fees.read_all'" />
+      <app-attendance-insight *appHasPermission="'attendance.read'" />
+      <app-admissions-insight *appHasPermission="'insights.admissions'" />
+      <app-staff-insight *appHasPermission="'insights.staff'" />
+    </div>
+
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       @for (item of shortcuts(); track item.path) {
         <a
@@ -48,7 +68,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     </div>
 
     <p class="mt-8 text-sm text-muted-foreground">
-      School insights (admissions, fees, attendance and results) arrive in a later phase.
+      Exam results will appear here once marks are entered.
     </p>
   `,
 })

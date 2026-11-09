@@ -62,3 +62,37 @@ describe("Dashboard: a teacher's classes", () => {
     http.expectNone('/api/teaching-assignments/mine');
   });
 });
+
+describe('Dashboard: insights follow permissions', () => {
+  const asked = (http: HttpTestingController) =>
+    http
+      .match(() => true)
+      .map((r) => r.request.url)
+      .filter((u) => u.startsWith('/api/insights'));
+
+  it('an accountant sees only fees and attendance, and nothing is asked for the rest', () => {
+    const { http } = setup(['fees.read_all', 'attendance.read', 'dashboard.view']);
+    expect(asked(http).sort()).toEqual(['/api/insights/attendance', '/api/insights/fees']);
+  });
+
+  it('a teacher asks only for attendance', () => {
+    const { http } = setup(['academics.read', 'attendance.read', 'dashboard.view']);
+    expect(asked(http)).toEqual(['/api/insights/attendance']);
+  });
+
+  it('the admin asks for all four', () => {
+    const { http } = setup([
+      'fees.read_all',
+      'attendance.read',
+      'insights.admissions',
+      'insights.staff',
+      'dashboard.view',
+    ]);
+    expect(asked(http)).toHaveLength(4);
+  });
+
+  it('someone with none of them asks for none', () => {
+    const { http } = setup(['staff.read']);
+    expect(asked(http)).toEqual([]);
+  });
+});

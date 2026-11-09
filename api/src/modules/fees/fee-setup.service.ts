@@ -10,10 +10,12 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
 import {
+  CopyStructuresDto,
   CreateFeeHeadDto,
   SaveStructureDto,
   UpdateFeeHeadDto,
 } from './dto/fees.dto.js';
+import { shiftYears } from './fee-dates.js';
 import { LedgerError, money2, toPaise } from './ledger.js';
 
 /** Fee heads (kinds of charge) and fee structures (what each class pays, and when). */
@@ -239,6 +241,112 @@ export class FeeSetupService {
     return (await this.listStructures(auth.schoolId, dto.academicYearId)).find(
       (s) => s.id === structure.id,
     );
+  }
+
+  /**
+   * Starts a new year from an old one: each class's fee structure is copied, and the due dates
+   * move on by the number of years between the two. A class that already has a structure in the
+   * new year is left as it is. Fee heads that have been switched off are not carried over.
+   */
+  async copyStructures(auth: AuthContext, dto: CopyStructuresDto, ip?: string) {
+    if (dto.fromAcademicYearId === dto.toAcademicYearId) {
+      throw new BadRequestException('Choose two different years');
+    }
+    const [from, to] = await Promise.all([
+      this.prisma.academicYear.findFirst({
+        where: { id: dto.fromAcademicYearId, schoolId: auth.schoolId },
+      }),
+      this.prisma.academicYear.findFirst({
+        where: { id: dto.toAcademicYearId, schoolId: auth.schoolId },
+      }),
+    ]);
+    if (!from || !to) throw new BadRequestException('Unknown academic year');
+    const shift =
+      to.startDate.getUTCFullYear() - from.startDate.getUTCFullYear();
+
+    const [sources, targets] = await Promise.all([
+      this.prisma.feeStructure.findMany({
+        where: {
+          schoolId: auth.schoolId,
+          academicYearId: from.id,
+          ...(dto.classIds ? { classId: { in: dto.classIds } } : {}),
+        },
+        include: {
+          class: { select: { name: true, sortOrder: true } },
+          items: { include: { feeHead: { select: { isActive: true } } } },
+          instalments: { orderBy: { seq: 'asc' } },
+        },
+      }),
+      this.prisma.feeStructure.findMany({
+        where: { schoolId: auth.schoolId, academicYearId: to.id },
+        select: { classId: true },
+      }),
+    ]);
+    const has = new Set(targets.map((t) => t.classId));
+    const copied: string[] = [];
+    const skipped: { class: string; reason: string }[] = [];
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const src of sources.sort(
+        (a, b) => a.class.sortOrder - b.class.sortOrder,
+      )) {
+        if (has.has(src.classId)) {
+          skipped.push({
+            class: src.class.name,
+            reason: `Already has fees for ${to.name}`,
+          });
+          continue;
+        }
+        const items = src.items.filter((i) => i.feeHead.isActive);
+        if (items.length === 0) {
+          skipped.push({
+            class: src.class.name,
+            reason: 'Every kind of fee in it has been switched off',
+          });
+          continue;
+        }
+        const created = await tx.feeStructure.create({
+          data: {
+            schoolId: auth.schoolId,
+            academicYearId: to.id,
+            classId: src.classId,
+          },
+        });
+        await tx.feeStructureItem.createMany({
+          data: items.map((i) => ({
+            structureId: created.id,
+            feeHeadId: i.feeHeadId,
+            amount: i.amount,
+          })),
+        });
+        await tx.feeStructureInstalment.createMany({
+          data: src.instalments.map((i) => ({
+            structureId: created.id,
+            seq: i.seq,
+            label: i.label,
+            dueDate: dateOnly(shiftYears(i.dueDate.toISOString(), shift)),
+            percentBp: i.percentBp,
+          })),
+        });
+        copied.push(src.class.name);
+      }
+    });
+
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'fees.structures_copied',
+      entityType: 'academic_year',
+      entityId: to.id,
+      metadata: {
+        from: from.name,
+        to: to.name,
+        copied: copied.length,
+        skipped: skipped.length,
+      },
+      ip,
+    });
+    return { from: from.name, to: to.name, copied, skipped };
   }
 
   private nameTaken(error: unknown): unknown {

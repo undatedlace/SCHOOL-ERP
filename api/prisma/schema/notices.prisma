@@ -1,0 +1,49 @@
+enum NoticeAudience {
+  /// Everyone: staff, parents and students.
+  ALL
+  /// Staff only (not parents or students).
+  STAFF
+  /// Parents and students of the chosen classes, and the teachers of those classes.
+  CLASSES
+  /// The same, for the chosen divisions.
+  DIVISIONS
+}
+
+/// A message from the school. Plain text only. Archived, never deleted.
+model Notice {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  schoolId    String         @map("school_id") @db.Uuid
+  title       String
+  body        String
+  audience    NoticeAudience
+  /// The last day the notice is shown (inclusive). Empty = until archived.
+  expiresOn   DateTime?      @map("expires_on") @db.Date
+  createdById String         @map("created_by_id") @db.Uuid
+  archivedAt  DateTime?      @map("archived_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  school    School         @relation(fields: [schoolId], references: [id])
+  createdBy User           @relation("NoticeAuthor", fields: [createdById], references: [id])
+  targets   NoticeTarget[]
+
+  @@index([schoolId, createdAt])
+  @@map("notices")
+}
+
+/// One class or division a CLASSES / DIVISIONS notice goes to.
+model NoticeTarget {
+  id         String  @id @default(uuid(7)) @db.Uuid
+  noticeId   String  @map("notice_id") @db.Uuid
+  classId    String? @map("class_id") @db.Uuid
+  divisionId String? @map("division_id") @db.Uuid
+
+  notice   Notice       @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  class    SchoolClass? @relation(fields: [classId], references: [id])
+  division Division?    @relation(fields: [divisionId], references: [id])
+
+  @@index([noticeId])
+  @@index([classId])
+  @@index([divisionId])
+  @@map("notice_targets")
+}
