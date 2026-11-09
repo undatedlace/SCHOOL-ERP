@@ -10,5 +10,6 @@ import { PaymentsService } from './payments.service.js';
   imports: [StudentsModule],
   controllers: [FeesController],
   providers: [FeeSetupService, InvoicesService, PaymentsService, DuesService],
+  exports: [DuesService],
 })
 export class FeesModule {}
