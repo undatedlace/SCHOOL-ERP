@@ -559,11 +559,15 @@ export interface AttendanceDivisionReport {
   from: string;
   to: string;
   daysMarked: number;
+  /** The days attendance was taken for this division, oldest first. */
+  markedDates: string[];
   students: (AttendanceSummary & {
     studentId: string;
     admissionNo: string;
     name: string;
     rollNo: number | null;
+    /** The student's status on each day it was taken. */
+    days: Record<string, AttendanceStatus>;
   })[];
 }
 

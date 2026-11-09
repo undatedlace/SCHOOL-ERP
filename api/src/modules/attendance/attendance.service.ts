@@ -359,10 +359,15 @@ export class AttendanceService {
       select: { studentId: true, status: true, date: true },
     });
     const perStudent = new Map<string, Status[]>();
+    /** Each student's status on each marked day, for the grid. */
+    const byDay = new Map<string, Record<string, Status>>();
     for (const r of records) {
       const list = perStudent.get(r.studentId) ?? [];
       list.push(r.status);
       perStudent.set(r.studentId, list);
+      const days = byDay.get(r.studentId) ?? {};
+      days[toIso(r.date)] = r.status;
+      byDay.set(r.studentId, days);
     }
     const days = new Set(records.map((r) => toIso(r.date)));
     const students = this.sortRoster(
@@ -372,11 +377,14 @@ export class AttendanceService {
         name: fullName(e.student),
         rollNo: e.rollNo,
         ...summarise(tally(perStudent.get(e.student.id) ?? [])),
+        days: byDay.get(e.student.id) ?? {},
       })),
     );
     return {
       from,
       to,
+      /** The days any attendance was taken for this division, oldest first. */
+      markedDates: [...days].sort(),
       academicYear: { id: year.id, name: year.name },
       division: { id: division.id, name: division.name, class: division.class },
       daysMarked: days.size,

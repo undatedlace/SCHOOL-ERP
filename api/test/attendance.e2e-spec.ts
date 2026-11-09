@@ -442,6 +442,20 @@ describe('attendance (e2e)', () => {
       expect(res.body.daysMarked).toBeGreaterThanOrEqual(3);
       expect(row(s1)).toMatchObject({ present: 2, absent: 1, onLeave: 1 });
       expect(row(s2)).toMatchObject({ late: 1, present: 1 });
+      // The grid: each student's status on each day taken.
+      expect(res.body.markedDates.length).toBe(res.body.daysMarked);
+      expect(res.body.markedDates).toEqual([...res.body.markedDates].sort());
+      const days = Object.entries(row(s1).days) as [string, string][];
+      expect(days.length).toBe(4);
+      expect(days.map(([, st]) => st).sort()).toEqual([
+        'ABSENT',
+        'ON_LEAVE',
+        'PRESENT',
+        'PRESENT',
+      ]);
+      expect(res.body.markedDates).toEqual(
+        expect.arrayContaining(days.map(([d]) => d)),
+      );
       await teacherA
         .get(`/api/attendance/divisions/${divB}/report`)
         .expect(404);

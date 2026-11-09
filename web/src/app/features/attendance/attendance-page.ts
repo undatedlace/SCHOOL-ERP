@@ -17,12 +17,14 @@ import {
 } from '../../core/models';
 import { formatDate, toIsoDate } from '../../shared/dates';
 import { PageHeader } from '../../shared/ui/page-header';
+import { AttendanceGrid } from './attendance-grid';
 import {
   Drafts,
   STATUSES,
   changes,
   draftsFrom,
   isLow,
+  monthBounds,
   percentText,
   unmarkedCount,
 } from './attendance-utils';
@@ -31,7 +33,15 @@ type Tab = 'take' | 'report';
 
 @Component({
   selector: 'app-attendance-page',
-  imports: [FormsModule, ButtonModule, MessageModule, SelectModule, TableModule, PageHeader],
+  imports: [
+    FormsModule,
+    ButtonModule,
+    MessageModule,
+    SelectModule,
+    TableModule,
+    PageHeader,
+    AttendanceGrid,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -118,6 +128,22 @@ type Tab = 'take' | 'report';
               aria-label="To"
             />
           </label>
+          <div class="flex gap-1" role="group" aria-label="Quick range">
+            <button
+              type="button"
+              class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
+              (click)="preset(0)"
+            >
+              This month
+            </button>
+            <button
+              type="button"
+              class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
+              (click)="preset(1)"
+            >
+              Last month
+            </button>
+          </div>
         }
         <div class="ml-auto flex gap-1 rounded-md border p-1" role="tablist">
           <button
@@ -267,46 +293,7 @@ type Tab = 'take' | 'report';
           <p class="text-muted-foreground">Loading...</p>
         }
       } @else if (report(); as rep) {
-        <p class="mb-3 text-sm text-muted-foreground">
-          {{ rep.daysMarked }} day{{ rep.daysMarked === 1 ? '' : 's' }} marked between
-          {{ dateText(rep.from) }} and {{ dateText(rep.to) }}. Present and late count as attended;
-          approved leave is left out.
-        </p>
-        <p-table [value]="rep.students">
-          <ng-template #header>
-            <tr>
-              <th>Student</th>
-              <th class="text-right">Present</th>
-              <th class="text-right">Late</th>
-              <th class="text-right">Absent</th>
-              <th class="text-right">Leave</th>
-              <th class="text-right">Attendance</th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-s>
-            <tr>
-              <td>
-                {{ s.name }}
-                <div class="text-xs text-muted-foreground">Admission no. {{ s.admissionNo }}</div>
-              </td>
-              <td class="text-right">{{ s.present }}</td>
-              <td class="text-right">{{ s.late }}</td>
-              <td class="text-right">{{ s.absent }}</td>
-              <td class="text-right">{{ s.onLeave }}</td>
-              <td class="text-right font-medium" [class.text-destructive]="low(s)">
-                {{ percent(s) }}
-                @if (low(s)) {
-                  <span class="block text-xs font-normal">Low</span>
-                }
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="6" class="p-4 text-center text-muted-foreground">No students.</td>
-            </tr>
-          </ng-template>
-        </p-table>
+        <app-attendance-grid [report]="rep" />
       } @else {
         <p class="text-muted-foreground">Loading...</p>
       }
@@ -384,6 +371,14 @@ export class AttendancePage {
     this.date.set(value);
     void this.load();
   }
+  /** This month so far (0) or the whole of last month (1). */
+  protected preset(monthsBack: number) {
+    const b = monthBounds(this.today, monthsBack);
+    this.from.set(b.from);
+    this.to.set(monthsBack === 0 ? this.today : b.to);
+    void this.load();
+  }
+
   protected onRange(which: 'from' | 'to', value: string) {
     if (!value) return;
     (which === 'from' ? this.from : this.to).set(value);
