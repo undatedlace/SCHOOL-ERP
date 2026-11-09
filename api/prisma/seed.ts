@@ -25,6 +25,7 @@ const PERMISSIONS = [
   'students.read',
   'students.read_all',
   'students.manage',
+  'students.promote',
   'portal.accounts.manage',
   'staff.read',
   'staff.read_all',

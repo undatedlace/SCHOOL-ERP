@@ -69,6 +69,12 @@ export const routes: Routes = [
           import('./features/admissions/application-page').then((m) => m.ApplicationPage),
       },
       {
+        path: 'promotion',
+        canActivate: [permissionGuard('students.promote')],
+        loadComponent: () =>
+          import('./features/promotion/promotion-page').then((m) => m.PromotionPage),
+      },
+      {
         path: 'attendance',
         canActivate: [permissionGuard('attendance.read')],
         loadComponent: () =>

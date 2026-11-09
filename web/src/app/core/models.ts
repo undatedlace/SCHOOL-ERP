@@ -574,3 +574,44 @@ export interface StudentAttendance {
   summary: AttendanceSummary;
   records: { date: string; status: AttendanceStatus; note: string | null }[];
 }
+
+// ---------- Year-end promotion ----------
+
+export type PromotionAction = 'PROMOTE' | 'REPEAT' | 'LEFT';
+
+export interface PromotionStatus {
+  from: { id: string; name: string };
+  to: { id: string; name: string };
+  divisions: {
+    id: string;
+    name: string;
+    class: { id: string; name: string };
+    total: number;
+    done: number;
+    remaining: number;
+  }[];
+}
+
+export interface PromotionPlan {
+  from: { id: string; name: string };
+  to: { id: string; name: string };
+  division: { id: string; name: string; class: { id: string; name: string } };
+  /** Null when this is the last class. */
+  nextClass: { id: string; name: string; divisions: { id: string; name: string }[] } | null;
+  sameClassDivisions: { id: string; name: string }[];
+  alreadyDone: number;
+  students: {
+    studentId: string;
+    admissionNo: string;
+    name: string;
+    rollNo: number | null;
+    suggested: { action: PromotionAction; divisionId: string | null };
+  }[];
+}
+
+export interface PromotionResult {
+  promoted: number;
+  repeated: number;
+  left: number;
+  skipped: { studentId: string; name: string; reason: string }[];
+}

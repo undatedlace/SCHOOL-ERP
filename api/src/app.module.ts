@@ -13,6 +13,7 @@ import { FilesModule } from './modules/files/files.module.js';
 import { FormsModule } from './modules/forms/forms.module.js';
 import { SessionGuard } from './modules/auth/session.guard.js';
 import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
+import { PromotionModule } from './modules/promotion/promotion.module.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
 import { SchoolModule } from './modules/school/school.module.js';
 import { StaffModule } from './modules/staff/staff.module.js';
@@ -46,6 +47,7 @@ import { UsersModule } from './modules/users/users.module.js';
     StaffModule,
     TeachingModule,
     AttendanceModule,
+    PromotionModule,
     AdmissionsModule,
   ],
   controllers: [AppController],

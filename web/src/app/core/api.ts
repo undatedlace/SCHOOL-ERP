@@ -2,6 +2,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  PromotionAction,
+  PromotionPlan,
+  PromotionResult,
+  PromotionStatus,
   AttendanceDivision,
   AttendanceDivisionReport,
   AttendanceOverview,
@@ -333,4 +337,20 @@ export class Api {
     this.http.get<StudentAttendance>(`/api/attendance/students/${studentId}`, {
       params: params(q),
     });
+
+  // ---------- Year-end promotion ----------
+  promotionStatus = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.get<PromotionStatus>('/api/promotion/status', {
+      params: params({ fromAcademicYearId, toAcademicYearId }),
+    });
+  promotionPlan = (fromAcademicYearId: string, toAcademicYearId: string, divisionId: string) =>
+    this.http.get<PromotionPlan>('/api/promotion/plan', {
+      params: params({ fromAcademicYearId, toAcademicYearId, divisionId }),
+    });
+  runPromotion = (body: {
+    fromAcademicYearId: string;
+    toAcademicYearId: string;
+    divisionId: string;
+    entries: { studentId: string; action: PromotionAction; divisionId?: string }[];
+  }) => this.http.post<PromotionResult>('/api/promotion/run', body);
 }

@@ -28,6 +28,12 @@ export const NAV: NavItem[] = [
     permission: 'students.read',
   },
   {
+    label: 'Year-end promotion',
+    path: '/app/promotion',
+    description: 'Move each class into the next academic year',
+    permission: 'students.promote',
+  },
+  {
     label: 'Attendance',
     path: '/app/attendance',
     description: 'Mark the day for a division, and see attendance totals',
