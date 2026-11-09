@@ -20,6 +20,7 @@ model School {
   files           StoredFile[]
   students        Student[]
   attendance      AttendanceRecord[]
+  notices         Notice[]
   guardians       Guardian[]
   enrollments     Enrollment[]
   staff           Staff[]

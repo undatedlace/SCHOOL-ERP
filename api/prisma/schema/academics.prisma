@@ -37,6 +37,7 @@ model SchoolClass {
   applications        Application[]  @relation("AppliedClass")
   grantedApplications Application[]  @relation("GrantedClass")
   feeStructures       FeeStructure[]
+  noticeTargets       NoticeTarget[]
 
   @@unique([schoolId, name])
   @@map("classes")
@@ -55,6 +56,7 @@ model Division {
   classTeachers       ClassTeacher[]
   subjectTeachers     SubjectTeacher[]
   attendanceRecords   AttendanceRecord[]
+  noticeTargets       NoticeTarget[]
 
   @@unique([classId, name])
   @@index([schoolId])

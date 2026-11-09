@@ -45,6 +45,8 @@ const PERMISSIONS = [
   'fees.payment.reverse',
   'notices.read',
   'notices.create',
+  'notices.read_all',
+  'notices.manage_all',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -65,6 +67,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'attendance.read',
       'attendance.read_all',
       'notices.read',
+      'notices.read_all',
       'notices.create',
       'dashboard.view',
     ],
@@ -81,6 +84,7 @@ const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
       'fees.structure.manage',
       'fees.payment.create',
       'notices.read',
+      'notices.read_all',
       'notices.create',
       'dashboard.view',
     ],
