@@ -693,3 +693,30 @@ export interface AttendanceInsight {
   }[];
   divisions: { id: string; label: string; percent: number | null; markedDays: number }[];
 }
+
+export interface CopyResult {
+  from: string;
+  to: string;
+  copied: string[];
+  skipped: { class: string; reason: string }[];
+}
+
+export interface PaymentRow {
+  id: string;
+  receiptNo: string;
+  studentId: string;
+  admissionNo: string;
+  studentName: string;
+  amount: Money;
+  mode: PaymentMode;
+  reference: string | null;
+  paidOn: string;
+  reversed: boolean;
+}
+
+export interface Collection {
+  from: string;
+  to: string;
+  total: Money;
+  byMode: { mode: PaymentMode; total: Money; count: number }[];
+}

@@ -52,6 +52,12 @@ export const NAV: NavItem[] = [
     permission: 'fees.read_all',
   },
   {
+    label: 'Fee collection',
+    path: '/app/fees/collection',
+    description: 'Money received today or between two dates, with receipts',
+    permission: 'fees.read_all',
+  },
+  {
     label: 'Fee setup',
     path: '/app/fees/setup',
     description: 'Kinds of fee, what each class pays, and when',

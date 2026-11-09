@@ -2,6 +2,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  Collection,
+  PaymentRow,
+  CopyResult,
   AdmissionsInsight,
   AttendanceInsight,
   FeesInsight,
@@ -369,6 +372,22 @@ export class Api {
   updateNotice = (id: string, body: Partial<NoticeInput>) =>
     this.http.patch<Notice>(`/api/notices/${id}`, body);
   archiveNotice = (id: string) => this.http.delete<void>(`/api/notices/${id}`);
+
+  payments = (q: {
+    page: number;
+    pageSize: number;
+    from?: string;
+    to?: string;
+    mode?: string | null;
+    search?: string;
+  }) => this.http.get<Page<PaymentRow>>('/api/payments', { params: params(q) });
+  collection = (from: string, to: string) =>
+    this.http.get<Collection>('/api/payments/collection', { params: params({ from, to }) });
+  copyFeeStructures = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.post<CopyResult>('/api/fee-structures/copy', {
+      fromAcademicYearId,
+      toAcademicYearId,
+    });
 
   // ---------- Dashboard insights ----------
   admissionsInsight = () => this.http.get<AdmissionsInsight>('/api/insights/admissions');

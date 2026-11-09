@@ -91,6 +91,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/fees/dues-page').then((m) => m.DuesPage),
       },
       {
+        path: 'fees/collection',
+        canActivate: [permissionGuard('fees.read_all')],
+        loadComponent: () =>
+          import('./features/fees/collection-page').then((m) => m.CollectionPage),
+      },
+      {
         path: 'fees/setup',
         canActivate: [permissionGuard('fees.read_all')],
         loadComponent: () => import('./features/fees/fees-setup').then((m) => m.FeesSetup),

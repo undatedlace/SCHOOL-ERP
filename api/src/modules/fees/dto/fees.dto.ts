@@ -113,6 +113,21 @@ export class SaveStructureDto {
   instalments: StructureInstalmentDto[];
 }
 
+export class CopyStructuresDto {
+  @IsUUID()
+  fromAcademicYearId: string;
+
+  @IsUUID()
+  toAcademicYearId: string;
+
+  /** Leave out to copy every class. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsUUID('all', { each: true })
+  classIds?: string[];
+}
+
 export class ListStructuresQueryDto {
   @IsOptional()
   @IsUUID()

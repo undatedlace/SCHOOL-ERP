@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
@@ -13,7 +19,7 @@ import { TabsModule } from '@openng/optimus-ui/tabs';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { AcademicYear, FeeHead, FeeStructure, SchoolClass } from '../../core/models';
+import { AcademicYear, CopyResult, FeeHead, FeeStructure, SchoolClass } from '../../core/models';
 import { formatDate, toIsoDate, fromIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { inr, isMoney } from '../../shared/money';
@@ -22,6 +28,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 @Component({
   selector: 'app-fees-setup',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     ButtonModule,
     DatePickerModule,
@@ -41,6 +48,13 @@ import { PageHeader } from '../../shared/ui/page-header';
       title="Fee setup"
       subtitle="What each class pays, and when. Then bill the year's fees to every student."
     >
+      <p-button
+        *appHasPermission="'fees.structure.manage'"
+        label="Copy fees from another year"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="openCopy()"
+      />
       <p-button
         *appHasPermission="'fees.structure.manage'"
         label="Bill this year's fees"
@@ -287,6 +301,63 @@ import { PageHeader } from '../../shared/ui/page-header';
         </div>
       </form>
     </p-dialog>
+
+    <p-dialog
+      header="Copy fees from another year"
+      [(visible)]="copyOpen"
+      [modal]="true"
+      [style]="{ width: '30rem', 'max-width': '95vw' }"
+    >
+      <div class="flex flex-col gap-4">
+        <p class="text-sm text-muted-foreground">
+          Copies what each class pays, and moves the due dates on by the number of years between the
+          two. A class that already has fees for {{ year()?.name }} is left as it is. Nothing is
+          billed to students by this.
+        </p>
+        <p-select
+          [options]="otherYears()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Copy from..."
+          [ngModel]="copyFrom()"
+          (ngModelChange)="copyFrom.set($event)"
+          aria-label="Copy from"
+          appendTo="body"
+        />
+        @if (copyResult(); as r) {
+          <div class="text-sm" role="status">
+            <p class="font-medium">
+              Copied {{ r.copied.length }} class{{ r.copied.length === 1 ? '' : 'es' }}.
+            </p>
+            @if (r.copied.length) {
+              <p class="text-muted-foreground">{{ r.copied.join(', ') }}</p>
+            }
+            @if (r.skipped.length) {
+              <p class="mt-2 font-medium">Left alone:</p>
+              <ul class="list-disc pl-5 text-muted-foreground">
+                @for (k of r.skipped; track k.class) {
+                  <li>{{ k.class }}: {{ k.reason }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+        <div class="flex justify-end gap-2">
+          <p-button
+            type="button"
+            label="Close"
+            severity="secondary"
+            (onClick)="copyOpen.set(false)"
+          />
+          <p-button
+            label="Copy fees"
+            [disabled]="!copyFrom()"
+            [loading]="copying()"
+            (onClick)="runCopy()"
+          />
+        </div>
+      </div>
+    </p-dialog>
   `,
 })
 export class FeesSetup {
@@ -303,6 +374,14 @@ export class FeesSetup {
   protected readonly heads = signal<FeeHead[]>([]);
   protected readonly loading = signal(false);
   protected readonly busy = signal(false);
+  protected readonly allYears = signal<AcademicYear[]>([]);
+  protected readonly otherYears = computed(() =>
+    this.allYears().filter((y) => y.id !== this.year()?.id),
+  );
+  protected readonly copyOpen = signal(false);
+  protected readonly copyFrom = signal<string | null>(null);
+  protected readonly copying = signal(false);
+  protected readonly copyResult = signal<CopyResult | null>(null);
 
   protected readonly activeHeads = computed(() => this.heads().filter((h) => h.isActive));
   protected readonly rows = computed(() =>
@@ -385,6 +464,7 @@ export class FeesSetup {
       ]);
       const current = years.find((y) => y.isCurrent) ?? null;
       this.year.set(current);
+      this.allYears.set(years);
       this.classes.set(classes);
       this.heads.set(heads);
       if (current) this.structures.set(await firstValueFrom(this.api.feeStructures(current.id)));
@@ -486,6 +566,32 @@ export class FeesSetup {
       this.formError.set(apiError(error));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  protected openCopy() {
+    this.copyResult.set(null);
+    // The most recent earlier year is the likely source.
+    const year = this.year();
+    const earlier = this.otherYears()
+      .filter((y) => !year || y.startDate < year.startDate)
+      .sort((a, b) => b.startDate.localeCompare(a.startDate));
+    this.copyFrom.set(earlier[0]?.id ?? null);
+    this.copyOpen.set(true);
+  }
+
+  protected async runCopy() {
+    const year = this.year();
+    const from = this.copyFrom();
+    if (!year || !from || this.copying()) return;
+    this.copying.set(true);
+    try {
+      this.copyResult.set(await firstValueFrom(this.api.copyFeeStructures(from, year.id)));
+      this.structures.set(await firstValueFrom(this.api.feeStructures(year.id)));
+    } catch (error) {
+      this.toast.add({ severity: 'error', summary: 'Could not copy', detail: apiError(error) });
+    } finally {
+      this.copying.set(false);
     }
   }
 
