@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -78,6 +79,11 @@ export class ListStaffQueryDto extends PageQueryDto {
   @IsString()
   @MaxLength(40)
   role?: string;
+
+  /** Only this kind of employee. */
+  @IsOptional()
+  @IsUUID()
+  staffTypeId?: string;
 }
 
 /** Give a member of staff a login. The temporary password is generated and shown once. */
@@ -159,6 +165,16 @@ export class CreateStaffDto {
   @ValidateNested()
   @Type(() => AccountDto)
   account?: AccountDto;
+
+  /** The kind of employee (from the school's staff types). It decides the onboarding form. */
+  @IsOptional()
+  @IsUUID()
+  staffTypeId?: string;
+
+  /** Answers to that type's onboarding form: { fieldId: value }. Documents are uploaded file ids. */
+  @IsOptional()
+  @IsObject()
+  answers?: Record<string, unknown>;
 }
 
 export class UpdateStaffDto {
@@ -227,6 +243,16 @@ export class UpdateStaffDto {
   @MinLength(1)
   @MaxLength(30)
   employeeNo?: string;
+
+  /** The kind of employee (from the school's staff types). It decides the onboarding form. */
+  @IsOptional()
+  @IsUUID()
+  staffTypeId?: string;
+
+  /** Answers to that type's onboarding form: { fieldId: value }. Documents are uploaded file ids. */
+  @IsOptional()
+  @IsObject()
+  answers?: Record<string, unknown>;
 
   /** LEFT also switches their login off; ACTIVE switches it back on. */
   @IsOptional()

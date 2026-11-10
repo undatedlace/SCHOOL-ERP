@@ -145,4 +145,75 @@ describe('StaffForm', () => {
     await done;
     expect(form.error()).toContain('already used by another login');
   });
+
+  describe('type of staff and onboarding details', () => {
+    const teacherType = {
+      id: 't1',
+      name: 'Teacher',
+      isTeaching: true,
+      active: true,
+      staffCount: 1,
+      formKey: 'staff-t1',
+    };
+    const schema = {
+      sections: [
+        {
+          id: 'pro',
+          title: 'Professional details',
+          fields: [
+            { id: 'subjects', type: 'text', label: 'Subjects taught' },
+            { id: 'idProof', type: 'document', label: 'Identity proof' },
+          ],
+        },
+      ],
+    };
+
+    it('offers the type only to administrators who set types up', async () => {
+      const plain = setup(['staff.manage', 'users.manage']);
+      await plain.fixture.whenStable();
+      plain.fixture.detectChanges();
+      plain.http.expectNone('/api/staff-types');
+      expect(document.body.textContent).not.toContain('Type of staff');
+    });
+
+    it('shows the questions for the chosen type, with a document upload, and sends the answers with the person', async () => {
+      TestBed.resetTestingModule();
+      document.body.innerHTML = '';
+      const { fixture, form, http, host } = setup(['staff.manage', 'users.manage', 'forms.manage']);
+      http.expectOne((r) => r.url === '/api/staff-types').flush([teacherType]);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(document.body.textContent).toContain('Type of staff');
+
+      (
+        form as unknown as { form: { patchValue(v: Record<string, unknown>): void } }
+      ).form.patchValue(fill({ staffTypeId: 't1', designation: '' }));
+      http
+        .expectOne('/api/staff-types/t1/form')
+        .flush({ key: 'staff-t1', name: 'x', version: 1, schema });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(document.body.textContent).toContain('Teacher details');
+      expect(document.body.textContent).toContain('Subjects taught');
+      expect(document.querySelector('app-document-upload')).not.toBeNull();
+      // The designation starts as the type's name when it was empty.
+      expect(form.form.getRawValue()['designation']).toBe('Teacher');
+
+      const subjects = Array.from(
+        document.querySelectorAll('input[type=text], input:not([type])'),
+      ).find((i) => (i as HTMLInputElement).id.includes('subjects')) as
+        HTMLInputElement | undefined;
+      if (subjects) {
+        subjects.value = 'Maths';
+        subjects.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      void form.save();
+      const req = http.expectOne((r) => r.method === 'POST' && r.url === '/api/staff');
+      expect(req.request.body.staffTypeId).toBe('t1');
+      expect(req.request.body.answers).toBeDefined();
+      req.flush({ id: 's1', fullName: 'Asha Rao' });
+      await fixture.whenStable();
+      expect(host.saved?.id).toBe('s1');
+    });
+  });
 });

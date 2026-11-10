@@ -7,6 +7,8 @@ interface Row {
   text?: string;
   /** For photographs: the id of the uploaded file. */
   image?: string;
+  /** For documents: the id of the uploaded file, opened in a new tab. */
+  doc?: string;
   /** For repeating groups: one entry per row, as label/value pairs. */
   table?: { columns: string[]; rows: string[][] };
 }
@@ -54,6 +56,17 @@ interface Row {
                     />
                   </a>
                 </dd>
+              } @else if (row.doc) {
+                <dd class="text-sm">
+                  <a
+                    class="app-link"
+                    [href]="'/api/files/' + row.doc"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.aria-label]="'Open ' + row.label"
+                    >Open document</a
+                  >
+                </dd>
               } @else {
                 <dd class="text-sm whitespace-pre-line">{{ row.text }}</dd>
               }
@@ -98,6 +111,7 @@ export class AnswerView {
       ];
     }
     if (field.type === 'image') return [{ label: field.label, image: String(value) }];
+    if (field.type === 'document') return [{ label: field.label, doc: String(value) }];
     return [{ label: field.label, text: this.display(field, value) }];
   }
 

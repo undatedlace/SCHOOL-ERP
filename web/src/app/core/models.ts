@@ -102,6 +102,7 @@ export type FieldType =
   | 'radio'
   | 'checkbox'
   | 'image'
+  | 'document'
   | 'ageLimits'
   | 'group';
 export type FieldWidth = 'full' | 'half' | 'third' | 'quarter';
@@ -355,12 +356,36 @@ export interface StaffMember {
   status: StaffStatus;
   joinedOn: string;
   leftOn: string | null;
+  staffType: { id: string; name: string; isTeaching: boolean } | null;
+  /** The onboarding form and the answers. Only administrators receive it (it holds identity papers). */
+  onboarding?: StaffOnboarding | null;
   account: StaffAccount | null;
   /** Present only in the response to creating a login. */
   temporaryPassword?: string;
 }
 
+export interface StaffOnboarding {
+  formId: string;
+  version: number;
+  name: string;
+  schema: FormSchema;
+  answers: Record<string, unknown>;
+}
+
+/** A kind of employee the school has (teacher, clerk, peon...). */
+export interface StaffType {
+  id: string;
+  name: string;
+  isTeaching: boolean;
+  active: boolean;
+  staffCount: number;
+  /** The key of its onboarding form in the form builder. */
+  formKey: string;
+}
+
 export interface NewStaff {
+  staffTypeId?: string;
+  answers?: Record<string, unknown>;
   firstName: string;
   surname: string;
   gender: Gender;

@@ -12,6 +12,7 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { AnswerErrors, FormField as Field, FormSchema } from '../../core/models';
 import { FormField } from '../ui/form-field';
 import { buildGroup, newRow, readAnswers } from './form-values';
+import { DocumentUpload } from './document-upload';
 import { ImageUpload } from './image-upload';
 
 export interface ClassInfo {
@@ -37,6 +38,7 @@ export interface ClassInfo {
     InputNumberModule,
     InputTextModule,
     ImageUpload,
+    DocumentUpload,
     SelectModule,
     SelectButtonModule,
     TextareaModule,
@@ -224,7 +226,20 @@ export interface ClassInfo {
               />
             }
             @case ('image') {
-              <app-image-upload [formControl]="ctrl" [inputId]="id(path)" [altText]="f.label" />
+              <app-image-upload
+                [formControl]="ctrl"
+                [inputId]="id(path)"
+                [altText]="f.label"
+                [purpose]="photoPurpose()"
+              />
+            }
+            @case ('document') {
+              <app-document-upload
+                [formControl]="ctrl"
+                [inputId]="id(path)"
+                [label]="f.label"
+                [purpose]="documentPurpose()"
+              />
             }
             @case ('radio') {
               <p-selectbutton
@@ -259,6 +274,10 @@ export class FormRenderer {
   readonly ageAsOn = input<string | null>(null);
   /** The starting answers (for editing). Pass a stable reference. */
   readonly value = input<Record<string, unknown> | null>(null);
+  /** What photographs on this form are uploaded for (decides who may add and see them). */
+  readonly photoPurpose = input('application-photo');
+  /** What documents on this form are uploaded for. */
+  readonly documentPurpose = input('staff-document');
   /** Messages from the server, by field id. */
   readonly errors = input<AnswerErrors>({});
 

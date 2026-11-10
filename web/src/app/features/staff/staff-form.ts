@@ -8,6 +8,7 @@ import {
   model,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -23,8 +24,16 @@ import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { grantableRoles } from '../../core/admin-roles';
 import { AuthService } from '../../core/auth.service';
-import { Gender, NewStaff, StaffMember } from '../../core/models';
+import {
+  AnswerErrors,
+  FormSchema,
+  Gender,
+  NewStaff,
+  StaffMember,
+  StaffType,
+} from '../../core/models';
 import { fromIsoDate, toIsoDate } from '../../shared/dates';
+import { FormRenderer } from '../../shared/forms/form-renderer';
 import { ImageUpload } from '../../shared/forms/image-upload';
 import { FormField } from '../../shared/ui/form-field';
 import { GENDERS } from '../../shared/ui/labels';
@@ -53,6 +62,7 @@ export const STAFF_ROLE_OPTIONS = [
     SelectModule,
     FormField,
     ImageUpload,
+    FormRenderer,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -112,6 +122,26 @@ export const STAFF_ROLE_OPTIONS = [
           </div>
         </div>
 
+        @if (canSetType()) {
+          <app-form-field
+            label="Type of staff"
+            for="s_type"
+            hint="Decides which details and documents are asked for below."
+          >
+            <p-select
+              inputId="s_type"
+              formControlName="staffTypeId"
+              [options]="types()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Choose a type"
+              [showClear]="true"
+              appendTo="body"
+              [fluid]="true"
+            />
+          </app-form-field>
+        }
+
         <div class="grid gap-4 sm:grid-cols-2">
           <app-form-field label="Mobile" for="s_mob" [control]="form.controls.mobile">
             <input pInputText id="s_mob" formControlName="mobile" inputmode="tel" [fluid]="true" />
@@ -152,6 +182,19 @@ export const STAFF_ROLE_OPTIONS = [
         <app-form-field label="Address" for="s_addr">
           <input pInputText id="s_addr" formControlName="address" [fluid]="true" />
         </app-form-field>
+
+        @if (onboarding(); as o) {
+          <section class="rounded-md border p-3" aria-label="Details for this type of staff">
+            <h3 class="mb-3 text-sm font-semibold">{{ typeName() }} details</h3>
+            <app-form-renderer
+              [schema]="o.schema"
+              [value]="o.answers"
+              [errors]="answerErrors()"
+              photoPurpose="staff-photo"
+              documentPurpose="staff-document"
+            />
+          </section>
+        }
 
         @if (!staff() && canGiveLogin()) {
           <div class="rounded-md border p-3">
@@ -213,6 +256,20 @@ export class StaffForm {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   protected readonly canGiveLogin = () => this.auth.has('users.manage');
+  /** Types and their details are for administrators: the details include identity papers. */
+  protected readonly canSetType = () =>
+    this.auth.has('staff.manage') && this.auth.has('forms.manage');
+
+  protected readonly types = signal<StaffType[]>([]);
+  /** The questions for the chosen type, and the answers to start from. */
+  protected readonly onboarding = signal<{
+    schema: FormSchema;
+    answers: Record<string, unknown>;
+  } | null>(null);
+  protected readonly answerErrors = signal<AnswerErrors>({});
+  private readonly renderer = viewChild(FormRenderer);
+  protected readonly typeName = () =>
+    this.types().find((t) => t.id === this.form.controls.staffTypeId.value)?.name ?? '';
 
   protected readonly genders = GENDERS;
   protected readonly roleOptions = grantableRoles(
@@ -229,6 +286,7 @@ export class StaffForm {
     surname: ['', [Validators.required, Validators.maxLength(60)]],
     gender: ['FEMALE' as Gender],
     designation: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
+    staffTypeId: [''],
     mobile: ['', Validators.pattern(/^(\+?[0-9]{10,15})?$/)],
     email: ['', Validators.email],
     dateOfBirth: [null as Date | null],
@@ -244,10 +302,46 @@ export class StaffForm {
     effect(() => {
       if (this.visible()) this.load(this.staff());
     });
+    // Choosing another type brings that type's questions.
+    this.form.controls.staffTypeId.valueChanges.subscribe((id) => void this.showFormFor(id));
+  }
+
+  /** The type's questions, with the answers already given when this is the type the person has. */
+  private async showFormFor(typeId: string | null | undefined) {
+    this.answerErrors.set({});
+    if (!typeId) {
+      this.onboarding.set(null);
+      return;
+    }
+    const s = this.staff();
+    if (s?.onboarding && s.staffType?.id === typeId) {
+      this.onboarding.set({ schema: s.onboarding.schema, answers: s.onboarding.answers });
+      return;
+    }
+    try {
+      const form = await firstValueFrom(this.api.staffTypeForm(typeId));
+      this.onboarding.set({ schema: form.schema, answers: {} });
+      // A new person with no designation yet gets the type's name as a starting point.
+      const des = this.form.controls.designation;
+      if (!this.staff() && !des.value.trim()) {
+        const name = this.types().find((t) => t.id === typeId)?.name;
+        if (name) des.setValue(name);
+      }
+    } catch (error) {
+      this.onboarding.set(null);
+      this.error.set(apiError(error));
+    }
   }
 
   private load(s: StaffMember | null) {
+    if (this.canSetType() && this.types().length === 0) {
+      firstValueFrom(this.api.staffTypes())
+        .then((t) => this.types.set(t))
+        .catch(() => undefined);
+    }
     this.error.set(null);
+    this.answerErrors.set({});
+    this.onboarding.set(null);
     this.employeeNoError.set(null);
     this.form.reset({
       photoFileId: s?.photoFileId ?? null,
@@ -255,6 +349,7 @@ export class StaffForm {
       surname: s?.surname ?? '',
       gender: s?.gender ?? 'FEMALE',
       designation: s?.designation ?? '',
+      staffTypeId: s?.staffType?.id ?? '',
       mobile: s?.mobile ?? '',
       email: s?.email ?? '',
       dateOfBirth: s?.dateOfBirth ? fromIsoDate(s.dateOfBirth) : null,
@@ -280,6 +375,16 @@ export class StaffForm {
       return;
     }
 
+    // The type's details are checked on screen first (required questions), then again by the server.
+    const details = this.renderer();
+    if (v.staffTypeId && details) {
+      details.touchAll();
+      if (!details.isValid()) {
+        this.error.set('Fill in the required details below.');
+        return;
+      }
+    }
+
     const text = (value: string) => (value.trim() ? value.trim() : undefined);
     const body: NewStaff = {
       firstName: v.firstName.trim(),
@@ -294,6 +399,9 @@ export class StaffForm {
       ...(text(v.employeeNo) ? { employeeNo: text(v.employeeNo) } : {}),
       ...(v.dateOfBirth ? { dateOfBirth: toIsoDate(v.dateOfBirth) } : {}),
       ...(v.joinedOn ? { joinedOn: toIsoDate(v.joinedOn) } : {}),
+      ...(v.staffTypeId && details
+        ? { staffTypeId: v.staffTypeId, answers: details.answers() }
+        : {}),
     };
 
     this.saving.set(true);
@@ -312,7 +420,10 @@ export class StaffForm {
       this.saved.emit(saved);
     } catch (error) {
       const message = apiError(error);
-      if (
+      if (error instanceof HttpErrorResponse && error.status === 400 && error.error?.errors) {
+        this.answerErrors.set(error.error.errors as AnswerErrors);
+        this.error.set(message);
+      } else if (
         error instanceof HttpErrorResponse &&
         error.status === 409 &&
         /employee number/i.test(message)

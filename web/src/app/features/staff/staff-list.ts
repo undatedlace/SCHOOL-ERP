@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
@@ -46,7 +46,7 @@ import { StaffForm } from './staff-form';
       />
     </app-page-header>
 
-    <app-filter-bar [fields]="fields" (changed)="onFilters($event)" />
+    <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
 
     <p-table
       [value]="rows()"
@@ -64,6 +64,7 @@ import { StaffForm } from './staff-form';
           <th>No.</th>
           <th>Name</th>
           <th>Designation</th>
+          <th>Type</th>
           <th>Joined</th>
           <th>Login</th>
           <th>Status</th>
@@ -88,6 +89,7 @@ import { StaffForm } from './staff-form';
             </a>
           </td>
           <td>{{ row.designation }}</td>
+          <td class="text-sm">{{ row.staffType?.name ?? '-' }}</td>
           <td class="whitespace-nowrap text-sm">{{ format(row.joinedOn) }}</td>
           <td class="text-sm">
             @if (row.account; as a) {
@@ -106,7 +108,7 @@ import { StaffForm } from './staff-form';
       </ng-template>
       <ng-template #emptymessage>
         <tr>
-          <td colspan="6" class="p-4 text-center text-muted-foreground">No staff found.</td>
+          <td colspan="7" class="p-4 text-center text-muted-foreground">No staff found.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -138,7 +140,9 @@ export class StaffList {
   private filters: FilterValues = {};
   private pageSize = 20;
 
-  protected readonly fields: FilterField[] = [
+  private readonly typeOptions = signal<{ label: string; value: string }[]>([]);
+
+  protected readonly fields = computed<FilterField[]>(() => [
     {
       key: 'search',
       label: 'Search',
@@ -181,7 +185,13 @@ export class StaffList {
     { key: 'hasLogin', label: 'Login', type: 'select', placeholder: 'Any', options: LOGIN_OPTIONS },
     { key: 'joinedFrom', label: 'Joined from', type: 'date' },
     { key: 'joinedTo', label: 'Joined to', type: 'date' },
-  ];
+  ]);
+
+  constructor() {
+    firstValueFrom(this.api.staffTypes())
+      .then((types) => this.typeOptions.set(types.map((t) => ({ label: t.name, value: t.id }))))
+      .catch(() => undefined);
+  }
 
   protected load(e: { first?: number | null; rows?: number | null }) {
     this.first.set(e.first ?? 0);
@@ -224,6 +234,7 @@ export class StaffList {
           search: this.filters['search'],
           status: this.filters['status'],
           designation: this.filters['designation'],
+          staffTypeId: this.filters['staffTypeId'],
           gender: this.filters['gender'],
           role: this.filters['role'],
           hasLogin: this.filters['hasLogin'],

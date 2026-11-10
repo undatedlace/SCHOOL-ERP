@@ -143,6 +143,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
+        path: 'settings/staff-types',
+        canActivate: [permissionGuard('forms.manage')],
+        loadComponent: () => import('./features/settings/staff-types').then((m) => m.StaffTypes),
+      },
+      {
         path: 'settings/forms',
         canActivate: [permissionGuard('forms.manage')],
         loadComponent: () => import('./features/forms/forms-list').then((m) => m.FormsList),

@@ -11,6 +11,7 @@ import {
   StaffInsight,
   CalendarEvent,
   SearchGroup,
+  StaffType,
   StudentMoved,
   CalendarEventInput,
   Notice,
@@ -337,7 +338,18 @@ export class Api {
     joinedTo?: string | null;
     hasLogin?: string | null;
     role?: string | null;
+    staffTypeId?: string | null;
   }) => this.http.get<Page<StaffMember>>('/api/staff', { params: params(q) });
+  staffTypes = (all = false) =>
+    this.http.get<StaffType[]>('/api/staff-types', { params: all ? { all: 'true' } : {} });
+  staffTypeForm = (id: string) =>
+    this.http.get<{ key: string; name: string; version: number; schema: FormSchema }>(
+      `/api/staff-types/${id}/form`,
+    );
+  createStaffType = (body: { name: string; isTeaching: boolean }) =>
+    this.http.post<StaffType>('/api/staff-types', body);
+  updateStaffType = (id: string, body: { name?: string; isTeaching?: boolean; active?: boolean }) =>
+    this.http.patch<StaffType>(`/api/staff-types/${id}`, body);
   staffMember = (id: string) => this.http.get<StaffMember>(`/api/staff/${id}`);
   createStaff = (body: NewStaff) => this.http.post<StaffMember>('/api/staff', body);
   updateStaff = (
