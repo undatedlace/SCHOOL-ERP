@@ -7,6 +7,8 @@ enum Gender {
 enum StudentStatus {
   ACTIVE
   LEFT
+  /// Taken off the lists by an admin, with a reason. Kept, never erased, and can be restored.
+  REMOVED
 }
 
 enum GuardianRelationship {
@@ -19,25 +21,29 @@ enum GuardianRelationship {
 /// A pupil. Never hard-deleted: leaving sets status and left_on, so yearly counts stay right.
 /// The class lives on enrollments, not here.
 model Student {
-  id          String        @id @default(uuid(7)) @db.Uuid
-  schoolId    String        @map("school_id") @db.Uuid
+  id           String        @id @default(uuid(7)) @db.Uuid
+  schoolId     String        @map("school_id") @db.Uuid
   /// Counts 1, 2, 3 ... within a school, assigned by the server.
-  seq         Int
+  seq          Int
   /// What the school calls the admission number (defaults to the sequence number).
-  admissionNo String        @map("admission_no")
-  firstName   String        @map("first_name")
-  fatherName  String?       @map("father_name")
-  surname     String
-  gender      Gender
-  dateOfBirth DateTime      @map("date_of_birth") @db.Date
-  photoFileId String?       @map("photo_file_id") @db.Uuid
+  admissionNo  String        @map("admission_no")
+  firstName    String        @map("first_name")
+  fatherName   String?       @map("father_name")
+  surname      String
+  gender       Gender
+  dateOfBirth  DateTime      @map("date_of_birth") @db.Date
+  photoFileId  String?       @map("photo_file_id") @db.Uuid
   /// The student's own login (read-only access), once the school creates one.
-  userId      String?       @unique @map("user_id") @db.Uuid
-  status      StudentStatus @default(ACTIVE)
-  joinedOn    DateTime      @map("joined_on") @db.Date
-  leftOn      DateTime?     @map("left_on") @db.Date
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  userId       String?       @unique @map("user_id") @db.Uuid
+  status       StudentStatus @default(ACTIVE)
+  joinedOn     DateTime      @map("joined_on") @db.Date
+  leftOn       DateTime?     @map("left_on") @db.Date
+  /// Set while status is REMOVED.
+  removedAt    DateTime?     @map("removed_at")
+  removedById  String?       @map("removed_by_id") @db.Uuid
+  removeReason String?       @map("remove_reason")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   school      School             @relation(fields: [schoolId], references: [id])
   user        User?              @relation(fields: [userId], references: [id])

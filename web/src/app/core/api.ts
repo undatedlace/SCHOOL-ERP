@@ -11,6 +11,7 @@ import {
   StaffInsight,
   CalendarEvent,
   SearchGroup,
+  StudentMoved,
   CalendarEventInput,
   Notice,
   NoticeAudiences,
@@ -79,7 +80,8 @@ export class Api {
 
   // ---------- School ----------
   school = () => this.http.get<School>('/api/school');
-  updateSchool = (body: Partial<School>) => this.http.patch<School>('/api/school', body);
+  updateSchool = (body: Record<string, string | number>) =>
+    this.http.patch<School>('/api/school', body);
 
   // ---------- Users and roles ----------
   roles = () => this.http.get<Role[]>('/api/rbac/roles');
@@ -234,6 +236,13 @@ export class Api {
     hasLogin?: string | null;
   }) => this.http.get<Page<StudentListItem>>('/api/students', { params: params(q) });
   student = (id: string) => this.http.get<StudentDetail>(`/api/students/${id}`);
+  removeStudent = (id: string, reason: string) =>
+    this.http.post<StudentDetail>(`/api/students/${id}/remove`, { reason });
+  restoreStudent = (id: string) => this.http.post<StudentDetail>(`/api/students/${id}/restore`, {});
+  moveStudent = (id: string, divisionId: string) =>
+    this.http.post<StudentDetail & { moved: StudentMoved }>(`/api/students/${id}/move`, {
+      divisionId,
+    });
   updateStudent = (
     id: string,
     body: {

@@ -20,6 +20,19 @@ export interface School {
   phone: string | null;
   email: string | null;
   board: string | null;
+  /** Student IDs begin with this (for example hesj gives hesj0001). */
+  studentIdPrefix: string | null;
+  studentIdDigits: number;
+  /** A student's school e-mail is their ID at this domain. */
+  studentEmailDomain: string | null;
+}
+
+/** What the move-a-student call tells the screen about the class change. */
+export interface StudentMoved {
+  from: string;
+  to: string;
+  /** Fees were billed for the old class, so the accountant should check them. */
+  feesNeedReview: boolean;
 }
 
 export interface Role {
@@ -209,7 +222,7 @@ export type AnswerErrors = Record<string, string>;
 
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 export type Relationship = 'FATHER' | 'MOTHER' | 'GUARDIAN' | 'OTHER';
-export type StudentStatus = 'ACTIVE' | 'LEFT';
+export type StudentStatus = 'ACTIVE' | 'LEFT' | 'REMOVED';
 
 export interface StudentListItem {
   id: string;
@@ -289,6 +302,10 @@ export interface StudentDetail {
   leftOn: string | null;
   photoFileId: string | null;
   hasLogin: boolean;
+  /** The student's school e-mail, when the school has an e-mail domain set. */
+  schoolEmail: string | null;
+  /** Set while the student is removed. */
+  removal: { at: string; reason: string; by: string | null } | null;
   guardians: StudentGuardian[];
   enrollments: {
     id: string;

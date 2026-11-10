@@ -44,6 +44,7 @@ export class AuthService {
   async login(identifier: string, password: string, client: ClientInfo) {
     const schoolId = await this.schools.getDefaultSchoolId();
     const id = identifier.trim();
+    const studentName = await this.studentLoginName(schoolId, id);
 
     const user = await this.prisma.user.findFirst({
       where: {
@@ -52,6 +53,8 @@ export class AuthService {
           { email: id.toLowerCase() },
           { mobile: id },
           { username: id.toLowerCase() },
+          // A student may type their school e-mail (hesj0001@school.in) instead of their ID.
+          ...(studentName ? [{ username: studentName }] : []),
         ],
       },
       include: { roles: { include: { role: { select: { code: true } } } } },
@@ -102,6 +105,22 @@ export class AuthService {
       ip: client.ip,
     });
     return { ...session, mustChangePassword: user.mustChangePassword };
+  }
+
+  /** The student ID inside a school e-mail address, if the address is at the school's own domain. */
+  private async studentLoginName(
+    schoolId: string,
+    id: string,
+  ): Promise<string | null> {
+    const at = id.lastIndexOf('@');
+    if (at < 1) return null;
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { studentEmailDomain: true },
+    });
+    const domain = school?.studentEmailDomain;
+    if (!domain || id.slice(at + 1).toLowerCase() !== domain) return null;
+    return id.slice(0, at).toLowerCase();
   }
 
   async logout(auth: AuthContext) {

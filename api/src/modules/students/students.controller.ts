@@ -18,6 +18,8 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import {
   GuardianInputDto,
   ListStudentsQueryDto,
+  MoveStudentDto,
+  RemoveStudentDto,
   UpdateGuardianDto,
   UpdateStudentDto,
 } from './dto/students.dto.js';
@@ -52,6 +54,43 @@ export class StudentsController {
     @Req() req: Request,
   ) {
     return this.students.update(auth, id, dto, req.ip);
+  }
+
+  /** Takes a student off the lists, with a reason. Admins only. */
+  @Post('students/:id/remove')
+  @HttpCode(200)
+  @RequirePermissions('students.remove')
+  remove(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RemoveStudentDto,
+    @Req() req: Request,
+  ) {
+    return this.students.remove(auth, id, dto.reason, req.ip);
+  }
+
+  @Post('students/:id/restore')
+  @HttpCode(200)
+  @RequirePermissions('students.remove')
+  restore(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ) {
+    return this.students.restore(auth, id, req.ip);
+  }
+
+  /** Another class or division, for this academic year. */
+  @Post('students/:id/move')
+  @HttpCode(200)
+  @RequirePermissions('students.manage')
+  move(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MoveStudentDto,
+    @Req() req: Request,
+  ) {
+    return this.students.move(auth, id, dto.divisionId, req.ip);
   }
 
   @Post('students/:id/guardians')

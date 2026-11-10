@@ -5,6 +5,7 @@ import { MessageService } from '@openng/optimus-ui/api';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { apiError } from '../../core/api-error';
 import { SchoolClass, StudentListItem } from '../../core/models';
 import { formatDate } from '../../shared/dates';
@@ -72,8 +73,14 @@ import { PageHeader } from '../../shared/ui/page-header';
           <td class="whitespace-nowrap text-sm">{{ format(row.dateOfBirth) }}</td>
           <td>
             <p-tag
-              [value]="row.status === 'ACTIVE' ? 'Active' : 'Left'"
-              [severity]="row.status === 'ACTIVE' ? 'success' : 'secondary'"
+              [value]="statusText(row.status)"
+              [severity]="
+                row.status === 'ACTIVE'
+                  ? 'success'
+                  : row.status === 'REMOVED'
+                    ? 'danger'
+                    : 'secondary'
+              "
             />
           </td>
         </tr>
@@ -91,10 +98,17 @@ export class StudentsList {
   private readonly toast = inject(MessageService);
 
   protected readonly format = formatDate;
+  protected readonly statusText = (s: string) =>
+    s === 'ACTIVE' ? 'Active' : s === 'REMOVED' ? 'Removed' : 'Left';
   protected readonly statuses = [
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Left', value: 'LEFT' },
   ];
+  /** Removed students are listed only for the people who may restore them. */
+  private readonly auth = inject(AuthService);
+  private readonly statusOptions = this.auth.has('students.remove')
+    ? [...this.statuses, { label: 'Removed', value: 'REMOVED' }]
+    : this.statuses;
 
   protected readonly rows = signal<StudentListItem[]>([]);
   protected readonly total = signal(0);
@@ -138,7 +152,7 @@ export class StudentsList {
         label: 'Status',
         type: 'select',
         placeholder: 'Any status',
-        options: this.statuses,
+        options: this.statusOptions,
       },
       {
         key: 'gender',

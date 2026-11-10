@@ -20,6 +20,15 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
+/** A student ID by the school's convention: prefix and zero-padded number, or just the number. */
+export function studentId(
+  n: number,
+  prefix: string | null | undefined,
+  digits: number,
+): string {
+  return prefix ? `${prefix}${String(n).padStart(digits, '0')}` : String(n);
+}
+
 const CURRENT_INCLUDE = (academicYearId: string | null) =>
   ({
     enrollments: {
@@ -102,8 +111,21 @@ export class StudentsService {
    * A teacher who left, or whose assignment was removed, loses that access at once.
    */
   private async visible(auth: AuthContext): Promise<Prisma.StudentWhereInput> {
-    if (auth.permissions.includes('students.read_all')) return {};
+    // A removed student is seen only by those who may remove (and so restore) students.
+    const notRemoved: Prisma.StudentWhereInput = {
+      status: { not: 'REMOVED' },
+    };
+    if (auth.permissions.includes('students.read_all')) {
+      return auth.permissions.includes('students.remove') ? {} : notRemoved;
+    }
+    const scope = await this.scopedVisible(auth);
+    return { AND: [notRemoved, scope] };
+  }
 
+  /** What a person with no school-wide access sees: their own children, or the students they teach. */
+  private async scopedVisible(
+    auth: AuthContext,
+  ): Promise<Prisma.StudentWhereInput> {
     const own: Prisma.StudentWhereInput = {
       OR: [
         { guardians: { some: { guardian: { userId: auth.userId } } } },
@@ -139,6 +161,23 @@ export class StudentsService {
     if (!found) throw new NotFoundException('Student not found');
   }
 
+  /**
+   * Like assertVisible, but only for what a person's own role covers (their children, or the divisions
+   * they teach), even if they may read every student's record. Attendance history uses this, so a
+   * teacher still sees attendance only for the classes they teach.
+   */
+  async assertInScope(auth: AuthContext, id: string) {
+    const found = await this.prisma.student.findFirst({
+      where: {
+        id,
+        schoolId: auth.schoolId,
+        AND: [{ status: { not: 'REMOVED' } }, await this.scopedVisible(auth)],
+      },
+      select: { id: true },
+    });
+    if (!found) throw new NotFoundException('Student not found');
+  }
+
   async list(
     auth: AuthContext,
     q: ListStudentsQueryDto,
@@ -154,7 +193,8 @@ export class StudentsService {
       schoolId: auth.schoolId,
       // In an AND of its own: the scope and the search both use OR, and one must not replace the other.
       AND: [await this.visible(auth)],
-      ...(q.status ? { status: q.status } : {}),
+      // Removed students are only listed when asked for.
+      status: q.status ?? { not: 'REMOVED' },
       ...(q.gender ? { gender: q.gender } : {}),
       ...(q.joinedFrom || q.joinedTo
         ? {
@@ -214,7 +254,6 @@ export class StudentsService {
   }
 
   async findOne(auth: AuthContext, id: string) {
-    const wide = auth.permissions.includes('students.read_all');
     const s = await this.prisma.student.findFirst({
       where: { id, schoolId: auth.schoolId, ...(await this.visible(auth)) },
       include: {
@@ -241,6 +280,19 @@ export class StudentsService {
     // Same answer for "does not exist" and "not yours to see".
     if (!s) throw new NotFoundException('Student not found');
 
+    const [school, remover] = await Promise.all([
+      this.prisma.school.findUnique({
+        where: { id: auth.schoolId },
+        select: { studentEmailDomain: true },
+      }),
+      s.removedById
+        ? this.prisma.user.findUnique({
+            where: { id: s.removedById },
+            select: { fullName: true },
+          })
+        : null,
+    ]);
+
     return {
       id: s.id,
       admissionNo: s.admissionNo,
@@ -255,6 +307,18 @@ export class StudentsService {
       leftOn: s.leftOn,
       photoFileId: s.photoFileId,
       hasLogin: !!s.userId,
+      /** The student's school e-mail, when the school has an e-mail domain set. */
+      schoolEmail: school?.studentEmailDomain
+        ? `${s.admissionNo.toLowerCase()}@${school.studentEmailDomain}`
+        : null,
+      removal:
+        s.status === 'REMOVED'
+          ? {
+              at: s.removedAt,
+              reason: s.removeReason,
+              by: remover?.fullName ?? null,
+            }
+          : null,
       guardians: s.guardians.map((g) => ({
         id: g.guardian.id,
         fullName: g.guardian.fullName,
@@ -274,7 +338,9 @@ export class StudentsService {
         endedOn: e.endedOn,
       })),
       // Admissions paperwork is for staff, not for a parent looking at their own child.
-      application: wide ? s.application : null,
+      application: auth.permissions.includes('admissions.read')
+        ? s.application
+        : null,
     };
   }
 
@@ -289,6 +355,14 @@ export class StudentsService {
       select: { id: true, status: true },
     });
     if (!existing) throw new NotFoundException('Student not found');
+    if (existing.status === 'REMOVED') {
+      throw new BadRequestException(
+        'Restore this student before changing them',
+      );
+    }
+    if (dto.status === 'REMOVED') {
+      throw new BadRequestException('Use "Remove student" to remove someone');
+    }
 
     const { dateOfBirth, status, leftOn, ...rest } = dto;
     const data: Prisma.StudentUpdateInput = { ...rest };
@@ -442,6 +516,165 @@ export class StudentsService {
     });
   }
 
+  // ---------- removing, restoring and moving ----------
+
+  /**
+   * Takes a student off the lists. They are kept: fees, receipts and attendance stay, and an admin
+   * can restore them. Their login is switched off and they are signed out at once.
+   */
+  async remove(auth: AuthContext, id: string, reason: string, ip?: string) {
+    const s = await this.prisma.student.findFirst({
+      where: { id, schoolId: auth.schoolId },
+      select: { id: true, status: true, userId: true },
+    });
+    if (!s) throw new NotFoundException('Student not found');
+    if (s.status === 'REMOVED') {
+      throw new ConflictException('This student is already removed');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.student.update({
+        where: { id },
+        data: {
+          status: 'REMOVED',
+          removedAt: new Date(),
+          removedById: auth.userId,
+          removeReason: reason,
+        },
+      });
+      if (s.userId) {
+        await tx.user.update({
+          where: { id: s.userId },
+          data: { status: 'DISABLED' },
+        });
+        await tx.session.deleteMany({ where: { userId: s.userId } });
+      }
+    });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'students.removed',
+      entityType: 'student',
+      entityId: id,
+      metadata: { reason, was: s.status },
+      ip,
+    });
+    return this.findOne(auth, id);
+  }
+
+  async restore(auth: AuthContext, id: string, ip?: string) {
+    const s = await this.prisma.student.findFirst({
+      where: { id, schoolId: auth.schoolId },
+      select: { id: true, status: true, userId: true },
+    });
+    if (!s) throw new NotFoundException('Student not found');
+    if (s.status !== 'REMOVED') {
+      throw new ConflictException('This student is not removed');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.student.update({
+        where: { id },
+        data: {
+          status: 'ACTIVE',
+          leftOn: null,
+          removedAt: null,
+          removedById: null,
+          removeReason: null,
+        },
+      });
+      if (s.userId) {
+        await tx.user.update({
+          where: { id: s.userId },
+          data: { status: 'ACTIVE' },
+        });
+      }
+    });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'students.restored',
+      entityType: 'student',
+      entityId: id,
+      ip,
+    });
+    return this.findOne(auth, id);
+  }
+
+  /**
+   * Puts a student in another class or division for this academic year. The enrolment is changed in place
+   * (one per student per year), so history is the audit entry. Fees already billed stay as they were:
+   * the reply says so, because the new class may charge differently.
+   */
+  async move(auth: AuthContext, id: string, divisionId: string, ip?: string) {
+    const s = await this.prisma.student.findFirst({
+      where: { id, schoolId: auth.schoolId },
+      select: { id: true, status: true },
+    });
+    if (!s) throw new NotFoundException('Student not found');
+    if (s.status !== 'ACTIVE') {
+      throw new BadRequestException('Only a current student can be moved');
+    }
+    const yearId = await this.currentYearId(auth.schoolId);
+    if (!yearId) {
+      throw new BadRequestException('There is no current academic year');
+    }
+    const [enrollment, target] = await Promise.all([
+      this.prisma.enrollment.findUnique({
+        where: {
+          studentId_academicYearId: { studentId: id, academicYearId: yearId },
+        },
+        include: {
+          division: {
+            select: { id: true, name: true, class: { select: { name: true } } },
+          },
+        },
+      }),
+      this.prisma.division.findFirst({
+        where: { id: divisionId, schoolId: auth.schoolId },
+        select: {
+          id: true,
+          name: true,
+          class: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+    if (!enrollment) {
+      throw new BadRequestException('This student is not enrolled this year');
+    }
+    if (!target) throw new BadRequestException('That division does not exist');
+    if (enrollment.divisionId === target.id) {
+      throw new BadRequestException('The student is already in that division');
+    }
+    const sameClass = enrollment.division.class.name === target.class.name;
+    const billed = await this.prisma.feeInvoice.count({
+      where: { studentId: id, academicYearId: yearId },
+    });
+    await this.prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { divisionId: target.id, rollNo: null },
+    });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'students.moved',
+      entityType: 'student',
+      entityId: id,
+      metadata: {
+        from: `${enrollment.division.class.name}-${enrollment.division.name}`,
+        to: `${target.class.name}-${target.name}`,
+      },
+      ip,
+    });
+    return {
+      ...(await this.findOne(auth, id)),
+      moved: {
+        from: `${enrollment.division.class.name}-${enrollment.division.name}`,
+        to: `${target.class.name}-${target.name}`,
+        // Fees were billed for the old class: the accountant should look at them.
+        feesNeedReview: billed > 0 && !sameClass,
+      },
+    };
+  }
+
   // ---------- creating a student (used by the admit flow) ----------
 
   /**
@@ -469,16 +702,23 @@ export class StudentsService {
           `Admission number ${admissionNo} is already used`,
         );
     } else {
+      // The school's own convention: a prefix and a zero-padded number (hesj0001), or plain numbers.
+      const school = await tx.school.findUniqueOrThrow({
+        where: { id: schoolId },
+        select: { studentIdPrefix: true, studentIdDigits: true },
+      });
+      const format = (n: number) =>
+        studentId(n, school.studentIdPrefix, school.studentIdDigits);
       let candidate = seq;
       while (
         await tx.student.findFirst({
-          where: { schoolId, admissionNo: String(candidate) },
+          where: { schoolId, admissionNo: format(candidate) },
           select: { id: true },
         })
       ) {
         candidate++;
       }
-      admissionNo = String(candidate);
+      admissionNo = format(candidate);
     }
 
     const joinedOn = dateOnly(input.joinedOn ?? todayIso());
