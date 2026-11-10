@@ -57,6 +57,8 @@ const PERMISSIONS = [
   'staff_attendance.read_all',
   'staff_attendance.manage',
   'admins.manage',
+  'leave.apply',
+  'leave.manage',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -136,6 +138,7 @@ const ROLES: Record<string, RoleDef> = {
       'attendance.read',
       'attendance.mark',
       'staff_attendance.read',
+      'leave.apply',
       'marks.enter',
       'notices.read',
       'calendar.read',
@@ -148,6 +151,7 @@ const ROLES: Record<string, RoleDef> = {
     permissions: [
       'staff.read',
       'staff_attendance.read',
+      'leave.apply',
       'notices.read',
       'calendar.read',
     ],

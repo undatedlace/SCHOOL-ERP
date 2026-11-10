@@ -43,6 +43,7 @@ model Staff {
   classTeacherOf ClassTeacher[]
   subjectsTaught SubjectTeacher[]
   attendance     StaffAttendanceRecord[]
+  leaveRequests  LeaveRequest[]
 
   @@unique([schoolId, seq])
   @@unique([schoolId, employeeNo])
@@ -63,8 +64,9 @@ model StaffType {
   sortOrder  Int      @default(0) @map("sort_order")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  school School  @relation(fields: [schoolId], references: [id])
-  staff  Staff[]
+  school            School             @relation(fields: [schoolId], references: [id])
+  staff             Staff[]
+  leaveEntitlements LeaveEntitlement[]
 
   @@unique([schoolId, name])
   @@map("staff_types")

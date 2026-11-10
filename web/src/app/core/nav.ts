@@ -115,6 +115,25 @@ const users: NavItem = {
   description: 'Staff and parent accounts, roles and passwords',
   permission: 'users.manage',
 };
+const leaveRequests: NavItem = {
+  label: 'Leave requests',
+  path: '/app/leave',
+  description: 'Approve staff leave and record leave for someone',
+  permission: 'leave.manage',
+};
+const myLeave: NavItem = {
+  label: 'My leave',
+  path: '/app/my-leave',
+  description: 'What you have left, and ask for leave',
+  permission: 'leave.apply',
+  hiddenWith: 'leave.manage',
+};
+const leaveSettings: NavItem = {
+  label: 'Leave',
+  path: '/app/settings/leave',
+  description: 'Kinds of leave and days a year, set before the year starts',
+  permission: 'leave.manage',
+};
 const staffTypes: NavItem = {
   label: 'Staff types',
   path: '/app/settings/staff-types',
@@ -141,7 +160,12 @@ export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup] },
   { label: 'Admissions', icon: 'clipboard', section: 'menu', items: [admissions, forms] },
   { label: 'Students', icon: 'students', section: 'menu', items: [students, promotion] },
-  { label: 'Staff', icon: 'teachers', section: 'menu', items: [staff] },
+  {
+    label: 'Staff',
+    icon: 'teachers',
+    section: 'menu',
+    items: [staff, leaveRequests, myLeave],
+  },
   {
     label: 'Attendance',
     icon: 'attendance',
@@ -154,7 +178,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: 'Settings',
     icon: 'settings',
     section: 'other',
-    items: [schoolSettings, users, staffTypes, auditLog],
+    items: [schoolSettings, users, staffTypes, leaveSettings, auditLog],
   },
 ];
 

@@ -269,3 +269,49 @@ describe('UpcomingEvents', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Nothing is planned');
   });
 });
+
+describe('CalendarPage staff leave', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('shows leave on the calendar for people who may see it, as a read-only item, and lists it in the key', async () => {
+    const http = setup(['calendar.read', 'leave.apply']);
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/calendar').flush([]);
+    http
+      .expectOne((r) => r.url === '/api/leave/calendar')
+      .flush([
+        {
+          id: 'l1',
+          title: 'Asha Rao: Casual leave',
+          startsOn: today,
+          endsOn: today,
+          status: 'APPROVED',
+          halfDay: false,
+        },
+      ]);
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const agenda = el.querySelector('[aria-labelledby="agenda-title"]')!.textContent!;
+    expect(agenda).toContain('Asha Rao: Casual leave');
+    expect(agenda).toContain('Staff leave');
+    expect(agenda).not.toContain('For:');
+    expect(agenda).not.toContain('Remove');
+    expect(el.querySelector('[aria-label="Key"]')!.textContent).toContain('Staff leave');
+  });
+
+  it('does not ask for leave at all from people who cannot see it', async () => {
+    const http = setup(['calendar.read']);
+    const fixture = TestBed.createComponent(CalendarPage);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/calendar').flush([]);
+    http.expectNone((r) => r.url === '/api/leave/calendar');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[aria-label="Key"]')!.textContent,
+    ).not.toContain('Staff leave');
+  });
+});

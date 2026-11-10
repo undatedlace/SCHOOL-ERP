@@ -58,4 +58,17 @@ describe('visibleEntries', () => {
     // A parent sees the portal, not this menu.
     expect(titles('calendar.read')).toBeUndefined();
   });
+
+  it('shows leave to the people it is for: requests for admins, "My leave" for staff, set-up under Settings', () => {
+    const staff = (...p: string[]) =>
+      visibleEntries(NAV_ENTRIES, has(...p))
+        .find((e) => e.label === 'Staff')
+        ?.items?.map((i) => i.label);
+    expect(staff('leave.apply')).toEqual(['My leave']);
+    expect(staff('leave.apply', 'leave.manage')).toEqual(['Leave requests']);
+    const settings = visibleEntries(NAV_ENTRIES, has('leave.manage'))
+      .find((e) => e.label === 'Settings')
+      ?.items?.map((i) => i.label);
+    expect(settings).toEqual(['Leave']);
+  });
 });

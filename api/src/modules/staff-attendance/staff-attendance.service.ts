@@ -17,6 +17,7 @@ import {
   todayInIndia,
 } from '../attendance/attendance-rules.js';
 import { AuditService } from '../audit/audit.service.js';
+import { leaveDates } from '../leave/leave-rules.js';
 import { MarkStaffAttendanceDto } from './dto/staff-attendance.dto.js';
 
 const fullName = (s: { firstName: string; surname: string }) =>
@@ -73,27 +74,67 @@ export class StaffAttendanceService {
     });
   }
 
+  /**
+   * Days of approved leave, by person, between two dates (Sundays never count). A day of leave shows as
+   * "on leave" in attendance unless an administrator has marked that day by hand, so cancelling leave
+   * takes it straight back off with nothing to undo.
+   */
+  private async leaveDays(
+    schoolId: string,
+    from: string,
+    to: string,
+  ): Promise<Map<string, Map<string, string>>> {
+    const rows = await this.prisma.leaveRequest.findMany({
+      where: {
+        schoolId,
+        status: 'APPROVED',
+        startsOn: { lte: toDate(to) },
+        endsOn: { gte: toDate(from) },
+      },
+      select: {
+        staffId: true,
+        startsOn: true,
+        endsOn: true,
+        leaveType: { select: { name: true } },
+      },
+    });
+    const out = new Map<string, Map<string, string>>();
+    for (const r of rows) {
+      const start = toIso(r.startsOn) < from ? from : toIso(r.startsOn);
+      const end = toIso(r.endsOn) > to ? to : toIso(r.endsOn);
+      const days = out.get(r.staffId) ?? new Map<string, string>();
+      for (const d of leaveDates(start, end)) days.set(d, r.leaveType.name);
+      out.set(r.staffId, days);
+    }
+    return out;
+  }
+
   /** Everyone working on a day, with their mark if there is one. */
   async roster(auth: AuthContext, dateIso?: string) {
     const iso = this.day(dateIso);
-    const [staff, records] = await Promise.all([
+    const [staff, records, leave] = await Promise.all([
       this.working(auth.schoolId, iso),
       this.prisma.staffAttendanceRecord.findMany({
         where: { schoolId: auth.schoolId, date: toDate(iso) },
         include: { markedBy: { select: { fullName: true } } },
       }),
+      this.leaveDays(auth.schoolId, iso, iso),
     ]);
     const byStaff = new Map(records.map((r) => [r.staffId, r]));
     const rows = staff.map((s) => {
       const r = byStaff.get(s.id);
+      const onLeave = leave.get(s.id)?.get(iso) ?? null;
       return {
         staffId: s.id,
         employeeNo: s.employeeNo,
         name: fullName(s),
         designation: s.designation,
-        status: (r?.status ?? null) as Status | null,
+        // A mark made by hand wins; otherwise approved leave shows as "on leave".
+        status: (r?.status ?? (onLeave ? 'ON_LEAVE' : null)) as Status | null,
         note: r?.note ?? null,
         markedBy: r?.markedBy.fullName ?? null,
+        /** Set when the status comes from approved leave rather than a mark: the kind of leave. */
+        fromLeave: r ? null : onLeave,
       };
     });
     return {
@@ -226,6 +267,7 @@ export class StaffAttendanceService {
         designation: s.designation,
       })),
       records,
+      await this.leaveDays(auth.schoolId, from, to),
     );
   }
 
@@ -264,6 +306,7 @@ export class StaffAttendanceService {
           },
         ],
         records,
+        await this.leaveDays(auth.schoolId, from, to),
       ),
       records: records.map((r) => ({
         date: toIso(r.date),
@@ -283,6 +326,7 @@ export class StaffAttendanceService {
       designation: string;
     }[],
     records: { staffId: string; status: Status; date: Date }[],
+    leave: Map<string, Map<string, string>> = new Map(),
   ) {
     const days = new Map<string, Record<string, Status>>();
     const list = new Map<string, Status[]>();
@@ -292,6 +336,14 @@ export class StaffAttendanceService {
       taken.add(iso);
       days.set(r.staffId, { ...days.get(r.staffId), [iso]: r.status });
       list.set(r.staffId, [...(list.get(r.staffId) ?? []), r.status]);
+    }
+    // Approved leave fills the days nobody marked by hand. It does not count as a day taken.
+    for (const p of people) {
+      for (const iso of leave.get(p.staffId)?.keys() ?? []) {
+        if (days.get(p.staffId)?.[iso]) continue;
+        days.set(p.staffId, { ...days.get(p.staffId), [iso]: 'ON_LEAVE' });
+        list.set(p.staffId, [...(list.get(p.staffId) ?? []), 'ON_LEAVE']);
+      }
     }
     return {
       from,
