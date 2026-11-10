@@ -47,9 +47,7 @@ import { PageHeader } from '../../shared/ui/page-header';
             }
           </td>
           <td class="text-right">
-            <a
-              class="font-medium underline-offset-4 hover:underline"
-              [routerLink]="['/app/settings/forms', form.key]"
+            <a class="font-medium app-link" [routerLink]="['/app/settings/forms', form.key]"
               >Open</a
             >
           </td>

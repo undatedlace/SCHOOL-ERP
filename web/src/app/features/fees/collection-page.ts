@@ -135,11 +135,9 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
             </td>
             <td>{{ date(p.paidOn) }}</td>
             <td>
-              <a
-                class="underline-offset-4 hover:underline"
-                [routerLink]="['/app/students', p.studentId]"
-                >{{ p.studentName }}</a
-              >
+              <a class="app-link" [routerLink]="['/app/students', p.studentId]">{{
+                p.studentName
+              }}</a>
               <div class="text-xs text-muted-foreground">Admission no. {{ p.admissionNo }}</div>
             </td>
             <td>
@@ -153,7 +151,7 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
             </td>
             <td class="text-right">
               <a
-                class="text-sm underline-offset-4 hover:underline"
+                class="text-sm app-link"
                 [href]="'/api/payments/' + p.id + '/receipt'"
                 target="_blank"
                 rel="noopener"

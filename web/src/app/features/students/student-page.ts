@@ -233,9 +233,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
                 <div>
                   <dt class="text-xs text-muted-foreground">Admission application</dt>
                   <dd>
-                    <a
-                      class="underline-offset-4 hover:underline"
-                      [routerLink]="['/app/admissions', s.application.id]"
+                    <a class="app-link" [routerLink]="['/app/admissions', s.application.id]"
                       >Form no. {{ s.application.formNo }}</a
                     >
                   </dd>

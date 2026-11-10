@@ -222,7 +222,7 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
                 <p class="text-sm">Admitted on {{ format(a.admittedAt!) }}.</p>
                 <a
                   *appHasPermission="'students.read_all'"
-                  class="mt-3 inline-block text-sm font-medium underline-offset-4 hover:underline"
+                  class="mt-3 inline-block text-sm font-medium app-link"
                   [routerLink]="['/app/students', a.studentId]"
                   >View student</a
                 >

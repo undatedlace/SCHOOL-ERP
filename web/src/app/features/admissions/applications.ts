@@ -119,11 +119,9 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
         <tr class="hover:bg-accent">
           <td class="font-mono text-sm">{{ row.formNo }}</td>
           <td>
-            <a
-              class="font-medium underline-offset-4 hover:underline"
-              [routerLink]="['/app/admissions', row.id]"
-              >{{ row.studentName }}</a
-            >
+            <a class="font-medium app-link" [routerLink]="['/app/admissions', row.id]">{{
+              row.studentName
+            }}</a>
           </td>
           <td>{{ row.class?.name }}</td>
           <td class="whitespace-nowrap text-sm">{{ format(row.receivedOn) }}</td>

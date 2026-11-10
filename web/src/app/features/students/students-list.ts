@@ -96,7 +96,7 @@ import { PageHeader } from '../../shared/ui/page-header';
           <td class="font-mono text-sm">{{ row.admissionNo }}</td>
           <td>
             <a
-              class="flex items-center gap-3 font-medium underline-offset-4 hover:underline"
+              class="flex items-center gap-3 font-medium app-link"
               [routerLink]="['/app/students', row.id]"
             >
               @if (row.photoFileId) {

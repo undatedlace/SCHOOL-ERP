@@ -49,7 +49,7 @@ const size = (bytes: number | null) =>
         <div class="flex items-center justify-between gap-3 border-b py-2 text-sm last:border-0">
           <div class="min-w-0">
             <a
-              class="font-medium underline-offset-4 hover:underline"
+              class="font-medium app-link"
               [href]="'/api/files/' + d.fileId"
               target="_blank"
               rel="noopener"

@@ -132,6 +132,7 @@ const auditLog: NavItem = {
 export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Dashboard', icon: 'home', section: 'menu', item: dashboard },
   { label: 'Calendar', icon: 'calendar', section: 'menu', item: calendar },
+  { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup] },
   { label: 'Admissions', icon: 'clipboard', section: 'menu', items: [admissions, forms] },
   { label: 'Students', icon: 'students', section: 'menu', items: [students, promotion] },
   { label: 'Staff', icon: 'teachers', section: 'menu', items: [staff] },
@@ -141,7 +142,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     section: 'menu',
     items: [attendance, staffAttendance, myAttendance],
   },
-  { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup] },
   { label: 'Finance', icon: 'finance', section: 'menu', items: [feeDues, feeCollection, feeSetup] },
   { label: 'Notices', icon: 'notice', section: 'menu', item: notices },
   {

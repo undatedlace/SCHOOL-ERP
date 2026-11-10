@@ -69,11 +69,7 @@ import { FormField } from '../../shared/ui/form-field';
             }
           </td>
           <td>
-            <a
-              class="underline-offset-4 hover:underline"
-              [routerLink]="['/app/staff', a.staff.id]"
-              >{{ a.staff.fullName }}</a
-            >
+            <a class="app-link" [routerLink]="['/app/staff', a.staff.id]">{{ a.staff.fullName }}</a>
             @if (a.staff.status === 'LEFT') {
               <p-tag class="ml-2" value="Left" severity="warn" />
             }

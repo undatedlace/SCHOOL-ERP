@@ -88,7 +88,7 @@ import { StaffForm } from './staff-form';
           <td class="font-mono text-sm">{{ row.employeeNo }}</td>
           <td>
             <a
-              class="flex items-center gap-3 font-medium underline-offset-4 hover:underline"
+              class="flex items-center gap-3 font-medium app-link"
               [routerLink]="['/app/staff', row.id]"
             >
               @if (row.photoFileId) {
