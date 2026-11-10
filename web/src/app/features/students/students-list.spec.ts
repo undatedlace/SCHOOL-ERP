@@ -23,8 +23,8 @@ describe('StudentsList filters', () => {
     const { fixture, el } = setup();
     await fixture.whenStable();
     fixture.detectChanges();
-    const labels = Array.from(el.querySelectorAll('app-filter-bar label')).map((l) =>
-      l.childNodes[0].textContent?.trim(),
+    const labels = Array.from(el.querySelectorAll('app-filter-bar [aria-label]')).map((c) =>
+      c.getAttribute('aria-label'),
     );
     expect(labels).toEqual([
       'Search',
@@ -46,9 +46,7 @@ describe('StudentsList filters', () => {
     http
       .match((r) => r.url === '/api/students')
       .forEach((r) => r.flush({ items: [], total: 0, page: 1, pageSize: 20 }));
-    const gender = Array.from(el.querySelectorAll('app-filter-bar label'))
-      .find((l) => l.textContent?.trim().startsWith('Gender'))!
-      .querySelector('select') as HTMLSelectElement;
+    const gender = el.querySelector('app-filter-bar [aria-label="Gender"]') as HTMLSelectElement;
     gender.value = 'FEMALE';
     gender.dispatchEvent(new Event('change', { bubbles: true }));
     fixture.detectChanges();

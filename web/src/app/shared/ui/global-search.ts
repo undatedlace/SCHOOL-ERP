@@ -43,7 +43,7 @@ const MIN_LETTERS = 2;
         [value]="query()"
         (input)="onInput($any($event.target).value)"
         (keydown)="onKey($event)"
-        (focus)="open.set(query().trim().length >= ${MIN_LETTERS})"
+        (focus)="open.set(query().trim().length >= minLetters)"
       />
       @if (open()) {
         <div
@@ -98,6 +98,7 @@ export class GlobalSearch {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly box = viewChild.required<ElementRef<HTMLInputElement>>('box');
 
+  protected readonly minLetters = MIN_LETTERS;
   protected readonly query = signal('');
   protected readonly groups = signal<SearchGroup[]>([]);
   protected readonly open = signal(false);

@@ -35,9 +35,7 @@ function setup() {
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
   const select = (label: string) =>
-    Array.from(el.querySelectorAll('label'))
-      .find((l) => l.textContent?.trim().startsWith(label))!
-      .querySelector('select, input') as HTMLSelectElement & HTMLInputElement;
+    el.querySelector(`[aria-label="${label}"]`) as HTMLSelectElement & HTMLInputElement;
   const change = async (control: HTMLElement, value: string, event = 'change') => {
     (control as HTMLInputElement).value = value;
     control.dispatchEvent(new Event(event, { bubbles: true }));

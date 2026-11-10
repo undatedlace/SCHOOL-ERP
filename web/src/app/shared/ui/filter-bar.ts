@@ -41,16 +41,17 @@ export type FilterValues = Record<string, string>;
       role="search"
     >
       @for (f of fields(); track f.key) {
-        <label
+        <div
           class="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground"
           [class.w-full]="f.type === 'search'"
           [class.sm:w-72]="f.type === 'search'"
         >
-          {{ f.label }}
+          <span aria-hidden="true">{{ f.label }}</span>
           @switch (f.type) {
             @case ('search') {
               <input
                 type="search"
+                [attr.aria-label]="f.label"
                 class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground"
                 [placeholder]="f.placeholder ?? ''"
                 [value]="values()[f.key] ?? ''"
@@ -59,6 +60,7 @@ export type FilterValues = Record<string, string>;
             }
             @case ('select') {
               <select
+                [attr.aria-label]="f.label"
                 class="h-10 min-w-36 rounded-md border bg-background px-3 text-sm text-foreground disabled:opacity-50"
                 [disabled]="!!f.disabled"
                 [value]="values()[f.key] ?? ''"
@@ -75,13 +77,14 @@ export type FilterValues = Record<string, string>;
             @case ('date') {
               <input
                 type="date"
+                [attr.aria-label]="f.label"
                 class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
                 [value]="values()[f.key] ?? ''"
                 (change)="set(f.key, $any($event.target).value)"
               />
             }
           }
-        </label>
+        </div>
       }
       @if (activeCount() > 0) {
         <button
