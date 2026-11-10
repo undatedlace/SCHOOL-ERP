@@ -70,13 +70,15 @@ import { PageHeader } from '../../shared/ui/page-header';
           </app-form-field>
         </div>
 
-        <app-form-renderer
-          [schema]="s"
-          [classes]="classes()"
-          [errors]="errors()"
-          [ageAsOn]="ageAsOn()"
-          (changed)="onChanged()"
-        />
+        <div class="mb-6 rounded-xl border-0 bg-card p-5 shadow-sm">
+          <app-form-renderer
+            [schema]="s"
+            [classes]="classes()"
+            [errors]="errors()"
+            [ageAsOn]="ageAsOn()"
+            (changed)="onChanged()"
+          />
+        </div>
 
         @if (advice(); as a) {
           @if (a.eligible) {
