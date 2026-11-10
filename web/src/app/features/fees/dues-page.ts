@@ -137,11 +137,9 @@ import { PageHeader } from '../../shared/ui/page-header';
         <ng-template #body let-s>
           <tr>
             <td>
-              <a
-                class="font-medium underline-offset-4 hover:underline"
-                [routerLink]="['/app/students', s.studentId]"
-                >{{ s.fullName }}</a
-              >
+              <a class="font-medium app-link" [routerLink]="['/app/students', s.studentId]">{{
+                s.fullName
+              }}</a>
               <div class="text-xs text-muted-foreground">Admission no. {{ s.admissionNo }}</div>
             </td>
             <td>{{ s.class }}-{{ s.division }}</td>

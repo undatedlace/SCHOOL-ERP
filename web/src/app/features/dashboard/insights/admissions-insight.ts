@@ -9,7 +9,7 @@ import { changeText, widthPercent } from './insight-utils';
   selector: 'app-admissions-insight',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5" aria-labelledby="ins-adm">
+    <section class="rounded-xl border-0 bg-card shadow-sm p-5" aria-labelledby="ins-adm">
       <h2 id="ins-adm" class="mb-1 font-semibold">Admissions by year</h2>
       <p class="mb-3 text-sm text-muted-foreground">
         Applications received, granted and turned into students.

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { AuthContext } from '../../common/auth-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { StudentsService } from '../students/students.service.js';
 import {
   Counts,
@@ -33,6 +34,7 @@ export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly students: StudentsService,
+    private readonly audit: AuditService,
   ) {}
 
   // ---------- who may work on which division ----------
@@ -333,6 +335,45 @@ export class AttendanceService {
     return this.roster(auth, divisionId, iso);
   }
 
+  /** Removes one student's mark for a day (the admin only; a teacher changes a mark instead). */
+  async clear(
+    auth: AuthContext,
+    divisionId: string,
+    studentId: string,
+    dateIso: string | undefined,
+    ip?: string,
+  ) {
+    if (!dateIso)
+      throw new BadRequestException('Say which date (date=YYYY-MM-DD)');
+    const iso = this.day(dateIso);
+    if (iso > todayInIndia()) {
+      throw new BadRequestException('There is no attendance for a future date');
+    }
+    const year = await this.yearOn(auth.schoolId, iso);
+    await this.assertDivision(auth, divisionId, year.id, 'mark');
+    const record = await this.prisma.attendanceRecord.findFirst({
+      where: {
+        schoolId: auth.schoolId,
+        divisionId,
+        studentId,
+        date: toDate(iso),
+      },
+      select: { id: true, status: true },
+    });
+    if (!record) throw new NotFoundException('There is no mark to remove');
+    await this.prisma.attendanceRecord.delete({ where: { id: record.id } });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'attendance.mark_removed',
+      entityType: 'student',
+      entityId: studentId,
+      metadata: { date: iso, was: record.status, divisionId },
+      ip,
+    });
+    return this.roster(auth, divisionId, iso);
+  }
+
   // ---------- reports ----------
 
   /** Each student of a division with their totals over a range. */
@@ -359,10 +400,15 @@ export class AttendanceService {
       select: { studentId: true, status: true, date: true },
     });
     const perStudent = new Map<string, Status[]>();
+    /** Each student's status on each marked day, for the grid. */
+    const byDay = new Map<string, Record<string, Status>>();
     for (const r of records) {
       const list = perStudent.get(r.studentId) ?? [];
       list.push(r.status);
       perStudent.set(r.studentId, list);
+      const days = byDay.get(r.studentId) ?? {};
+      days[toIso(r.date)] = r.status;
+      byDay.set(r.studentId, days);
     }
     const days = new Set(records.map((r) => toIso(r.date)));
     const students = this.sortRoster(
@@ -372,11 +418,14 @@ export class AttendanceService {
         name: fullName(e.student),
         rollNo: e.rollNo,
         ...summarise(tally(perStudent.get(e.student.id) ?? [])),
+        days: byDay.get(e.student.id) ?? {},
       })),
     );
     return {
       from,
       to,
+      /** The days any attendance was taken for this division, oldest first. */
+      markedDates: [...days].sort(),
       academicYear: { id: year.id, name: year.name },
       division: { id: division.id, name: division.name, class: division.class },
       daysMarked: days.size,

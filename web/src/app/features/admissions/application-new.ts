@@ -48,7 +48,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     } @else if (schema(); as s) {
       <div class="max-w-4xl">
         <div
-          class="mb-8 grid gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2"
+          class="mb-8 grid gap-4 rounded-xl border-0 bg-card shadow-sm p-4 sm:grid-cols-2"
           [formGroup]="header"
         >
           <app-form-field

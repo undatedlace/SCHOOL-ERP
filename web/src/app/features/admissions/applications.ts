@@ -45,7 +45,7 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
       <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <button
           type="button"
-          class="rounded-lg border bg-card p-3 text-left hover:bg-accent"
+          class="rounded-xl border-0 bg-card shadow-sm p-3 text-left hover:bg-accent"
           (click)="onStatus(null)"
         >
           <p class="text-xs text-muted-foreground">All applications</p>
@@ -54,7 +54,7 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
         @for (opt of statuses; track opt.value) {
           <button
             type="button"
-            class="rounded-lg border bg-card p-3 text-left hover:bg-accent"
+            class="rounded-xl border-0 bg-card shadow-sm p-3 text-left hover:bg-accent"
             [class.ring-2]="status === opt.value"
             [class.ring-ring]="status === opt.value"
             (click)="onStatus(opt.value)"
@@ -119,11 +119,9 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
         <tr class="hover:bg-accent">
           <td class="font-mono text-sm">{{ row.formNo }}</td>
           <td>
-            <a
-              class="font-medium underline-offset-4 hover:underline"
-              [routerLink]="['/app/admissions', row.id]"
-              >{{ row.studentName }}</a
-            >
+            <a class="font-medium app-link" [routerLink]="['/app/admissions', row.id]">{{
+              row.studentName
+            }}</a>
           </td>
           <td>{{ row.class?.name }}</td>
           <td class="whitespace-nowrap text-sm">{{ format(row.receivedOn) }}</td>

@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth.service';
 import { Notice, StudentAttendance, StudentLedger } from '../../core/models';
 import { inr } from '../../shared/money';
 import { percentText } from '../attendance/attendance-utils';
+import { UpcomingEvents } from '../calendar/upcoming-events';
 import { NoticeCard } from '../notices/notice-card';
 import { ChildSwitcher } from './child-switcher';
 import { PortalChildren } from './portal-children';
@@ -13,7 +14,7 @@ import { PortalChildren } from './portal-children';
 /** The first screen: a child's attendance and fees at a glance, and the latest notices. */
 @Component({
   selector: 'app-portal-home',
-  imports: [RouterLink, ChildSwitcher, NoticeCard],
+  imports: [RouterLink, ChildSwitcher, NoticeCard, UpcomingEvents],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="mb-3 text-xl font-semibold">Welcome, {{ auth.me()?.fullName }}</h1>
@@ -27,19 +28,19 @@ import { PortalChildren } from './portal-children';
         }
       </p>
       <div class="mb-6 grid grid-cols-2 gap-3">
-        <a routerLink="/portal/attendance" class="rounded-lg border bg-card p-4">
-          <div class="text-xs text-muted-foreground">Attendance</div>
+        <a routerLink="/portal/attendance" class="rounded-xl bg-lavender p-4">
+          <div class="text-xs opacity-80">Attendance</div>
           <div class="text-2xl font-semibold">
             {{ attendance() ? percent(attendance()!.summary) : '-' }}
           </div>
-          <div class="text-xs text-muted-foreground">this year</div>
+          <div class="text-xs opacity-80">this year</div>
         </a>
-        <a routerLink="/portal/fees" class="rounded-lg border bg-card p-4">
-          <div class="text-xs text-muted-foreground">Fees to pay</div>
+        <a routerLink="/portal/fees" class="rounded-xl bg-sun p-4">
+          <div class="text-xs opacity-80">Fees to pay</div>
           <div class="text-2xl font-semibold">
             {{ ledger() ? money(ledger()!.totals.pending) : '-' }}
           </div>
-          <div class="text-xs text-muted-foreground">pay at the school office</div>
+          <div class="text-xs opacity-80">pay at the school office</div>
         </a>
       </div>
     } @else if (portal.loaded()) {
@@ -47,6 +48,8 @@ import { PortalChildren } from './portal-children';
         No student is linked to this login yet. Please ask the school office.
       </p>
     }
+
+    <div class="mb-6"><app-upcoming-events calendarLink="/portal/calendar" [limit]="3" /></div>
 
     <div class="mb-2 flex items-baseline justify-between">
       <h2 class="font-semibold">Latest notices</h2>

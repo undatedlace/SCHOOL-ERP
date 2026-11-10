@@ -108,7 +108,7 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
 
       @if (schema(); as s) {
         @if (!editing() || previewing()) {
-          <div class="max-w-4xl rounded-lg border bg-card p-6">
+          <div class="max-w-4xl rounded-xl border-0 bg-card shadow-sm p-6">
             @if (previewing()) {
               <p class="mb-4 text-sm text-muted-foreground">
                 This is how the form will look. Nothing you type here is saved.
@@ -125,7 +125,7 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
               let first = $first;
               let last = $last
             ) {
-              <section class="mb-6 rounded-lg border bg-card">
+              <section class="mb-6 rounded-xl border-0 bg-card shadow-sm">
                 <div class="flex flex-wrap items-center gap-2 border-b p-3">
                   <input
                     class="min-w-48 flex-1 rounded-md border bg-background px-3 py-2 text-sm font-semibold"

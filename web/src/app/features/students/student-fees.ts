@@ -56,7 +56,10 @@ const moneyValidator = (c: { value: string }) =>
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5 lg:col-span-3" *appHasPermission="'fees.read'">
+    <section
+      class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-3"
+      *appHasPermission="'fees.read'"
+    >
       <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 class="font-semibold">Fees</h2>
         <div class="flex flex-wrap gap-2">

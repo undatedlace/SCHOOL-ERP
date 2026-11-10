@@ -12,7 +12,10 @@ import { monthLabel, widthPercent } from './insight-utils';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5 lg:col-span-2" aria-labelledby="ins-fees">
+    <section
+      class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2"
+      aria-labelledby="ins-fees"
+    >
       <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="ins-fees" class="font-semibold">
           Fees {{ data() ? '(' + data()!.academicYear.name + ')' : '' }}

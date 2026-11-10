@@ -104,7 +104,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
       </div>
 
       <div class="grid gap-6 lg:grid-cols-3">
-        <section class="rounded-lg border bg-card p-5 lg:col-span-2">
+        <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">
           <div class="mb-3 flex items-center justify-between">
             <h2 class="font-semibold">Parents and guardians</h2>
             <p-button
@@ -184,7 +184,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
           <app-student-documents [studentId]="s.id" />
 
           <section
-            class="rounded-lg border bg-card p-5"
+            class="rounded-xl border-0 bg-card shadow-sm p-5"
             *appHasPermission="'portal.accounts.manage'"
           >
             <h2 class="mb-1 font-semibold">Student login</h2>
@@ -212,7 +212,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
             }
           </section>
 
-          <section class="rounded-lg border bg-card p-5">
+          <section class="rounded-xl border-0 bg-card shadow-sm p-5">
             <h2 class="mb-3 font-semibold">Details</h2>
             <dl class="grid gap-3 text-sm">
               <div>
@@ -233,9 +233,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
                 <div>
                   <dt class="text-xs text-muted-foreground">Admission application</dt>
                   <dd>
-                    <a
-                      class="underline-offset-4 hover:underline"
-                      [routerLink]="['/app/admissions', s.application.id]"
+                    <a class="app-link" [routerLink]="['/app/admissions', s.application.id]"
                       >Form no. {{ s.application.formNo }}</a
                     >
                   </dd>
@@ -244,7 +242,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
             </dl>
           </section>
 
-          <section class="rounded-lg border bg-card p-5">
+          <section class="rounded-xl border-0 bg-card shadow-sm p-5">
             <h2 class="mb-3 font-semibold">Class history</h2>
             <ul class="grid gap-2 text-sm">
               @for (e of s.enrollments; track e.id) {

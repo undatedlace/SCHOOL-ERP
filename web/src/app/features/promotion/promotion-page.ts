@@ -84,7 +84,7 @@ import {
       @if (p.students.length === 0) {
         <p-message severity="info" text="Everyone in this division has already been dealt with." />
       } @else {
-        <ul class="divide-y rounded-lg border bg-card">
+        <ul class="divide-y rounded-xl border-0 bg-card shadow-sm">
           @for (s of p.students; track s.studentId) {
             <li class="flex flex-wrap items-center gap-3 p-3">
               <div class="min-w-40 flex-1">
@@ -140,7 +140,7 @@ import {
           text="No students were enrolled in the year you are moving from."
         />
       } @else {
-        <ul class="divide-y rounded-lg border bg-card">
+        <ul class="divide-y rounded-xl border-0 bg-card shadow-sm">
           @for (d of st.divisions; track d.id) {
             <li class="flex flex-wrap items-center gap-3 p-3">
               <div class="min-w-40 flex-1 font-medium">{{ d.class.name }}-{{ d.name }}</div>

@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth.service';
 import { Assignment } from '../../core/models';
 import { NAV } from '../../core/nav';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { UpcomingEvents } from '../calendar/upcoming-events';
 import { PageHeader } from '../../shared/ui/page-header';
 import { AdmissionsInsightCard } from './insights/admissions-insight';
 import { AttendanceInsightCard } from './insights/attendance-insight';
@@ -22,13 +23,14 @@ import { StaffInsightCard } from './insights/staff-insight';
     AttendanceInsightCard,
     FeesInsightCard,
     StaffInsightCard,
+    UpcomingEvents,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header [title]="'Welcome, ' + firstName()" subtitle="Here is what you can do." />
 
     @if (mine().length) {
-      <section class="mb-8 rounded-lg border bg-card p-5" aria-labelledby="my-classes">
+      <section class="mb-8 rounded-xl border-0 bg-card shadow-sm p-5" aria-labelledby="my-classes">
         <h2 id="my-classes" class="mb-3 font-semibold">Your classes this year</h2>
         <ul class="grid gap-2 text-sm sm:grid-cols-2">
           @for (a of mine(); track a.id) {
@@ -45,6 +47,7 @@ import { StaffInsightCard } from './insights/staff-insight';
     }
 
     <div class="mb-8 grid gap-4 lg:grid-cols-2">
+      <app-upcoming-events *appHasPermission="'calendar.read'" />
       <app-fees-insight *appHasPermission="'fees.read_all'" />
       <app-attendance-insight *appHasPermission="'attendance.read'" />
       <app-admissions-insight *appHasPermission="'insights.admissions'" />
@@ -55,7 +58,7 @@ import { StaffInsightCard } from './insights/staff-insight';
       @for (item of shortcuts(); track item.path) {
         <a
           [routerLink]="item.path"
-          class="rounded-lg border bg-card p-5 shadow-sm transition hover:border-ring"
+          class="rounded-xl bg-card p-5 shadow-sm transition hover:shadow-md"
         >
           <h2 class="font-medium">{{ item.label }}</h2>
           <p class="mt-1 text-sm text-muted-foreground">{{ item.description }}</p>

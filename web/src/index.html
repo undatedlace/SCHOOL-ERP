@@ -6,17 +6,17 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#18181b" />
+    <meta name="theme-color" content="#f6f6fb" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <script>
-      // Dark by default. Runs before the app starts so the page never flashes white.
+      // Light by default; dark only if chosen. Runs before the app starts so the page never flashes white.
       try {
-        if (localStorage.getItem('theme') !== 'light')
+        if (localStorage.getItem('theme') === 'dark')
           document.documentElement.classList.add('app-dark');
       } catch (e) {
-        document.documentElement.classList.add('app-dark');
+        // Storage blocked: stay light.
       }
     </script>
   </head>

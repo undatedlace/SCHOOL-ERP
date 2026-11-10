@@ -26,7 +26,8 @@ export interface TempPassword {
       @if (info(); as t) {
         <p class="mb-3 text-sm">
           Give this password to <strong>{{ t.name }}</strong
-          >. It is shown only once, and they must change it when they sign in.
+          >. It is shown only once. They must sign in and change it within 2 days, or it stops
+          working and a new one is needed.
         </p>
         @if (t.loginId) {
           <p class="mb-2 text-sm">

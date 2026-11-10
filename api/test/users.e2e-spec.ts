@@ -28,6 +28,7 @@ describe('users, roles and tenancy (e2e)', () => {
     const codes = res.body.map((r: { code: string }) => r.code);
     expect(codes).toEqual(
       expect.arrayContaining([
+        'SUPER_ADMIN',
         'SCHOOL_ADMIN',
         'OFFICE_STAFF',
         'ACCOUNTANT',
@@ -37,10 +38,27 @@ describe('users, roles and tenancy (e2e)', () => {
         'STUDENT',
       ]),
     );
-    const adminRole = res.body.find(
+    const superRole = res.body.find(
+      (r: { code: string }) => r.code === 'SUPER_ADMIN',
+    );
+    expect(superRole.permissions).toContain('fees.payment.reverse');
+    expect(superRole.permissions).toContain('admins.manage');
+    // The School Admin runs the school but keeps out of the trustees' powers.
+    const schoolAdmin = res.body.find(
       (r: { code: string }) => r.code === 'SCHOOL_ADMIN',
     );
-    expect(adminRole.permissions).toContain('fees.payment.reverse');
+    expect(schoolAdmin.permissions).toContain('users.manage');
+    expect(schoolAdmin.permissions).toContain('forms.manage');
+    expect(schoolAdmin.permissions).toContain('fees.payment.create');
+    for (const p of [
+      'admins.manage',
+      'settings.manage',
+      'audit.read',
+      'fees.payment.reverse',
+      'fees.concession.manage',
+    ]) {
+      expect(schoolAdmin.permissions).not.toContain(p);
+    }
     const accountant = res.body.find(
       (r: { code: string }) => r.code === 'ACCOUNTANT',
     );
@@ -223,7 +241,7 @@ describe('users, roles and tenancy (e2e)', () => {
         .expect(400);
     });
 
-    it('the school always keeps one active School Admin', async () => {
+    it('the school always keeps one active Super Admin', async () => {
       const me = await prisma.user.findFirstOrThrow({
         where: { email: ADMIN_EMAIL },
       });
@@ -231,7 +249,7 @@ describe('users, roles and tenancy (e2e)', () => {
       await prisma.user.updateMany({
         where: {
           id: { not: me.id },
-          roles: { some: { role: { code: 'SCHOOL_ADMIN' } } },
+          roles: { some: { role: { code: 'SUPER_ADMIN' } } },
         },
         data: { status: 'DISABLED' },
       });
@@ -240,10 +258,10 @@ describe('users, roles and tenancy (e2e)', () => {
         .patch(`/api/users/${me.id}`)
         .send({ roleCodes: ['TEACHER'] })
         .expect(400);
-      expect(res.body.message).toMatch(/at least one active School Admin/);
+      expect(res.body.message).toMatch(/at least one active Super Admin/);
 
       // With a second active admin the same change is allowed (then restored).
-      const second = await createUser(admin, 'SCHOOL_ADMIN');
+      const second = await createUser(admin, 'SUPER_ADMIN');
       await admin
         .patch(`/api/users/${me.id}`)
         .send({ roleCodes: ['TEACHER'] })
@@ -254,7 +272,7 @@ describe('users, roles and tenancy (e2e)', () => {
           userId: me.id,
           roleId: (
             await prisma.role.findUniqueOrThrow({
-              where: { code: 'SCHOOL_ADMIN' },
+              where: { code: 'SUPER_ADMIN' },
             })
           ).id,
         },

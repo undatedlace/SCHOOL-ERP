@@ -5,19 +5,24 @@
 
 /* Design tokens: neutral (zinc) palette, shadcn-style. Light values first, dark below. */
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
+  --background: #f6f6fb;
+  --foreground: #1c2430;
   --card: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --border: #e4e4e7;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --ring: #a1a1aa;
+  --muted: #f1f1f8;
+  --muted-foreground: #6b7280;
+  --accent: #e3f4fc;
+  --border: #e7e7f0;
+  --primary: #1f2a44;
+  --primary-foreground: #ffffff;
+  --ring: #8fa0d8;
   --destructive: #dc2626;
-  --success: #16a34a;
-  --radius: 0.5rem;
+  --success: #15803d;
+  /* SchoolHub accents: lavender, sun (yellow) and sky tiles */
+  --link: #3b3a8f;
+  --lavender: #d2cffd;
+  --sun: #fae27c;
+  --sky: #c6ebfb;
+  --radius: 0.75rem;
 }
 
 .app-dark {
@@ -33,6 +38,10 @@
   --ring: #52525b;
   --destructive: #f87171;
   --success: #4ade80;
+  --link: #b9b6ff;
+  --lavender: #3b3868;
+  --sun: #5c4f14;
+  --sky: #174559;
   color-scheme: dark;
 }
 
@@ -50,7 +59,11 @@
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
+  --color-lavender: var(--lavender);
+  --color-sun: var(--sun);
+  --color-sky: var(--sky);
   --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
 }
 
 @layer base {
@@ -62,4 +75,16 @@
     color: var(--foreground);
     @apply antialiased;
   }
+}
+
+/* A name or title that opens something: coloured and underlined all the time, so it never looks like plain text. */
+.app-link {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent);
+  text-underline-offset: 4px;
+}
+.app-link:hover,
+.app-link:focus-visible {
+  text-decoration-color: currentColor;
 }

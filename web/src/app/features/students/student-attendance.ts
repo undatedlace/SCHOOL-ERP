@@ -13,7 +13,10 @@ import { percentText, statusLabel } from '../attendance/attendance-utils';
   imports: [HasPermission],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="rounded-lg border bg-card p-5" *appHasPermission="'attendance.read'">
+    <section
+      class="rounded-xl border-0 bg-card shadow-sm p-5"
+      *appHasPermission="'attendance.read'"
+    >
       <h2 class="mb-1 font-semibold">Attendance</h2>
       @if (data(); as a) {
         <p class="mb-3 text-sm text-muted-foreground">

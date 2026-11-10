@@ -559,12 +559,50 @@ export interface AttendanceDivisionReport {
   from: string;
   to: string;
   daysMarked: number;
+  /** The days attendance was taken for this division, oldest first. */
+  markedDates: string[];
   students: (AttendanceSummary & {
     studentId: string;
     admissionNo: string;
     name: string;
     rollNo: number | null;
+    /** The student's status on each day it was taken. */
+    days: Record<string, AttendanceStatus>;
   })[];
+}
+
+export interface StaffAttendanceRoster {
+  date: string;
+  canMark: boolean;
+  marked: boolean;
+  counts: AttendanceSummary;
+  staff: {
+    staffId: string;
+    employeeNo: string;
+    name: string;
+    designation: string;
+    status: AttendanceStatus | null;
+    note: string | null;
+    markedBy: string | null;
+  }[];
+}
+
+export interface StaffAttendanceReport {
+  from: string;
+  to: string;
+  daysMarked: number;
+  markedDates: string[];
+  people: (AttendanceSummary & {
+    staffId: string;
+    employeeNo: string;
+    name: string;
+    designation: string;
+    days: Record<string, AttendanceStatus>;
+  })[];
+}
+
+export interface MyStaffAttendance extends StaffAttendanceReport {
+  records: { date: string; status: AttendanceStatus; note: string | null }[];
 }
 
 export interface StudentAttendance {
@@ -647,6 +685,41 @@ export interface NoticeInput {
   classIds?: string[];
   divisionIds?: string[];
   expiresOn?: string | null;
+}
+
+// ---------- Calendar ----------
+
+export type CalendarCategory = 'EVENT' | 'HOLIDAY' | 'EXAM' | 'MEETING';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  category: CalendarCategory;
+  startsOn: string;
+  endsOn: string;
+  startTime: string | null;
+  endTime: string | null;
+  audience: NoticeAudience;
+  classes: { id: string; name: string }[];
+  divisions: { id: string; label: string }[];
+  /** A notice about it was sent to the same audience. */
+  announced: boolean;
+  canChange: boolean;
+}
+
+export interface CalendarEventInput {
+  title: string;
+  description?: string | null;
+  category: CalendarCategory;
+  startsOn: string;
+  endsOn?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  audience: NoticeAudience;
+  classIds?: string[];
+  divisionIds?: string[];
+  announce?: boolean;
 }
 
 // ---------- Dashboard insights ----------

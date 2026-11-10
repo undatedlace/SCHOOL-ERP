@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices, the portal screens and the installable app are built (results and report cards wait for Phase 4). Phase 6 has started: dashboard insights, deployment files and backup scripts are built. Last updated: 9 Nov 2026.
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices, the portal screens and the installable app are built (results and report cards wait for Phase 4). Phase 6 has started: dashboard insights, deployment files and backup scripts are built. The SchoolHub restyle and the calendar are built (branch `feature/schoolhub-ui`). Last updated: 10 Nov 2026. **A second round of requirements came from the school on 10 Nov (roles, staff types, leave, homework, results, notifications, global search). The design and build order are in `docs/architecture-v2.md`; open decisions 18 to 24 below record what is confirmed. Step T1 (Super Admin and School Admin, temporary-password expiry) is built.**
 
 ## 1. How we work (read this first)
 
@@ -27,7 +27,7 @@ A school management system for **one school**, structured so it can become multi
 5. **Parent and student portal:** report cards, pending fees, attendance, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
 6. **Dashboard:** overall insights.
 
-**Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, staff attendance, native mobile apps, and SMS/WhatsApp notifications.
+**Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, native mobile apps, and SMS/WhatsApp notifications.
 
 ## 3. Tech stack
 
@@ -92,7 +92,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 **Login**
 - Staff: email or mobile number plus password.
 - Parents and students: mobile number or admission-linked ID plus password.
-- First login: the school issues a temporary password, and the user must change it.
+- First login: the school issues a temporary password, and the user must change it **within 2 days** (`TEMP_PASSWORD_DAYS`); after that the password stops working and an admin resets it.
 - Forgot password in V1: admin resets it. SMS OTP comes later, since India's SMS rules (DLT registration) add setup time and cost.
 - MFA for admin and accountant: after V1.
 
@@ -108,7 +108,8 @@ Why it fits: this app holds children's data and money records, and a departing s
 **Roles**
 | Role | Who | Purpose |
 |---|---|---|
-| `SCHOOL_ADMIN` | Principal, management | Full control |
+| `SUPER_ADMIN` | Trustees | Everything. Alone manages admin accounts and roles, school settings, the audit log, erasure, payment reversals and concessions |
+| `SCHOOL_ADMIN` | Principal, management | Runs the school day to day: everything except the Super-Admin-only list |
 | `OFFICE_STAFF` | Front office | Admissions and student records |
 | `ACCOUNTANT` | Accounts office | Fees and payments |
 | `TEACHER` | Teaching staff | Attendance and marks for assigned classes |
@@ -116,7 +117,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | `PARENT` | Guardians | Linked children only |
 | `STUDENT` | Students | Own records, read-only |
 
-"Class teacher" is an assignment, not a role. A future platform `SUPER_ADMIN` isn't needed in V1.
+"Class teacher" is an assignment, not a role. `SUPER_ADMIN` is the trustees of this school, not a platform owner; a platform-level owner for many schools is a later, separate concept.
 
 **Access matrix**
 | Area | Admin | Office | Accountant | Teacher | Staff | Parent | Student |
@@ -126,7 +127,8 @@ Why it fits: this app holds children's data and money records, and a departing s
 | Admissions | Full | Full | Read | - | - | - | - |
 | Student records | Full | Full | Read | Assigned classes (read) | - | Own child (read) | Self (read) |
 | Staff records | Full | Read | - | Self | Self | - | - |
-| Student attendance | Full | Read | - | Assigned classes | - | Own child (read) | Self (read) |
+| Student attendance | Full (mark, change, remove) | Read | - | Assigned classes (mark, change) | - | Own child (read) | Self (read) |
+| Staff attendance | Full (mark, change, remove, leave) | Read | - | Own (read) | Own (read) | - | - |
 | Marks entry | Full | - | - | Assigned subjects | - | - | - |
 | Publish results | Full | - | - | - | - | Own child (read) | Self (read) |
 | Fee structures | Full | - | Full | - | - | - | - |
@@ -134,6 +136,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | Reverse a payment | Full | - | - | - | - | - | - |
 | Own fees (view dues, download receipts) | - | - | - | - | - | Own child | Read |
 | Notices | Full | Create | Create | Own classes | Read | Read | Read |
+| Calendar (events, holidays, exams) | Full | Full | Read | Read (own classes) | Read | Read (own child's classes) | Read |
 | Dashboard | Full | Admissions | Fees | Assigned classes | - | - | - |
 
 **Two layers of checks**
@@ -158,10 +161,12 @@ api/src/
     students/     students, guardians, enrollments, promotion, documents
     staff/        profiles, joining and exit dates, teaching assignments
     attendance/   daily student attendance
+    staff-attendance/  attendance of teachers and other staff
     exams/        exams, marks, grading, results, report cards
     fees/         structures, invoices, payments, allocations, concessions, receipts, dues
     payments/     Razorpay orders and webhooks (ON HOLD, not built)
     notices/      notices and audience targeting
+    calendar/     events, holidays, exams and meetings, with the notice audiences
     imports/      Excel import with validation
     insights/     dashboard queries
     files/        S3 uploads and signed URLs
@@ -189,6 +194,7 @@ web/src/app/
     exams/        exams, marks entry, publish, report cards
     fees/         structures, student ledger, record payment, dues by class
     notices/
+    calendar/     month view, agenda, event dialog, upcoming widget
     imports/
     settings/     school settings, users and roles
     portal/       child switcher, attendance, results, fees, notices
@@ -252,7 +258,7 @@ Admissions, students, guardians, enrollments, staff, teaching assignments, docum
 - **Photographs:** the four photo boxes (child, mother, father, guardian) are a `photograph` question type. Files module: `POST /files` and `GET /files/:id`. Every file has a purpose that decides who may add and see it (`api/src/modules/files/file-purposes.ts`); the type is judged from the file's bytes (PNG, JPEG, WebP only; SVG, HTML and PDF are refused), 5 MB limit, private downloads, and a file you may not see looks the same as one that does not exist. Bytes go through a `FileStorage` interface: local disk in development (`FILES_DIR`) and S3-compatible storage in production, chosen by `FILES_DRIVER` (`docs/s3-setup.md`; check credentials with `npm run s3:check`). The S3 driver is tested against an in-process S3-like server with the real AWS SDK; it has not yet been run against a real bucket. Every photo is re-encoded with `sharp` on upload (`image-clean.ts`): all metadata including camera and GPS data is removed, it is turned upright, shrunk to fit 1600 pixels, and a file that is not a decodable picture is refused. Uploads that are never attached to a student, staff member or application are removed by `npm run files:cleanup` (after `npm run build`; default: older than 24 hours; run it daily from cron once deployed).
 - **Age limits (configurable):** each class has an optional minimum age in whole years and an "open for admission" switch, and each academic year has an optional "age counted as on" date (the paper form's "Age as on"); all set in Academic setup. The form has a display-only *Age limits table* block that draws itself from those settings (so the table on the form always matches them). While an application is filled in, and on the application page, the app advises whether the child's age suits the class and whether it is open, but never blocks saving (see open question 10). Rule in `api/src/common/age.ts`: age in whole months on the counting date, compared with the minimum.
 - **Left out of the paper form on purpose:** "Age as on" (shown as an age calculated from the date of birth), "Date of birth in words", signatures (a tick box records that the signed undertaking was received), and "For office use only" (that is the status and decision).
-- **UI:** neutral (zinc) theme, dark by default, with a toggle. Design tokens live in `web/src/styles.css`; the Optimus preset is `web/src/app/theme/optimus-preset.ts`.
+- **UI:** (replaced by the SchoolHub look, see below; was neutral zinc, dark by default.) Design tokens live in `web/src/styles.css`; the Optimus preset is `web/src/app/theme/optimus-preset.ts`.
 - **Students, guardians, enrolments and the admit flow:** a granted application plus a division and the guardians' details becomes a student, guardians and the first enrolment, in one transaction (all or nothing). A student is never hard-deleted (status and left date) and holds no class: `enrollments` link student, academic year and division, one per year, so promotion will add rows and never rewrite history. A guardian is a person linked to students through `student_guardians` (relationship, primary contact); siblings share one guardian (same name and mobile number), while a father and mother who share a phone stay two people. Guardians can later be linked to a login (`guardians.user_id`). Admission numbers are sequential per school (a typed number is kept) and assigned under a lock; simultaneous admits of one application create exactly one student.
 - **Who sees which students:** `students.read_all` (admin, office, accountant) sees every student. Anyone else with `students.read` sees the students they are a guardian of, plus, for a teacher, the students of the divisions they teach this academic year (class teacher or subject teacher), read only; student accounts see none yet. The access ends the moment an assignment is removed, the year changes, or the teacher leaves. A student you may not see looks the same as one that does not exist, and a parent does not see the admissions paperwork.
 - **Staff:** a profile (name, designation, contact, joined and left dates, photograph) with an optional login. Never hard-deleted: leaving sets status and a left date, **switches the login off and signs the person out everywhere**, and rejoining switches it back on; an administrator cannot lock themselves out. A login is created together with the person or added later, only by someone with `users.manage`, only with staff roles (not parent or student), with a temporary password shown once. Employee numbers are sequential under a lock, or typed. `staff.read_all` (admin, office) sees everyone; teachers and other staff with `staff.read` see only their own record.
@@ -303,6 +309,21 @@ Portal screens, notices, PWA setup. (Razorpay online payment is **on hold**; par
 - **PWA (installable app):** a web manifest (standalone, dark theme colours, neutral placeholder icons to be replaced with the school's logo) and Angular's service worker (`@angular/service-worker` 22.2.4, production builds only). It keeps only the app's own files (scripts, styles, icons) so the app opens fast and can be added to a phone's home screen. **It never caches anything from `/api`** (no data groups; `/api/**` is excluded from navigation; a test guards this), so children's data is never stored by the service worker. In production nginx must serve `ngsw.json`, `ngsw-worker.js` and `index.html` with `Cache-Control: no-cache` so updates reach users, and the manifest and icons from the site root.
 - **Not built:** read receipts, scheduled publishing, attachments on notices, push notifications, offline use of data, and report cards and results in the portal (they follow Phase 4).
 
+### SchoolHub restyle and calendar (10 Nov 2026, branch `feature/schoolhub-ui`)
+
+A look taken from the "SchoolHub" Figma template, plus a calendar. **This changes two earlier decisions:** the theme is now **light by default** (dark stays as a toggle) with lavender, yellow and sky accents instead of neutral zinc, and the staff menu is **grouped** instead of one flat list.
+
+- **Look:** tokens in `web/src/styles.css` (`--lavender`, `--sun`, `--sky`, a pale lavender page, white rounded borderless cards with a soft shadow, larger corners). A floating sidebar with line icons (`shared/ui/icon.ts`), a top bar with the notices bell, the theme toggle and the signed-in person, and coloured shortcut tiles on the dashboard. Colour is never the only cue (labels are always written).
+- **Grouped menu:** `core/nav.ts` holds `NAV_ENTRIES` (single links and groups) and `visibleEntries()`, which drops pages a person may not open and any group left empty. Groups: Admissions (applications, admission form), Students (all students, year-end promotion), Staff, Academics, Finance (fee dues, fee collection, fee setup), Settings (school settings, users, audit log); Dashboard, Calendar, Attendance and Notices stay single links. A group opens by itself when you are on one of its pages and can be folded by hand. Hidden pages are still protected by the route guard and the API.
+- **Calendar:** `calendar_events` and `calendar_event_targets` (same four audiences as notices: everyone, staff only, classes, divisions). Kinds: event, holiday, exam, meeting. Dates are inclusive and an event may span days (up to 60); optional start and end times (India time). Plain text only. Archived, never deleted. Permissions: `calendar.read` (every role), `calendar.manage` (admin, office). Who sees an event follows the same rules as notices (a parent sees events for their child's class and division; a staff-only event never reaches a parent or student). `GET /calendar?from=&to=` returns the events touching those days (at most 400 days), `POST`, `PATCH /:id`, `DELETE /:id`, and `GET /calendar/audiences`. Audited: `calendar.event_created`, `calendar.event_updated`, `calendar.event_archived`.
+- **Telling people:** when an event is created with "Also send a notice about it", a notice is posted to the same audience (through the notice rules), shown until the event ends, and the event remembers it. **In V1 this is an in-app notice only**: there is no push, SMS, WhatsApp or e-mail (still "not in V1"). Changing or removing the event afterwards does not change a notice already sent. It cannot be used for an event already over.
+- **Screens:** *Calendar* with four views chosen from a Day / Week / Month / Year switch (the choice is remembered on that device): **Month** (bordered grid, up to two events a day and "N more"), **Week** and **Day** (hours down the side, an "all-day" band for untimed and multi-day events, overlapping events side by side, opens scrolled to 7 am), and **Year** (twelve small months, a dot under days with events; a month's name opens that month and a day opens that day). Today is a red circle, Previous / Today / Next step by the current view, and an agenda for the chosen day sits beside it (add, change and remove for people who manage it), an *Upcoming* card on the staff dashboard and the portal home, and a *Calendar* tab in the portal (read only).
+- **Attendance grid:** the Report tab on *Attendance* is now a grid like the template: students down the side, one column per day (every day for a range up to 31 days, otherwise only the days taken), a mark in each box (tick present, cross absent, L late, Lv on leave; the letter and a label carry the meaning, not colour alone), a dash where nothing was taken, Sundays greyed, and the attendance percentage with "Low" under 75% at the end. *This month* and *Last month* shortcuts sit beside the From and To dates. `GET /attendance/divisions/:id/report` now also returns `markedDates` and each student's `days` (date to status); the same visibility rules apply. Taking attendance is unchanged.
+- **Student attendance, admin powers (added 10 Nov 2026):** besides marking any division on any past date, the admin can now **remove** a saved mark (`DELETE /attendance/divisions/:id/students/:studentId?date=`, `attendance.mark_all` only, audited as `attendance.mark_removed`); the student then shows as not marked. "On leave" is how leave is recorded, with a note. Teachers still mark and change only their own divisions, for the last 7 days, and cannot remove a mark.
+- **Staff attendance (new, decided 10 Nov 2026; moves "staff attendance" into V1):** the attendance of teachers and other staff, in `staff_attendance_records` (one per person per day; statuses present, absent, late, on leave; a note such as the reason). **The admin marks, changes and removes it for any past date** (`staff_attendance.manage`); office staff can look (`staff_attendance.read_all`); a teacher or other staff member sees only their own (`staff_attendance.read`, *My attendance*). Who is listed on a day: staff who had joined by then and had not left, so leavers stay in the past grid. Audited: `staff_attendance.marked`, `staff_attendance.mark_removed`. Screens: *Attendance* is now a group in the menu with *Students*, *Staff* (take and report grid, remove, mark everyone present) and *My attendance* (hidden for admin and office, who hold the wider permission). **Method of capture is not decided yet** (how teachers will log in and out): every record is `source = MANUAL`, and the table already has `check_in_at` and `check_out_at` (empty) so a login/logout, biometric or QR method can be added later without changing it.
+- **Not built (attendance):** leave **requests and approval** (a parent or teacher applies, the admin approves; today the admin simply marks "on leave"), half days, holidays that excuse everyone, check-in and check-out times.
+- **Not built:** recurring events, a global search box in the top bar (it would have been a dead control), unread counts on the bell, drag to move events.
+
 ### Phase 6: Dashboard and launch
 Insights, security review, backups, deployment, staff training data.
 
@@ -334,6 +355,14 @@ Insights, security review, backups, deployment, staff training data.
 | 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
 | 14 | Online payment through Razorpay? | **On hold** (8 Nov 2026). Offline payments only; the ledger is ready for it | Phase 5 |
 | 15 | Fee rules the school has not given yet: instalments, late fee, who approves concessions | Assumed: instalments are a percentage plan per class; no late fee; concessions are approved by the admin only (`fees.concession.manage`); the accountant records payments | Phase 3 |
+| 18 | Super Admin / School Admin split | **Confirmed 10 Nov.** Only the Super Admin: admin accounts and roles, school settings, audit log, permanent erasure, payment reversals and concessions. The School Admin does everything else | RBAC (built, T1) |
+| 19 | Removing a student | **Confirmed 10 Nov.** Archive with a reason, restorable; permanent erasure only by the Super Admin | Students, DPDP |
+| 20 | Teachers and students they do not teach | **Confirmed 10 Nov.** Teachers read the full record of every student and change only assigned ones. This replaces the earlier rule that a teacher sees only their own students (not yet built, T3). Scanned documents stay behind their own permission until the school says otherwise | Students, privacy |
+| 21 | Staff types (teacher, clerk, peon and so on) instead of a new "School Staff" role, each with its own onboarding form and documents | Proposed (`docs/architecture-v2.md`) | Staff, forms engine |
+| 22 | Homework is back in V1 (dropped on 8 Nov); teachers upload marks and publish results for any test before the board's grading scheme is known | Proposed | Phase 4, 5 |
+| 23 | Staff leave with applications and approval; notifications (in-app first, then email, then SMS/WhatsApp) | Proposed; needs the school's leave policy | Staff, notifications |
+| 24 | Family logins | **Confirmed 10 Nov.** One login per student, held by the parent: a student ID by the school's convention (for example `hesj0001`) with a temporary password, changed within 2 days (built). Later the school e-mail `<id>@<domain>`. The convention (prefix, digits, e-mail domain) is a school setting (T3). Parent mobile-number login is postponed | Auth, students |
+| 17 | How teachers' attendance is captured (login/logout, biometric, QR, or the admin marking by hand), and whether leave needs requests and approval? | Admin marks by hand for now; leave is the admin marking "on leave"; the data model is ready for check-in/out | Phase 4 |
 | 16 | How the school takes attendance: daily or per period, who may take it, how far back it can be corrected, the minimum percentage, and how leave is counted? | Daily for the whole division; any teacher of the division (class or subject); teachers correct up to 7 days back, the admin any time; 75% is called low; approved leave is not counted against the child | Phase 4 |
 
 ## 12. Next step

@@ -9,7 +9,7 @@ import { audienceText } from './notice-utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <article class="rounded-lg border bg-card p-4">
+    <article class="rounded-xl border-0 bg-card shadow-sm p-4">
       <div class="flex flex-wrap items-start justify-between gap-2">
         <h2 class="font-semibold">{{ notice().title }}</h2>
         <ng-content />

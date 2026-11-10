@@ -21,6 +21,7 @@ import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
+import { grantableRoles } from '../../core/admin-roles';
 import { AuthService } from '../../core/auth.service';
 import { Gender, NewStaff, StaffMember } from '../../core/models';
 import { fromIsoDate, toIsoDate } from '../../shared/dates';
@@ -214,7 +215,10 @@ export class StaffForm {
   protected readonly canGiveLogin = () => this.auth.has('users.manage');
 
   protected readonly genders = GENDERS;
-  protected readonly roleOptions = STAFF_ROLE_OPTIONS;
+  protected readonly roleOptions = grantableRoles(
+    STAFF_ROLE_OPTIONS,
+    inject(AuthService).has('admins.manage'),
+  );
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly employeeNoError = signal<string | null>(null);

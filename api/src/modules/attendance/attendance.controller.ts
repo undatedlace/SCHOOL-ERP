@@ -1,12 +1,15 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import type { AuthContext } from '../../common/auth-context.js';
 import { CurrentAuth } from '../../common/decorators/current-auth.decorator.js';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
@@ -53,6 +56,19 @@ export class AttendanceController {
     @Body() dto: MarkAttendanceDto,
   ) {
     return this.attendance.mark(auth, divisionId, dto);
+  }
+
+  /** Removes one student's mark for a day. The admin only. */
+  @Delete('divisions/:divisionId/students/:studentId')
+  @RequirePermissions('attendance.mark_all')
+  clear(
+    @CurrentAuth() auth: AuthContext,
+    @Param('divisionId', ParseUUIDPipe) divisionId: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Query() q: DayQueryDto,
+    @Req() req: Request,
+  ) {
+    return this.attendance.clear(auth, divisionId, studentId, q.date, req.ip);
   }
 
   @Get('divisions/:divisionId/report')

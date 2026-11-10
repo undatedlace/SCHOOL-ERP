@@ -26,6 +26,7 @@ model Notice {
   school    School         @relation(fields: [schoolId], references: [id])
   createdBy User           @relation("NoticeAuthor", fields: [createdById], references: [id])
   targets   NoticeTarget[]
+  event     CalendarEvent?
 
   @@index([schoolId, createdAt])
   @@map("notices")

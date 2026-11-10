@@ -295,6 +295,44 @@ describe('attendance (e2e)', () => {
     });
   });
 
+  describe('removing a mark', () => {
+    it('lets the admin remove a mark (even an old one), audits it, and the student shows unmarked', async () => {
+      const old = addDays(today, -20);
+      await put(admin, divA, old, [
+        { studentId: s3 === s1 ? s2 : s1, status: 'ABSENT' },
+      ]).expect(200);
+      const who = s3 === s1 ? s2 : s1;
+      const res = await admin
+        .delete(`/api/attendance/divisions/${divA}/students/${who}?date=${old}`)
+        .expect(200);
+      expect(
+        res.body.students.find(
+          (x: { studentId: string }) => x.studentId === who,
+        ).status,
+      ).toBeNull();
+      await admin
+        .delete(`/api/attendance/divisions/${divA}/students/${who}?date=${old}`)
+        .expect(404);
+      await admin
+        .delete(`/api/attendance/divisions/${divA}/students/${who}`)
+        .expect(400);
+      const log = await prisma.auditLog.findFirst({
+        where: { entityId: who, action: 'attendance.mark_removed' },
+      });
+      expect(log).not.toBeNull();
+    });
+
+    it('is not for teachers, office staff or parents (a teacher changes a mark instead)', async () => {
+      for (const who of [teacherA, office, parent]) {
+        await who
+          .delete(
+            `/api/attendance/divisions/${divA}/students/${s1}?date=${today}`,
+          )
+          .expect(403);
+      }
+    });
+  });
+
   describe('who may do what', () => {
     it('a teacher works only on divisions they teach, and others look like they do not exist', async () => {
       await teacherA.get(`/api/attendance/divisions/${divB}`).expect(404);
@@ -442,6 +480,20 @@ describe('attendance (e2e)', () => {
       expect(res.body.daysMarked).toBeGreaterThanOrEqual(3);
       expect(row(s1)).toMatchObject({ present: 2, absent: 1, onLeave: 1 });
       expect(row(s2)).toMatchObject({ late: 1, present: 1 });
+      // The grid: each student's status on each day taken.
+      expect(res.body.markedDates.length).toBe(res.body.daysMarked);
+      expect(res.body.markedDates).toEqual([...res.body.markedDates].sort());
+      const days = Object.entries(row(s1).days) as [string, string][];
+      expect(days.length).toBe(4);
+      expect(days.map(([, st]) => st).sort()).toEqual([
+        'ABSENT',
+        'ON_LEAVE',
+        'PRESENT',
+        'PRESENT',
+      ]);
+      expect(res.body.markedDates).toEqual(
+        expect.arrayContaining(days.map(([d]) => d)),
+      );
       await teacherA
         .get(`/api/attendance/divisions/${divB}/report`)
         .expect(404);

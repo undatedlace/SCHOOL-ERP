@@ -1,0 +1,30 @@
+/// How a staff attendance record was captured. Only MANUAL exists now; the school has not yet
+/// decided how teachers will log in and out, so other ways are added later without changing the table.
+enum AttendanceSource {
+  MANUAL
+}
+
+/// One member of staff's attendance on one day. Marked by the school admin.
+model StaffAttendanceRecord {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  schoolId   String           @map("school_id") @db.Uuid
+  staffId    String           @map("staff_id") @db.Uuid
+  date       DateTime         @db.Date
+  status     AttendanceStatus
+  note       String?
+  source     AttendanceSource @default(MANUAL)
+  /// Reserved for when check-in and check-out are captured.
+  checkInAt  DateTime?        @map("check_in_at")
+  checkOutAt DateTime?        @map("check_out_at")
+  markedById String           @map("marked_by_id") @db.Uuid
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  school   School @relation(fields: [schoolId], references: [id])
+  staff    Staff  @relation(fields: [staffId], references: [id])
+  markedBy User   @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([staffId, date])
+  @@index([schoolId, date])
+  @@map("staff_attendance_records")
+}

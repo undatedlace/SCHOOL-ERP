@@ -27,7 +27,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       <form
         [formGroup]="form"
         (ngSubmit)="save()"
-        class="grid max-w-3xl gap-4 rounded-lg border bg-card p-6 sm:grid-cols-2"
+        class="grid max-w-3xl gap-4 rounded-xl border-0 bg-card shadow-sm p-6 sm:grid-cols-2"
         novalidate
       >
         <app-form-field

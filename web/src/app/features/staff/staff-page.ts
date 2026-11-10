@@ -17,6 +17,8 @@ import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
 import { genderLabel } from '../../shared/ui/labels';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
+import { AuthService } from '../../core/auth.service';
+import { grantableRoles } from '../../core/admin-roles';
 import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
 
 @Component({
@@ -92,7 +94,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
       </div>
 
       <div class="grid gap-6 lg:grid-cols-2">
-        <section class="rounded-lg border bg-card p-5">
+        <section class="rounded-xl border-0 bg-card shadow-sm p-5">
           <h2 class="mb-3 font-semibold">Details</h2>
           <dl class="grid gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -137,7 +139,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
         </section>
 
         @if (teaching().length) {
-          <section class="rounded-lg border bg-card p-5 lg:col-span-2">
+          <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">
             <h2 class="mb-3 font-semibold">Teaching this year</h2>
             <ul class="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
               @for (a of teaching(); track a.id) {
@@ -152,7 +154,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           </section>
         }
 
-        <section class="rounded-lg border bg-card p-5">
+        <section class="rounded-xl border-0 bg-card shadow-sm p-5">
           <h2 class="mb-3 font-semibold">Login</h2>
           @if (s.account; as a) {
             <div class="flex flex-wrap items-center gap-2">
@@ -261,7 +263,10 @@ export class StaffPage {
   protected readonly format = formatDate;
   protected readonly age = (dob: string) => ageText(dob);
   protected readonly gender = genderLabel;
-  protected readonly roleOptions = STAFF_ROLE_OPTIONS;
+  protected readonly roleOptions = grantableRoles(
+    STAFF_ROLE_OPTIONS,
+    inject(AuthService).has('admins.manage'),
+  );
 
   protected readonly staff = signal<StaffMember | null>(null);
   protected readonly teaching = signal<Assignment[]>([]);
