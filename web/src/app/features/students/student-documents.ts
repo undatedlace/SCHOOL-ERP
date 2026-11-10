@@ -34,7 +34,7 @@ const size = (bytes: number | null) =>
   template: `
     <section
       class="rounded-xl border-0 bg-card shadow-sm p-5"
-      *appHasPermission="'students.read_all'"
+      *appHasPermission="'students.documents.read'"
     >
       <h2 class="mb-1 font-semibold">Documents</h2>
       <p class="mb-3 text-sm text-muted-foreground">

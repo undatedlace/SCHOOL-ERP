@@ -39,6 +39,9 @@ export class SchoolService {
         phone: true,
         email: true,
         board: true,
+        studentIdPrefix: true,
+        studentIdDigits: true,
+        studentEmailDomain: true,
       },
     });
   }
@@ -46,7 +49,12 @@ export class SchoolService {
   async update(auth: AuthContext, dto: UpdateSchoolDto) {
     const updated = await this.prisma.school.update({
       where: { id: auth.schoolId },
-      data: dto,
+      data: {
+        ...dto,
+        // An empty box means "none".
+        ...(dto.studentIdPrefix === '' ? { studentIdPrefix: null } : {}),
+        ...(dto.studentEmailDomain === '' ? { studentEmailDomain: null } : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -54,6 +62,9 @@ export class SchoolService {
         phone: true,
         email: true,
         board: true,
+        studentIdPrefix: true,
+        studentIdDigits: true,
+        studentEmailDomain: true,
       },
     });
     await this.audit.log({

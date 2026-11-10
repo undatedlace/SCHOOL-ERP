@@ -335,9 +335,9 @@ describe('search and filters (e2e)', () => {
       expect(group(await find(parentB, boy.surname), 'students')).toBeDefined();
     });
 
-    it('a teacher with no classes finds no students and no applications', async () => {
+    it('a teacher finds every student (as decided) but no applications', async () => {
       const res = await find(teacher, tag);
-      expect(group(res, 'students')).toBeUndefined();
+      expect(group(res, 'students')).toBeDefined();
       expect(group(res, 'applications')).toBeUndefined();
     });
 

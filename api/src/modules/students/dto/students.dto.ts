@@ -190,3 +190,18 @@ export class UpdateGuardianDto {
   @MaxLength(100)
   occupation?: string;
 }
+
+/** Taking a student off the lists. A reason is required and kept. */
+export class RemoveStudentDto {
+  @Transform(trim)
+  @IsString()
+  @MinLength(3, { message: 'Say why the student is being removed' })
+  @MaxLength(300)
+  reason: string;
+}
+
+/** Putting a student in another class or division for this academic year. */
+export class MoveStudentDto {
+  @IsUUID()
+  divisionId: string;
+}

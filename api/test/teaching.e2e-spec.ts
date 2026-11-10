@@ -480,7 +480,7 @@ describe('teaching assignments (e2e)', () => {
     });
   });
 
-  describe('a teacher sees the students of the divisions they teach', () => {
+  describe('teachers read every student; their assignments decide whose attendance they see', () => {
     let sA: string;
     let sB: string;
     let inA: string;
@@ -512,23 +512,26 @@ describe('teaching assignments (e2e)', () => {
           .items as { id: string }[]
       ).map((s) => s.id);
 
-    it('sees none while they have no assignment', async () => {
-      expect(await visibleIds(t.agent)).toEqual([]);
-      await t.agent.get(`/api/students/${inA}`).expect(404);
+    const historyStatus = async (who: Agent, id: string) =>
+      (await who.get(`/api/attendance/students/${id}`)).status;
+
+    it('reads every student even with no assignment, but sees no attendance history', async () => {
+      await t.agent.get(`/api/students/${inA}`).expect(200);
+      await t.agent.get(`/api/students/${inB}`).expect(200);
+      expect(await historyStatus(t.agent, inA)).toBe(404);
     });
 
-    it('a class teacher sees that division only, without the admissions paperwork, and cannot change anything', async () => {
+    it('a class teacher gets attendance for that division only, without the admissions paperwork, and cannot change anything', async () => {
       const a = (
         await assign({ staffId: t.staffId, divisionId: sA }).expect(201)
       ).body;
-      const ids = await visibleIds(t.agent);
-      expect(ids).toContain(inA);
-      expect(ids).not.toContain(inB);
+      expect(await historyStatus(t.agent, inA)).toBe(200);
+      expect(await historyStatus(t.agent, inB)).toBe(404);
 
       const profile = (await t.agent.get(`/api/students/${inA}`).expect(200))
         .body;
       expect(profile.application).toBeNull();
-      await t.agent.get(`/api/students/${inB}`).expect(404);
+      await t.agent.get(`/api/students/${inB}`).expect(200);
       await t.agent
         .patch(`/api/students/${inA}`)
         .send({ surname: 'Hacked' })
@@ -539,10 +542,12 @@ describe('teaching assignments (e2e)', () => {
         .expect(403);
 
       await admin.delete(`/api/teaching-assignments/${a.id}`).expect(204);
-      expect(await visibleIds(t.agent)).toEqual([]); // access ends the moment the assignment does
+      // Attendance access ends the moment the assignment does; reading the record does not depend on it.
+      expect(await historyStatus(t.agent, inA)).toBe(404);
+      await t.agent.get(`/api/students/${inA}`).expect(200);
     });
 
-    it('a subject teacher sees the division they teach in', async () => {
+    it('a subject teacher gets attendance for the division they teach in', async () => {
       const hist = (
         await admin
           .post('/api/subjects')
@@ -556,9 +561,8 @@ describe('teaching assignments (e2e)', () => {
           subjectId: hist,
         }).expect(201)
       ).body;
-      const ids = await visibleIds(t.agent);
-      expect(ids).toContain(inB);
-      expect(ids).not.toContain(inA);
+      expect(await historyStatus(t.agent, inB)).toBe(200);
+      expect(await historyStatus(t.agent, inA)).toBe(404);
       await admin.delete(`/api/teaching-assignments/${a.id}`).expect(204);
     });
 
@@ -580,7 +584,7 @@ describe('teaching assignments (e2e)', () => {
           academicYearId: otherYear,
         }).expect(201)
       ).body;
-      expect(await visibleIds(t.agent)).toEqual([]);
+      expect(await historyStatus(t.agent, inA)).toBe(404);
       await admin.delete(`/api/teaching-assignments/${a.id}`).expect(204);
     });
 

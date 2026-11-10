@@ -1,12 +1,17 @@
 model School {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  name      String
-  address   String?
-  phone     String?
-  email     String?
-  board     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  name               String
+  address            String?
+  phone              String?
+  email              String?
+  board              String?
+  /// Student IDs are this prefix plus a zero-padded number, for example hesj0001. Empty = plain numbers.
+  studentIdPrefix    String?  @map("student_id_prefix")
+  studentIdDigits    Int      @default(4) @map("student_id_digits")
+  /// With a domain, a student's school e-mail is their ID at this domain.
+  studentEmailDomain String?  @map("student_email_domain")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   users           User[]
   sessions        Session[]

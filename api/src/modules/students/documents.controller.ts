@@ -21,7 +21,7 @@ export class DocumentsController {
   constructor(private readonly documents: DocumentsService) {}
 
   @Get()
-  @RequirePermissions('students.read_all')
+  @RequirePermissions('students.documents.read')
   list(
     @CurrentAuth() auth: AuthContext,
     @Param('id', ParseUUIDPipe) id: string,

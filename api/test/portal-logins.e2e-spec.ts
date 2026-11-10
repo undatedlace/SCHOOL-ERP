@@ -375,8 +375,8 @@ describe('parent and student logins (e2e)', () => {
     }
   });
 
-  describe('teacher search stays inside the scope', () => {
-    it('a name search does not reveal students the teacher does not teach', async () => {
+  describe('teachers read every student (decided 10 Nov 2026)', () => {
+    it('a teacher lists and searches all students, not only the ones they teach', async () => {
       const email = `${unique('t')}@test.local`;
       const staff = (
         await admin
@@ -405,14 +405,17 @@ describe('parent and student logins (e2e)', () => {
       const mine = await admitStudent(divA, [father()]);
       const notMine = await admitStudent(divB, [father()], unique('Hidden'));
 
-      const all = (await teacher.get('/api/students').expect(200)).body.items;
-      expect(all.map((i: { id: string }) => i.id)).toContain(mine.id);
-      expect(all.map((i: { id: string }) => i.id)).not.toContain(notMine.id);
+      for (const kid of [mine, notMine]) {
+        const found = (
+          await teacher.get(`/api/students?search=${kid.surname}`).expect(200)
+        ).body.items;
+        expect(found.map((i: { id: string }) => i.id)).toContain(kid.id);
+      }
 
       const searched = (
         await teacher.get(`/api/students?search=${notMine.surname}`).expect(200)
       ).body;
-      expect(searched.total).toBe(0);
+      expect(searched.total).toBe(1);
       const searchedMine = (
         await teacher.get(`/api/students?search=${mine.surname}`).expect(200)
       ).body;

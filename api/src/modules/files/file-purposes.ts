@@ -30,7 +30,7 @@ export const FILE_PURPOSES: Record<string, FilePurpose> = {
   // Birth certificates and the like. Staff only: a parent does not see the school's paperwork.
   'student-document': {
     write: 'students.manage',
-    read: 'students.read_all',
+    read: 'students.documents.read',
     maxBytes: 10 * MB,
     kind: 'document',
   },

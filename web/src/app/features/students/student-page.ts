@@ -1,5 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
@@ -13,6 +21,7 @@ import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
+import { SchoolClass } from '../../core/models';
 import { apiError } from '../../core/api-error';
 import {
   Gender,
@@ -71,7 +80,10 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
           <div>
             <h1 class="text-2xl font-semibold">{{ s.fullName }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">
-              Admission no. {{ s.admissionNo }}
+              Student ID {{ s.admissionNo }}
+              @if (s.schoolEmail) {
+                &middot; {{ s.schoolEmail }}
+              }
               @if (s.enrollments[0]; as e) {
                 &middot; {{ e.class.name }}-{{ e.division.name }} ({{ e.academicYear.name }})
               }
@@ -83,25 +95,71 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
         </div>
         <div class="flex items-center gap-2">
           <p-tag
-            [value]="s.status === 'ACTIVE' ? 'Active' : 'Left'"
-            [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'"
+            [value]="s.status === 'ACTIVE' ? 'Active' : s.status === 'REMOVED' ? 'Removed' : 'Left'"
+            [severity]="
+              s.status === 'ACTIVE' ? 'success' : s.status === 'REMOVED' ? 'danger' : 'secondary'
+            "
           />
-          <ng-container *appHasPermission="'students.manage'">
-            <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(s)" />
-            @if (s.status === 'ACTIVE') {
+          @if (s.status !== 'REMOVED') {
+            <ng-container *appHasPermission="'students.manage'">
+              <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(s)" />
+              @if (s.status === 'ACTIVE') {
+                <p-button
+                  label="Move to another division"
+                  size="small"
+                  severity="secondary"
+                  [outlined]="true"
+                  (onClick)="openMove(s)"
+                />
+              }
+              @if (s.status === 'ACTIVE') {
+                <p-button
+                  label="Mark as left"
+                  size="small"
+                  severity="danger"
+                  [outlined]="true"
+                  (onClick)="confirmLeft(s)"
+                />
+              } @else {
+                <p-button label="Rejoin" size="small" severity="secondary" (onClick)="rejoin(s)" />
+              }
+            </ng-container>
+          }
+          <ng-container *appHasPermission="'students.remove'">
+            @if (s.status === 'REMOVED') {
+              <p-button label="Restore student" size="small" (onClick)="restore(s)" />
+            } @else {
               <p-button
-                label="Mark as left"
+                label="Remove student"
                 size="small"
                 severity="danger"
                 [outlined]="true"
-                (onClick)="confirmLeft(s)"
+                (onClick)="openRemove()"
               />
-            } @else {
-              <p-button label="Rejoin" size="small" severity="secondary" (onClick)="rejoin(s)" />
             }
           </ng-container>
         </div>
       </div>
+
+      @if (s.removal; as r) {
+        <p-message
+          class="mb-4 block"
+          severity="warn"
+          [text]="
+            'Removed' +
+            (r.by ? ' by ' + r.by : '') +
+            ' on ' +
+            format(r.at) +
+            '. Reason: ' +
+            r.reason +
+            '. Their records are kept; an administrator can restore them.'
+          "
+        />
+      }
+
+      @if (moveNote(); as note) {
+        <p-message class="mb-4 block" severity="info" [text]="note" />
+      }
 
       <div class="grid gap-6 lg:grid-cols-3">
         <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">
@@ -399,6 +457,99 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
           </div>
         </form>
       </p-dialog>
+      <p-dialog
+        header="Move to another division"
+        [visible]="moveOpen()"
+        (visibleChange)="!$event && moveOpen.set(false)"
+        [modal]="true"
+        [style]="{ width: '28rem', 'max-width': '95vw' }"
+      >
+        <p class="mb-3 text-sm text-muted-foreground">
+          This changes the class for this academic year. The old division's attendance days stay
+          with the student; fees already billed are not changed.
+        </p>
+        <div class="mb-3 flex flex-col gap-3">
+          <label class="flex flex-col gap-1 text-sm" for="move-class">
+            Class
+            <select
+              id="move-class"
+              class="h-10 rounded-md border bg-background px-3"
+              [value]="moveClassId()"
+              (change)="moveClassId.set($any($event.target).value); moveDivisionId.set('')"
+            >
+              <option value="">Choose a class</option>
+              @for (c of classes(); track c.id) {
+                <option [value]="c.id" [selected]="c.id === moveClassId()">{{ c.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm" for="move-division">
+            Division
+            <select
+              id="move-division"
+              class="h-10 rounded-md border bg-background px-3"
+              [disabled]="!moveClassId()"
+              [value]="moveDivisionId()"
+              (change)="moveDivisionId.set($any($event.target).value)"
+            >
+              <option value="">Choose a division</option>
+              @for (d of moveDivisions(); track d.id) {
+                <option [value]="d.id" [selected]="d.id === moveDivisionId()">{{ d.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (moveError()) {
+          <p class="mb-3 text-sm text-destructive" role="alert">{{ moveError() }}</p>
+        }
+        <div class="flex justify-end gap-2">
+          <p-button label="Cancel" severity="secondary" (onClick)="moveOpen.set(false)" />
+          <p-button
+            label="Move student"
+            [disabled]="!moveDivisionId()"
+            [loading]="saving()"
+            (onClick)="move()"
+          />
+        </div>
+      </p-dialog>
+
+      <p-dialog
+        header="Remove this student?"
+        [visible]="removeOpen()"
+        (visibleChange)="!$event && removeOpen.set(false)"
+        [modal]="true"
+        [style]="{ width: '30rem', 'max-width': '95vw' }"
+      >
+        <p class="mb-3 text-sm text-muted-foreground">
+          The student disappears from the lists and their login is switched off. Fees, receipts and
+          attendance are kept, and an administrator can restore them later.
+        </p>
+        <label class="mb-3 flex flex-col gap-1 text-sm" for="remove-reason">
+          Reason (required)
+          <textarea
+            id="remove-reason"
+            rows="3"
+            maxlength="300"
+            class="rounded-md border bg-background p-3"
+            [value]="removeReason()"
+            (input)="removeReason.set($any($event.target).value)"
+          ></textarea>
+        </label>
+        @if (removeError()) {
+          <p class="mb-3 text-sm text-destructive" role="alert">{{ removeError() }}</p>
+        }
+        <div class="flex justify-end gap-2">
+          <p-button label="Cancel" severity="secondary" (onClick)="removeOpen.set(false)" />
+          <p-button
+            label="Remove student"
+            severity="danger"
+            [disabled]="removeReason().trim().length < 3"
+            [loading]="saving()"
+            (onClick)="remove()"
+          />
+        </div>
+      </p-dialog>
+
       <app-temp-password-dialog [info]="temp()" (closed)="temp.set(null)" />
     } @else {
       <p class="mt-4 text-muted-foreground">Loading...</p>
@@ -425,6 +576,20 @@ export class StudentPage {
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly temp = signal<TempPassword | null>(null);
+
+  protected readonly classes = signal<SchoolClass[]>([]);
+  protected readonly moveOpen = signal(false);
+  protected readonly moveClassId = signal('');
+  protected readonly moveDivisionId = signal('');
+  protected readonly moveError = signal<string | null>(null);
+  /** What to tell the person after a move, for example that fees were billed for the old class. */
+  protected readonly moveNote = signal<string | null>(null);
+  protected readonly moveDivisions = computed(
+    () => this.classes().find((c) => c.id === this.moveClassId())?.divisions ?? [],
+  );
+  protected readonly removeOpen = signal(false);
+  protected readonly removeReason = signal('');
+  protected readonly removeError = signal<string | null>(null);
 
   protected readonly editOpen = signal(false);
   protected readonly editError = signal<string | null>(null);
@@ -525,6 +690,80 @@ export class StudentPage {
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => void this.setStatus(s, 'LEFT'),
     });
+  }
+
+  protected async openMove(s: StudentDetail) {
+    void s;
+    this.moveError.set(null);
+    this.moveClassId.set('');
+    this.moveDivisionId.set('');
+    this.moveOpen.set(true);
+    if (this.classes().length === 0) {
+      try {
+        this.classes.set(await firstValueFrom(this.api.classes()));
+      } catch (error) {
+        this.moveError.set(apiError(error));
+      }
+    }
+  }
+
+  protected async move() {
+    const s = this.student();
+    if (!s || !this.moveDivisionId() || this.saving()) return;
+    this.saving.set(true);
+    this.moveError.set(null);
+    try {
+      const res = await firstValueFrom(this.api.moveStudent(s.id, this.moveDivisionId()));
+      this.student.set(res);
+      this.moveOpen.set(false);
+      this.toast.add({ severity: 'success', summary: `Moved to ${res.moved.to}` });
+      this.moveNote.set(
+        res.moved.feesNeedReview
+          ? `Moved from ${res.moved.from} to ${res.moved.to}. Fees were billed for the old class, so ask the accountant to check them.`
+          : null,
+      );
+    } catch (error) {
+      this.moveError.set(apiError(error));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected openRemove() {
+    this.removeReason.set('');
+    this.removeError.set(null);
+    this.removeOpen.set(true);
+  }
+
+  protected async remove() {
+    const s = this.student();
+    if (!s || this.saving()) return;
+    this.saving.set(true);
+    this.removeError.set(null);
+    try {
+      this.student.set(
+        await firstValueFrom(this.api.removeStudent(s.id, this.removeReason().trim())),
+      );
+      this.removeOpen.set(false);
+      this.toast.add({ severity: 'success', summary: 'Student removed' });
+    } catch (error) {
+      this.removeError.set(apiError(error));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected async restore(s: StudentDetail) {
+    if (this.saving()) return;
+    this.saving.set(true);
+    try {
+      this.student.set(await firstValueFrom(this.api.restoreStudent(s.id)));
+      this.toast.add({ severity: 'success', summary: 'Student restored' });
+    } catch (error) {
+      this.toast.add({ severity: 'error', summary: 'Could not restore', detail: apiError(error) });
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   protected rejoin(s: StudentDetail) {

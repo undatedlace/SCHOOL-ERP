@@ -416,17 +416,19 @@ describe('students and the admit flow (e2e)', () => {
       }
     });
 
-    it('teachers with no classes assigned, and student accounts, see none', async () => {
-      for (const role of ['TEACHER', 'STUDENT', 'STAFF']) {
-        const user = await createSettledUser(app, admin, role);
-        if (role === 'STAFF') {
-          await user.agent.get('/api/students').expect(403); // has no student permission at all
-          continue;
-        }
-        const list = await user.agent.get('/api/students').expect(200);
-        expect(list.body.total).toBe(0);
-        await user.agent.get(`/api/students/${studentId}`).expect(404);
-      }
+    it('teachers read every student, student accounts see none, and other staff have no access', async () => {
+      const teacher = await createSettledUser(app, admin, 'TEACHER');
+      expect(
+        (await teacher.agent.get('/api/students').expect(200)).body.total,
+      ).toBeGreaterThan(0);
+      await teacher.agent.get(`/api/students/${studentId}`).expect(200);
+      const student = await createSettledUser(app, admin, 'STUDENT');
+      expect(
+        (await student.agent.get('/api/students').expect(200)).body.total,
+      ).toBe(0);
+      await student.agent.get(`/api/students/${studentId}`).expect(404);
+      const staff = await createSettledUser(app, admin, 'STAFF');
+      await staff.agent.get('/api/students').expect(403); // has no student permission at all
     });
 
     it('a parent sees only their own child, without the admissions paperwork, and cannot change anything', async () => {

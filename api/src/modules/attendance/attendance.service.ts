@@ -439,7 +439,13 @@ export class AttendanceService {
     studentId: string,
     q: { from?: string; to?: string },
   ) {
-    await this.students.assertVisible(auth, studentId);
+    // Reading every student's record does not open every student's attendance: a teacher sees the
+    // attendance of the divisions they teach, and a parent their own child's.
+    if (this.can(auth, 'attendance.read_all')) {
+      await this.students.assertVisible(auth, studentId);
+    } else {
+      await this.students.assertInScope(auth, studentId);
+    }
     const { from, to } = await this.range(auth, q);
     const records = await this.prisma.attendanceRecord.findMany({
       where: {
