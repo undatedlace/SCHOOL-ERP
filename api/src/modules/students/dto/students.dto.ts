@@ -18,6 +18,11 @@ import {
 import { Type } from 'class-transformer';
 import { PageQueryDto } from '../../../common/dto/page-query.dto.js';
 import {
+  DATE_MESSAGE,
+  DATE_PATTERN,
+  queryBool,
+} from '../../../common/dto/filters.js';
+import {
   Gender,
   GuardianRelationship,
   StudentStatus,
@@ -51,6 +56,26 @@ export class ListStudentsQueryDto extends PageQueryDto {
   @IsOptional()
   @IsUUID()
   academicYearId?: string;
+
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
+
+  /** Joined the school on or after this day. */
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  joinedFrom?: string;
+
+  /** Joined the school on or before this day. */
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  joinedTo?: string;
+
+  /** Whether the student has a login. */
+  @IsOptional()
+  @queryBool()
+  @IsBoolean()
+  hasLogin?: boolean;
 }
 
 /** A parent or guardian, as typed in at admission or added later. */

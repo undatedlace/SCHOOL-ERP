@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -15,6 +16,11 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PageQueryDto } from '../../../common/dto/page-query.dto.js';
+import {
+  DATE_MESSAGE,
+  DATE_PATTERN,
+  queryBool,
+} from '../../../common/dto/filters.js';
 import { Gender, StaffStatus } from '../../../generated/prisma/enums.js';
 
 const trim = ({ value }: { value: unknown }) =>
@@ -41,6 +47,37 @@ export class ListStaffQueryDto extends PageQueryDto {
   @IsOptional()
   @IsEnum(StaffStatus)
   status?: StaffStatus;
+
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
+
+  /** Part of the designation, for example "teacher". */
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(60)
+  designation?: string;
+
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  joinedFrom?: string;
+
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  joinedTo?: string;
+
+  /** Whether the person has a login. */
+  @IsOptional()
+  @queryBool()
+  @IsBoolean()
+  hasLogin?: boolean;
+
+  /** Only people whose login holds this role, for example TEACHER. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  role?: string;
 }
 
 /** Give a member of staff a login. The temporary password is generated and shown once. */

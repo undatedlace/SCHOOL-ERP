@@ -12,6 +12,8 @@ import { apiError } from '../../core/api-error';
 import { StaffMember } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
+import { GENDER_OPTIONS, LOGIN_OPTIONS } from '../../shared/ui/filter-options';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { StaffForm } from './staff-form';
@@ -27,6 +29,7 @@ import { StaffForm } from './staff-form';
     TagModule,
     HasPermission,
     PageHeader,
+    FilterBar,
     StaffForm,
     TempPasswordDialog,
   ],
@@ -43,24 +46,7 @@ import { StaffForm } from './staff-form';
       />
     </app-page-header>
 
-    <div class="mb-4 flex flex-wrap gap-3">
-      <input
-        pInputText
-        class="w-full sm:w-72"
-        placeholder="Search by name, number or designation"
-        aria-label="Search staff"
-        (input)="onSearch($any($event.target).value)"
-      />
-      <p-select
-        [options]="statuses"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Any status"
-        [showClear]="true"
-        ariaLabel="Filter by status"
-        (onChange)="onStatus($event.value)"
-      />
-    </div>
+    <app-filter-bar [fields]="fields" (changed)="onFilters($event)" />
 
     <p-table
       [value]="rows()"
@@ -149,10 +135,53 @@ export class StaffList {
   protected readonly temp = signal<TempPassword | null>(null);
   private newId: string | null = null;
 
-  private search = '';
-  private status: string | null = null;
+  private filters: FilterValues = {};
   private pageSize = 20;
-  private timer?: ReturnType<typeof setTimeout>;
+
+  protected readonly fields: FilterField[] = [
+    {
+      key: 'search',
+      label: 'Search',
+      type: 'search',
+      placeholder: 'Name, number, designation or mobile',
+    },
+    {
+      key: 'designation',
+      label: 'Designation',
+      type: 'search',
+      placeholder: 'For example Teacher',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Any status',
+      options: this.statuses,
+    },
+    {
+      key: 'gender',
+      label: 'Gender',
+      type: 'select',
+      placeholder: 'Any gender',
+      options: GENDER_OPTIONS,
+    },
+    {
+      key: 'role',
+      label: 'Login role',
+      type: 'select',
+      placeholder: 'Any role',
+      options: [
+        { label: 'Teacher', value: 'TEACHER' },
+        { label: 'Accountant', value: 'ACCOUNTANT' },
+        { label: 'Office staff', value: 'OFFICE_STAFF' },
+        { label: 'Other staff', value: 'STAFF' },
+        { label: 'School admin', value: 'SCHOOL_ADMIN' },
+      ],
+    },
+    { key: 'hasLogin', label: 'Login', type: 'select', placeholder: 'Any', options: LOGIN_OPTIONS },
+    { key: 'joinedFrom', label: 'Joined from', type: 'date' },
+    { key: 'joinedTo', label: 'Joined to', type: 'date' },
+  ];
 
   protected load(e: { first?: number | null; rows?: number | null }) {
     this.first.set(e.first ?? 0);
@@ -160,12 +189,10 @@ export class StaffList {
     void this.fetch();
   }
 
-  protected onSearch(value: string) {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.refilter(() => (this.search = value.trim())), 300);
-  }
-  protected onStatus(value: string | null) {
-    this.refilter(() => (this.status = value));
+  protected onFilters(values: FilterValues) {
+    this.filters = values;
+    this.first.set(0);
+    void this.fetch();
   }
 
   /** After adding someone: show the temporary password if a login was made, then open their page. */
@@ -187,12 +214,6 @@ export class StaffList {
     }
   }
 
-  private refilter(apply: () => void) {
-    apply();
-    this.first.set(0);
-    void this.fetch();
-  }
-
   private async fetch() {
     this.loading.set(true);
     try {
@@ -200,8 +221,14 @@ export class StaffList {
         this.api.staffList({
           page: Math.floor(this.first() / this.pageSize) + 1,
           pageSize: this.pageSize,
-          search: this.search,
-          status: this.status,
+          search: this.filters['search'],
+          status: this.filters['status'],
+          designation: this.filters['designation'],
+          gender: this.filters['gender'],
+          role: this.filters['role'],
+          hasLogin: this.filters['hasLogin'],
+          joinedFrom: this.filters['joinedFrom'],
+          joinedTo: this.filters['joinedTo'],
         }),
       );
       this.rows.set(page.items);

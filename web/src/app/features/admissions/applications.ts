@@ -1,11 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
-import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
@@ -17,22 +14,13 @@ import {
 } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
 import { PageHeader } from '../../shared/ui/page-header';
 import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-tag';
 
 @Component({
   selector: 'app-applications',
-  imports: [
-    FormsModule,
-    RouterLink,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TableModule,
-    PageHeader,
-    StatusTag,
-    HasPermission,
-  ],
+  imports: [RouterLink, ButtonModule, TableModule, FilterBar, PageHeader, StatusTag, HasPermission],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header title="Admissions" subtitle="Applications for the current academic year.">
@@ -66,34 +54,7 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
       </div>
     }
 
-    <div class="mb-4 flex flex-wrap gap-3">
-      <input
-        pInputText
-        class="w-full sm:w-72"
-        placeholder="Search by name or form number"
-        aria-label="Search applications"
-        (input)="onSearch($any($event.target).value)"
-      />
-      <p-select
-        [options]="statuses"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Any status"
-        [showClear]="true"
-        [ngModel]="status"
-        ariaLabel="Filter by status"
-        (onChange)="onStatus($event.value)"
-      />
-      <p-select
-        [options]="classes()"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Any class"
-        [showClear]="true"
-        ariaLabel="Filter by class"
-        (onChange)="onClass($event.value)"
-      />
-    </div>
+    <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
 
     <p-table
       [value]="rows()"
@@ -152,10 +113,31 @@ export class Applications {
   protected readonly classes = signal<SchoolClass[]>([]);
 
   protected status: ApplicationStatus | null = null;
-  private search = '';
-  private classId: string | null = null;
+  private filters: FilterValues = {};
   private pageSize = 20;
-  private timer?: ReturnType<typeof setTimeout>;
+
+  protected readonly fields = computed<FilterField[]>(() => [
+    { key: 'search', label: 'Search', type: 'search', placeholder: 'Child name or form number' },
+    {
+      key: 'classId',
+      label: 'Class applied for',
+      type: 'select',
+      placeholder: 'Any class',
+      options: this.classes().map((c) => ({ label: c.name, value: c.id })),
+    },
+    { key: 'receivedFrom', label: 'Received from', type: 'date' },
+    { key: 'receivedTo', label: 'Received to', type: 'date' },
+    {
+      key: 'admitted',
+      label: 'Admitted',
+      type: 'select',
+      placeholder: 'Any',
+      options: [
+        { label: 'Admitted as a student', value: 'true' },
+        { label: 'Not admitted yet', value: 'false' },
+      ],
+    },
+  ]);
 
   constructor() {
     firstValueFrom(this.api.classes())
@@ -172,19 +154,15 @@ export class Applications {
     void this.fetch();
   }
 
-  protected onSearch(value: string) {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.refilter(() => (this.search = value.trim())), 300);
-  }
-  protected onStatus(value: ApplicationStatus | null) {
-    this.refilter(() => (this.status = value));
-  }
-  protected onClass(value: string | null) {
-    this.refilter(() => (this.classId = value));
+  protected onFilters(values: FilterValues) {
+    this.filters = values;
+    this.first.set(0);
+    void this.fetch();
   }
 
-  private refilter(apply: () => void) {
-    apply();
+  /** The status tiles above the list. */
+  protected onStatus(value: ApplicationStatus | null) {
+    this.status = value;
     this.first.set(0);
     void this.fetch();
   }
@@ -196,9 +174,12 @@ export class Applications {
         this.api.applications({
           page: Math.floor(this.first() / this.pageSize) + 1,
           pageSize: this.pageSize,
-          search: this.search,
+          search: this.filters['search'],
           status: this.status,
-          classId: this.classId,
+          classId: this.filters['classId'],
+          receivedFrom: this.filters['receivedFrom'],
+          receivedTo: this.filters['receivedTo'],
+          admitted: this.filters['admitted'],
         }),
       );
       this.rows.set(page.items);

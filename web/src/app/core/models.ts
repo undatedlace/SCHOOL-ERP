@@ -687,6 +687,24 @@ export interface NoticeInput {
   expiresOn?: string | null;
 }
 
+// ---------- Search ----------
+
+export interface SearchHit {
+  id: string;
+  title: string;
+  subtitle: string;
+  /** Where the app opens it. */
+  path: string;
+}
+
+export interface SearchGroup {
+  type: 'students' | 'staff' | 'applications';
+  label: string;
+  hits: SearchHit[];
+  /** More matches exist than are shown. */
+  more: boolean;
+}
+
 // ---------- Calendar ----------
 
 export type CalendarCategory = 'EVENT' | 'HOLIDAY' | 'EXAM' | 'MEETING';

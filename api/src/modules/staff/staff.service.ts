@@ -91,6 +91,23 @@ export class StaffService {
       schoolId: auth.schoolId,
       ...this.visible(auth),
       ...(q.status ? { status: q.status } : {}),
+      ...(q.gender ? { gender: q.gender } : {}),
+      ...(q.designation
+        ? { designation: { contains: q.designation, mode: 'insensitive' } }
+        : {}),
+      ...(q.joinedFrom || q.joinedTo
+        ? {
+            joinedOn: {
+              ...(q.joinedFrom ? { gte: dateOnly(q.joinedFrom) } : {}),
+              ...(q.joinedTo ? { lte: dateOnly(q.joinedTo) } : {}),
+            },
+          }
+        : {}),
+      ...(q.role
+        ? { user: { roles: { some: { role: { code: q.role } } } } }
+        : q.hasLogin === undefined
+          ? {}
+          : { userId: q.hasLogin ? { not: null } : null }),
       ...(q.search
         ? {
             OR: [

@@ -9,5 +9,6 @@ import { AdmissionsService } from './admissions.service.js';
   imports: [FormsModule, FilesModule, StudentsModule],
   controllers: [AdmissionsController],
   providers: [AdmissionsService],
+  exports: [AdmissionsService],
 })
 export class AdmissionsModule {}

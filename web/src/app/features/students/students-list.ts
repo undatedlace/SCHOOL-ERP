@@ -1,29 +1,20 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
-import { InputTextModule } from '@openng/optimus-ui/inputtext';
-import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { SchoolClass, StudentListItem } from '../../core/models';
 import { formatDate } from '../../shared/dates';
+import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
+import { GENDER_OPTIONS, LOGIN_OPTIONS } from '../../shared/ui/filter-options';
 import { PageHeader } from '../../shared/ui/page-header';
 
 @Component({
   selector: 'app-students-list',
-  imports: [
-    FormsModule,
-    RouterLink,
-    InputTextModule,
-    SelectModule,
-    TableModule,
-    TagModule,
-    PageHeader,
-  ],
+  imports: [RouterLink, TableModule, TagModule, PageHeader, FilterBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -31,45 +22,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       subtitle="Students enrolled this academic year. New students come from granted admission applications."
     />
 
-    <div class="mb-4 flex flex-wrap gap-3">
-      <input
-        pInputText
-        class="w-full sm:w-72"
-        placeholder="Search by name or admission number"
-        aria-label="Search students"
-        (input)="onSearch($any($event.target).value)"
-      />
-      <p-select
-        [options]="classes()"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Any class"
-        [showClear]="true"
-        [ngModel]="classId"
-        ariaLabel="Filter by class"
-        (onChange)="onClass($event.value)"
-      />
-      <p-select
-        [options]="divisions()"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Any division"
-        [showClear]="true"
-        [disabled]="!classId"
-        [ngModel]="divisionId"
-        ariaLabel="Filter by division"
-        (onChange)="onDivision($event.value)"
-      />
-      <p-select
-        [options]="statuses"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Any status"
-        [showClear]="true"
-        ariaLabel="Filter by status"
-        (onChange)="onStatus($event.value)"
-      />
-    </div>
+    <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
 
     <p-table
       [value]="rows()"
@@ -148,14 +101,66 @@ export class StudentsList {
   protected readonly loading = signal(false);
   protected readonly first = signal(0);
   protected readonly classes = signal<SchoolClass[]>([]);
-  protected readonly divisions = signal<{ id: string; name: string }[]>([]);
 
-  protected classId: string | null = null;
-  protected divisionId: string | null = null;
-  private search = '';
-  private status: string | null = null;
+  private filters: FilterValues = {};
   private pageSize = 20;
-  private timer?: ReturnType<typeof setTimeout>;
+
+  protected readonly fields = computed<FilterField[]>(() => {
+    const classId = this.classId();
+    return [
+      {
+        key: 'search',
+        label: 'Search',
+        type: 'search',
+        placeholder: 'Name, admission number, parent name or phone',
+      },
+      {
+        key: 'classId',
+        label: 'Class',
+        type: 'select',
+        placeholder: 'Any class',
+        options: this.classes().map((c) => ({ label: c.name, value: c.id })),
+      },
+      {
+        key: 'divisionId',
+        label: 'Division',
+        type: 'select',
+        placeholder: 'Any division',
+        dependsOn: 'classId',
+        disabled: !classId,
+        options: (this.classes().find((c) => c.id === classId)?.divisions ?? []).map((d) => ({
+          label: d.name,
+          value: d.id,
+        })),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        placeholder: 'Any status',
+        options: this.statuses,
+      },
+      {
+        key: 'gender',
+        label: 'Gender',
+        type: 'select',
+        placeholder: 'Any gender',
+        options: GENDER_OPTIONS,
+      },
+      {
+        key: 'hasLogin',
+        label: 'Login',
+        type: 'select',
+        placeholder: 'Any',
+        options: LOGIN_OPTIONS,
+      },
+      { key: 'joinedFrom', label: 'Joined from', type: 'date' },
+      { key: 'joinedTo', label: 'Joined to', type: 'date' },
+    ];
+  });
+
+  /** The class chosen in the filter bar, so the division list can follow it. */
+  private readonly classId = signal<string | null>(null);
 
   constructor() {
     firstValueFrom(this.api.classes())
@@ -169,26 +174,9 @@ export class StudentsList {
     void this.fetch();
   }
 
-  protected onSearch(value: string) {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.refilter(() => (this.search = value.trim())), 300);
-  }
-  protected onClass(value: string | null) {
-    this.refilter(() => {
-      this.classId = value;
-      this.divisionId = null;
-      this.divisions.set(this.classes().find((c) => c.id === value)?.divisions ?? []);
-    });
-  }
-  protected onDivision(value: string | null) {
-    this.refilter(() => (this.divisionId = value));
-  }
-  protected onStatus(value: string | null) {
-    this.refilter(() => (this.status = value));
-  }
-
-  private refilter(apply: () => void) {
-    apply();
+  protected onFilters(values: FilterValues) {
+    this.filters = values;
+    this.classId.set(values['classId'] ?? null);
     this.first.set(0);
     void this.fetch();
   }
@@ -200,10 +188,14 @@ export class StudentsList {
         this.api.students({
           page: Math.floor(this.first() / this.pageSize) + 1,
           pageSize: this.pageSize,
-          search: this.search,
-          status: this.status,
-          classId: this.classId,
-          divisionId: this.divisionId,
+          search: this.filters['search'],
+          status: this.filters['status'],
+          classId: this.filters['classId'],
+          divisionId: this.filters['divisionId'],
+          gender: this.filters['gender'],
+          hasLogin: this.filters['hasLogin'],
+          joinedFrom: this.filters['joinedFrom'],
+          joinedTo: this.filters['joinedTo'],
         }),
       );
       this.rows.set(page.items);

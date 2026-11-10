@@ -1,11 +1,13 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -16,6 +18,11 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PageQueryDto } from '../../../common/dto/page-query.dto.js';
+import {
+  DATE_MESSAGE,
+  DATE_PATTERN,
+  queryBool,
+} from '../../../common/dto/filters.js';
 import { GuardianInputDto } from '../../students/dto/students.dto.js';
 import { ApplicationStatus } from '../../../generated/prisma/enums.js';
 
@@ -119,6 +126,22 @@ export class ListApplicationsQueryDto extends PageQueryDto {
   @IsOptional()
   @IsUUID()
   academicYearId?: string;
+
+  /** Received on or after this day. */
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  receivedFrom?: string;
+
+  /** Received on or before this day. */
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: DATE_MESSAGE })
+  receivedTo?: string;
+
+  /** Only applications that have (true) or have not (false) been turned into a student. */
+  @IsOptional()
+  @queryBool()
+  @IsBoolean()
+  admitted?: boolean;
 }
 
 /** Turns a granted application into a student. */
