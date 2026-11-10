@@ -1,6 +1,6 @@
 # School ERP: V1 Plan
 
-Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices, the portal screens and the installable app are built (results and report cards wait for Phase 4). Phase 6 has started: dashboard insights, deployment files and backup scripts are built. The SchoolHub restyle and the calendar are built (branch `feature/schoolhub-ui`). Last updated: 10 Nov 2026. **A second round of requirements came from the school on 10 Nov (roles, staff types, leave, homework, results, notifications, global search); the proposed design and build order are in `docs/architecture-v2.md` and are not yet part of this plan until the decisions in its section 8 are confirmed.**
+Status: Phases 0 and 1 done (merged). Phase 2 (people) in progress: admissions, the form builder, photographs, students, guardians, the admit flow, age limits, staff and teaching assignments are built. Phase 3 (fees) is built; Phase 4 has started: attendance and year-end promotion are built. Phase 5 has started: notices, the portal screens and the installable app are built (results and report cards wait for Phase 4). Phase 6 has started: dashboard insights, deployment files and backup scripts are built. The SchoolHub restyle and the calendar are built (branch `feature/schoolhub-ui`). Last updated: 10 Nov 2026. **A second round of requirements came from the school on 10 Nov (roles, staff types, leave, homework, results, notifications, global search). The design and build order are in `docs/architecture-v2.md`; open decisions 18 to 24 below record what is confirmed. Step T1 (Super Admin and School Admin, temporary-password expiry) is built.**
 
 ## 1. How we work (read this first)
 
@@ -92,7 +92,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 **Login**
 - Staff: email or mobile number plus password.
 - Parents and students: mobile number or admission-linked ID plus password.
-- First login: the school issues a temporary password, and the user must change it.
+- First login: the school issues a temporary password, and the user must change it **within 2 days** (`TEMP_PASSWORD_DAYS`); after that the password stops working and an admin resets it.
 - Forgot password in V1: admin resets it. SMS OTP comes later, since India's SMS rules (DLT registration) add setup time and cost.
 - MFA for admin and accountant: after V1.
 
@@ -108,7 +108,8 @@ Why it fits: this app holds children's data and money records, and a departing s
 **Roles**
 | Role | Who | Purpose |
 |---|---|---|
-| `SCHOOL_ADMIN` | Principal, management | Full control |
+| `SUPER_ADMIN` | Trustees | Everything. Alone manages admin accounts and roles, school settings, the audit log, erasure, payment reversals and concessions |
+| `SCHOOL_ADMIN` | Principal, management | Runs the school day to day: everything except the Super-Admin-only list |
 | `OFFICE_STAFF` | Front office | Admissions and student records |
 | `ACCOUNTANT` | Accounts office | Fees and payments |
 | `TEACHER` | Teaching staff | Attendance and marks for assigned classes |
@@ -116,7 +117,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | `PARENT` | Guardians | Linked children only |
 | `STUDENT` | Students | Own records, read-only |
 
-"Class teacher" is an assignment, not a role. A future platform `SUPER_ADMIN` isn't needed in V1.
+"Class teacher" is an assignment, not a role. `SUPER_ADMIN` is the trustees of this school, not a platform owner; a platform-level owner for many schools is a later, separate concept.
 
 **Access matrix**
 | Area | Admin | Office | Accountant | Teacher | Staff | Parent | Student |
@@ -354,12 +355,13 @@ Insights, security review, backups, deployment, staff training data.
 | 13 | Which classes does the school run, and are there divisions from the start (the form mentions Play Group to Std 2)? | Set up in Academic setup | Admissions |
 | 14 | Online payment through Razorpay? | **On hold** (8 Nov 2026). Offline payments only; the ledger is ready for it | Phase 5 |
 | 15 | Fee rules the school has not given yet: instalments, late fee, who approves concessions | Assumed: instalments are a percentage plan per class; no late fee; concessions are approved by the admin only (`fees.concession.manage`); the accountant records payments | Phase 3 |
-| 18 | **Proposed 10 Nov** (see `docs/architecture-v2.md`): a Super Admin / School Admin split, with the Super Admin alone managing admin accounts and roles, school settings, the audit log and permanent erasure | Awaiting confirmation | RBAC, T1 |
-| 19 | Removing a student: archive with a reason (restorable) rather than a physical delete; permanent erasure only by Super Admin | Awaiting confirmation | Students, DPDP |
-| 20 | Teachers see the whole student list but control only assigned students | Limited "directory" row for everyone, full detail only for assigned students. This changes the earlier rule that a teacher sees only their own students | Students, privacy |
-| 21 | Staff types (teacher, clerk, peon and so on) instead of a new "School Staff" role, each with its own onboarding form and documents | Proposed | Staff, forms engine |
-| 22 | Homework is back in V1 (it was dropped on 8 Nov); teachers also upload marks and publish results for any test before the board's grading scheme is known | Proposed | Phase 4, 5 |
-| 23 | Staff leave with applications and approval, notifications (in-app first, then email, then SMS/WhatsApp), temporary passwords that expire after 2 days | Proposed; needs the school's leave policy | Staff, notifications |
+| 18 | Super Admin / School Admin split | **Confirmed 10 Nov.** Only the Super Admin: admin accounts and roles, school settings, audit log, permanent erasure, payment reversals and concessions. The School Admin does everything else | RBAC (built, T1) |
+| 19 | Removing a student | **Confirmed 10 Nov.** Archive with a reason, restorable; permanent erasure only by the Super Admin | Students, DPDP |
+| 20 | Teachers and students they do not teach | **Confirmed 10 Nov.** Teachers read the full record of every student and change only assigned ones. This replaces the earlier rule that a teacher sees only their own students (not yet built, T3). Scanned documents stay behind their own permission until the school says otherwise | Students, privacy |
+| 21 | Staff types (teacher, clerk, peon and so on) instead of a new "School Staff" role, each with its own onboarding form and documents | Proposed (`docs/architecture-v2.md`) | Staff, forms engine |
+| 22 | Homework is back in V1 (dropped on 8 Nov); teachers upload marks and publish results for any test before the board's grading scheme is known | Proposed | Phase 4, 5 |
+| 23 | Staff leave with applications and approval; notifications (in-app first, then email, then SMS/WhatsApp) | Proposed; needs the school's leave policy | Staff, notifications |
+| 24 | Family logins | **Confirmed 10 Nov.** One login per student, held by the parent: a student ID by the school's convention (for example `hesj0001`) with a temporary password, changed within 2 days (built). Later the school e-mail `<id>@<domain>`. The convention (prefix, digits, e-mail domain) is a school setting (T3). Parent mobile-number login is postponed | Auth, students |
 | 17 | How teachers' attendance is captured (login/logout, biometric, QR, or the admin marking by hand), and whether leave needs requests and approval? | Admin marks by hand for now; leave is the admin marking "on leave"; the data model is ready for check-in/out | Phase 4 |
 | 16 | How the school takes attendance: daily or per period, who may take it, how far back it can be corrected, the minimum percentage, and how leave is counted? | Daily for the whole division; any teacher of the division (class or subject); teachers correct up to 7 days back, the admin any time; 75% is called low; approved leave is not counted against the child | Phase 4 |
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -15,7 +15,9 @@ import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
+import { grantableRoles } from '../../core/admin-roles';
 import { Api } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { apiError } from '../../core/api-error';
 import { Role, UserRow } from '../../core/models';
 import { FormField } from '../../shared/ui/form-field';
@@ -164,7 +166,7 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
           <p-multiselect
             inputId="roles"
             formControlName="roleCodes"
-            [options]="roles()"
+            [options]="grantable()"
             optionLabel="name"
             optionValue="code"
             display="chip"
@@ -220,6 +222,11 @@ export class Users {
   protected readonly loading = signal(false);
   protected readonly first = signal(0);
   protected readonly roles = signal<Role[]>([]);
+  private readonly auth = inject(AuthService);
+  /** What the Roles pickers offer: admin roles only for a Super Admin. */
+  protected readonly grantable = computed(() =>
+    grantableRoles(this.roles(), this.auth.has('admins.manage')),
+  );
 
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<UserRow | null>(null);

@@ -1,6 +1,6 @@
 # Architecture review after the 10 Nov discussion
 
-Status: **proposal, not yet built** except the two small fixes listed in section 9. Written 10 Nov 2026.
+Status: decisions 1, 2, 3 and 5 confirmed on 10 Nov 2026. Built so far: the small fixes in section 9 and step T1 (roles and temporary-password expiry). Written 10 Nov 2026.
 This document turns the discussion with the school into design decisions and a build order. Where it
 changes something already in `school-erp-plan.md`, that is stated, and the plan is only changed once the
 decisions in section 8 are confirmed.
@@ -217,9 +217,9 @@ action issues a fresh one. Staff accounts use the same rule (the number of days 
 | Step | What | Depends on |
 |---|---|---|
 | T0 | Menu order, readable name links (**done**) | - |
-| T1 | **Role model v2**: `SUPER_ADMIN`, `SCHOOL_ADMIN` split, `STAFF` role, admin-account guard, temp password expiry, form editing for both admins | Decisions 8.1, 8.5 |
+| T1 | **Role model v2**: `SUPER_ADMIN`, `SCHOOL_ADMIN` split, admin-account guard, temp password expiry (**done**) | Decision 1 |
 | T2 | **Search and filters**: shared list contract, global search in the top bar, filters on admissions, students, staff | T1 |
-| T3 | **Students v2**: edit, archive and restore, move within a year, directory visibility for teachers | T1, T2, decisions 8.2, 8.3 |
+| T3 | **Students v2**: edit, archive and restore, move within a year, teachers read all students, student ID and e-mail convention in school settings | T1, T2, decisions 8.2, 8.3 |
 | T4 | **Staff v2**: staff types, per-type forms and documents, filters | T1, forms engine (3.1) |
 | T5 | **Leave management** and the staff calendar | T4, decision 8.4 |
 | T6 | **Notifications platform** (outbox, in-app inbox, bell) and the fee reminder to class teachers | T1 |
@@ -243,24 +243,41 @@ results so those features never need their own way of telling parents.
 | Leave rules differ from what we assume | Rules are data (types, entitlements, approval), confirmed with the school before building T5 |
 | Mobile app later forces API rework | Versioned, documented API and bearer tokens from T9; no UI logic in the API |
 
-## 8. Decisions to confirm
+## 8. Decisions (confirmed by Ismail on 10 Nov 2026 unless marked open)
 
-Defaults are what will be built unless told otherwise.
+1. **Super Admin vs School Admin: confirmed, the widest version.** Only the Super Admin can manage admin accounts and
+   roles, change the school profile and settings, read the audit log, permanently erase records, **and reverse
+   payments or give concessions**. The School Admin does everything else, including the rest of Finance (setting
+   fee structures, recording payments, billing, dues).
+2. **Remove a student: confirmed.** Archive with a required reason, restorable; permanent erasure only by the Super Admin.
+3. **Teachers see all students: confirmed in the widest form.** A teacher reads the full record of every student
+   (the proposal was a limited row) and changes only the students of their assigned divisions. Scanned documents
+   (birth certificate and so on) still need their own permission and are not part of "full details" until the
+   school says otherwise (open question for T3).
+4. **Leave: open.** Needs the school's leave policy. Default stands: staff apply, School Admin approves, approved
+   leave marks attendance "on leave".
+5. **Accounts for families: confirmed, one login per student, held by the parent.** Each student gets a login ID by
+   the school's convention, for example `hesj0001` for Hera English School Jogeshwari, and a temporary password that
+   must be changed within 2 days. When the school has its own email domain, the login becomes the student's school
+   e-mail address (`hesj0001@<domain>`); until then the ID itself is the login. **The convention is a school
+   setting, not code** (prefix, number of digits, where the counter starts, optional e-mail domain), because every
+   school names things differently. The parent mobile-number login is postponed to a later discussion.
+6. **Email in V1: open.** Default: in-app first; email once the school has a sender address.
 
-1. **Super Admin vs School Admin.** Default: Super Admin alone manages admin accounts and roles, school settings,
-   the audit log and permanent erasure; School Admin does everything else, including all of Finance.
-2. **Delete a student.** Default: archive with a required reason, restorable; permanent erasure only by Super Admin.
-3. **Teachers see all students.** Default: a limited directory row for everyone, full detail only for assigned students.
-4. **Leave.** Default: staff apply, School Admin approves, approved leave marks attendance "on leave"; entitlements per
-   leave type per year. Needs the school's leave policy.
-5. **Accounts for families.** Default: keep the parent login (mobile number) and the student login (admission number);
-   both are optional and created from the student page. If the school wants exactly one credential per student that the
-   parent holds, only the student login is used and the parent login is not issued.
-6. **Email in V1.** Default: in-app notifications first; email as the first channel added after T6 once the school
-   provides a sender address; SMS and WhatsApp stay outside V1.
+### 8.1 Student ID and e-mail convention (new, from decision 5)
+
+- School settings gain: **student ID prefix** (for example `hesj`), **digits** (4), **next number**, and an optional
+  **e-mail domain**. The ID is `prefix + zero-padded number`, assigned under the same lock that numbers admissions
+  today, so two admits never collide. Admission numbers and student IDs become the same thing (today the admission
+  number is the student's login name).
+- With a domain set, the student's e-mail is `<id>@<domain>` and is shown on the student page; the account's login
+  accepts either the ID or the e-mail.
+- Changing the prefix later affects new students only; issued IDs never change.
+- Siblings each have their own ID and login. A parent with two children uses two logins (or the mobile login later).
 
 ## 9. Done in this step
 
 - Academic setup now sits above Admissions in the staff menu.
+- **T1 built (10 Nov):** `SUPER_ADMIN` and `SCHOOL_ADMIN` roles as in decision 1 (`admins.manage` permission; the seeded first login is now a Super Admin; "keep one active Super Admin" guard), admin accounts can be created, changed, disabled or reset only by a Super Admin, and temporary passwords stop working after 2 days (`TEMP_PASSWORD_DAYS`, default 2) with a clear message and an audit entry. 12 new tests.
 - Names that open something (admission list, students, staff, fee lists and similar) are coloured and underlined at
   all times, so a row no longer looks empty until hovered.

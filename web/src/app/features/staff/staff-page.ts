@@ -17,6 +17,8 @@ import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
 import { genderLabel } from '../../shared/ui/labels';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
+import { AuthService } from '../../core/auth.service';
+import { grantableRoles } from '../../core/admin-roles';
 import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
 
 @Component({
@@ -261,7 +263,10 @@ export class StaffPage {
   protected readonly format = formatDate;
   protected readonly age = (dob: string) => ageText(dob);
   protected readonly gender = genderLabel;
-  protected readonly roleOptions = STAFF_ROLE_OPTIONS;
+  protected readonly roleOptions = grantableRoles(
+    STAFF_ROLE_OPTIONS,
+    inject(AuthService).has('admins.manage'),
+  );
 
   protected readonly staff = signal<StaffMember | null>(null);
   protected readonly teaching = signal<Assignment[]>([]);

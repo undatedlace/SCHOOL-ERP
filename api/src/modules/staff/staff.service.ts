@@ -373,6 +373,7 @@ export class StaffService {
         'Only an administrator can give someone a login',
       );
     }
+    this.users.assertMayGrantRoles(auth, account.roleCodes);
     const bad = account.roleCodes.filter((c) => !STAFF_ROLES.includes(c));
     if (bad.length) {
       throw new BadRequestException(

@@ -54,11 +54,32 @@ const PERMISSIONS = [
   'staff_attendance.read',
   'staff_attendance.read_all',
   'staff_attendance.manage',
+  'admins.manage',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
-const ROLES: Record<string, { name: string; permissions: string[] | 'ALL' }> = {
-  SCHOOL_ADMIN: { name: 'School Admin', permissions: 'ALL' },
+/**
+ * What only the Super Admin (the trustees) may do. The School Admin runs the school day to day with
+ * every other permission, including all of Finance except reversing payments and giving concessions.
+ */
+const SUPER_ADMIN_ONLY = [
+  'admins.manage',
+  'settings.manage',
+  'audit.read',
+  'fees.payment.reverse',
+  'fees.concession.manage',
+];
+
+type RoleDef = {
+  name: string;
+  permissions: string[] | 'ALL' | { allExcept: string[] };
+};
+const ROLES: Record<string, RoleDef> = {
+  SUPER_ADMIN: { name: 'Super Admin', permissions: 'ALL' },
+  SCHOOL_ADMIN: {
+    name: 'School Admin',
+    permissions: { allExcept: SUPER_ADMIN_ONLY },
+  },
   OFFICE_STAFF: {
     name: 'Office Staff',
     permissions: [
@@ -168,10 +189,20 @@ async function main() {
       update: { name: def.name },
       create: { code, name: def.name },
     });
+    const perms = def.permissions;
     const wanted =
-      def.permissions === 'ALL'
+      perms === 'ALL'
         ? allPermissions
-        : allPermissions.filter((p) => def.permissions.includes(p.code));
+        : Array.isArray(perms)
+          ? allPermissions.filter((p) => perms.includes(p.code))
+          : allPermissions.filter((p) => !perms.allExcept.includes(p.code));
+    // Make the role match the list exactly, so a permission taken away here is taken away in the database.
+    await prisma.rolePermission.deleteMany({
+      where: {
+        roleId: role.id,
+        permissionId: { notIn: wanted.map((p) => p.id) },
+      },
+    });
     await prisma.rolePermission.createMany({
       data: wanted.map((p) => ({ roleId: role.id, permissionId: p.id })),
       skipDuplicates: true,
@@ -292,8 +323,9 @@ async function main() {
       mustChangePassword: true,
     },
   });
+  // The first login belongs to the trustees' role. Further admins are made from the Users screen.
   const adminRole = await prisma.role.findUniqueOrThrow({
-    where: { code: 'SCHOOL_ADMIN' },
+    where: { code: 'SUPER_ADMIN' },
   });
   await prisma.userRole.createMany({
     data: [{ userId: admin.id, roleId: adminRole.id }],

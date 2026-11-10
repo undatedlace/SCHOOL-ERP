@@ -1,12 +1,19 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  ADMINS_MANAGE,
+  TOP_ROLE,
+  hasAdminRole,
+} from '../../common/admin-roles.js';
 import type { AuthContext } from '../../common/auth-context.js';
 import { Page, skipTake } from '../../common/dto/page-query.dto.js';
 import {
   generateTemporaryPassword,
+  tempPasswordExpiry,
   hashPassword,
 } from '../../common/password.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -17,8 +24,6 @@ import {
   ListUsersQueryDto,
   UpdateUserDto,
 } from './dto/user.dto.js';
-
-const ADMIN_ROLE = 'SCHOOL_ADMIN';
 
 const USER_SELECT = {
   id: true,
@@ -95,7 +100,17 @@ export class UsersService {
     return toDto(user);
   }
 
+  /** Only a Super Admin may give an admin role. Everyone else with users.manage cannot. */
+  assertMayGrantRoles(auth: AuthContext, roleCodes: readonly string[]) {
+    if (hasAdminRole(roleCodes) && !auth.permissions.includes(ADMINS_MANAGE)) {
+      throw new ForbiddenException(
+        'Only a Super Admin can give someone an administrator role',
+      );
+    }
+  }
+
   async create(auth: AuthContext, dto: CreateUserDto, ip?: string) {
+    this.assertMayGrantRoles(auth, dto.roleCodes);
     const { id, temporaryPassword } = await this.createAccount(
       this.prisma,
       auth.schoolId,
@@ -157,6 +172,7 @@ export class UsersService {
           input.password ?? (temporaryPassword as string),
         ),
         mustChangePassword: true,
+        tempPasswordExpiresAt: tempPasswordExpiry(),
         roles: { create: roleIds.map((roleId) => ({ roleId })) },
       },
       select: { id: true },
@@ -181,9 +197,21 @@ export class UsersService {
       throw new BadRequestException('You cannot disable your own account');
     }
 
-    const wasAdmin = existing.roles.some((r) => r.role.code === ADMIN_ROLE);
+    // Changing an administrator, or giving or taking an admin role, is for a Super Admin.
+    const mayAdmins = auth.permissions.includes(ADMINS_MANAGE);
+    if (
+      !mayAdmins &&
+      (hasAdminRole(existing.roles.map((r) => r.role.code)) ||
+        (dto.roleCodes && hasAdminRole(dto.roleCodes)))
+    ) {
+      throw new ForbiddenException(
+        'Only a Super Admin can change an administrator or give an administrator role',
+      );
+    }
+
+    const wasAdmin = existing.roles.some((r) => r.role.code === TOP_ROLE);
     const staysAdmin = dto.roleCodes
-      ? dto.roleCodes.includes(ADMIN_ROLE)
+      ? dto.roleCodes.includes(TOP_ROLE)
       : wasAdmin;
     const staysActive = (dto.status ?? existing.status) === 'ACTIVE';
     if (wasAdmin && (!staysAdmin || !staysActive)) {
@@ -253,12 +281,12 @@ export class UsersService {
         schoolId,
         id: { not: excludingUserId },
         status: 'ACTIVE',
-        roles: { some: { role: { code: ADMIN_ROLE } } },
+        roles: { some: { role: { code: TOP_ROLE } } },
       },
     });
     if (others === 0) {
       throw new BadRequestException(
-        'The school must keep at least one active School Admin',
+        'The school must keep at least one active Super Admin',
       );
     }
   }

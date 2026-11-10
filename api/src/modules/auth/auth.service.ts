@@ -1,14 +1,17 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
+import { ADMINS_MANAGE, hasAdminRole } from '../../common/admin-roles.js';
 import type { AuthContext } from '../../common/auth-context.js';
 import {
   generateTemporaryPassword,
   hashPassword,
+  tempPasswordExpiry,
   verifyPassword,
 } from '../../common/password.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -68,6 +71,24 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // A temporary password that was not changed in time no longer works. Said only after the
+    // password was right, so it reveals nothing to someone guessing.
+    if (
+      user.mustChangePassword &&
+      user.tempPasswordExpiresAt &&
+      user.tempPasswordExpiresAt.getTime() < Date.now()
+    ) {
+      await this.audit.log({
+        schoolId,
+        actorUserId: user.id,
+        action: 'auth.temp_password_expired',
+        ip: client.ip,
+      });
+      throw new UnauthorizedException(
+        'Your temporary password has expired. Ask the school office for a new one.',
+      );
+    }
+
     const session = await this.issueSession(
       user.id,
       schoolId,
@@ -113,7 +134,11 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: user.id },
-        data: { passwordHash, mustChangePassword: false },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          tempPasswordExpiresAt: null,
+        },
       }),
       this.prisma.session.deleteMany({ where: { userId: user.id } }),
     ]);
@@ -137,9 +162,21 @@ export class AuthService {
   async resetPassword(auth: AuthContext, targetUserId: string, ip?: string) {
     const target = await this.prisma.user.findFirst({
       where: { id: targetUserId, schoolId: auth.schoolId },
-      select: { id: true },
+      select: {
+        id: true,
+        roles: { select: { role: { select: { code: true } } } },
+      },
     });
     if (!target) throw new NotFoundException('User not found');
+    // Only a Super Admin may reset the password of an admin.
+    if (
+      hasAdminRole(target.roles.map((r) => r.role.code)) &&
+      !auth.permissions.includes(ADMINS_MANAGE)
+    ) {
+      throw new ForbiddenException(
+        'Only a Super Admin can reset the password of an administrator',
+      );
+    }
 
     const temporaryPassword = generateTemporaryPassword();
     await this.prisma.$transaction([
@@ -148,6 +185,7 @@ export class AuthService {
         data: {
           passwordHash: await hashPassword(temporaryPassword),
           mustChangePassword: true,
+          tempPasswordExpiresAt: tempPasswordExpiry(),
         },
       }),
       this.prisma.session.deleteMany({ where: { userId: target.id } }),
