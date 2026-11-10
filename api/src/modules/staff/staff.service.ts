@@ -12,6 +12,9 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FilesService } from '../files/files.service.js';
+import { fileIds, FormSchema, validateAnswers } from '../forms/form-schema.js';
+import { STAFF_FORM_PREFIX } from '../forms/form-kinds.js';
+import { FormsService } from '../forms/forms.service.js';
 import { UsersService } from '../users/users.service.js';
 import {
   AccountDto,
@@ -22,6 +25,7 @@ import {
 } from './dto/staff.dto.js';
 
 const ACCOUNT_INCLUDE = {
+  staffType: { select: { id: true, name: true, isTeaching: true } },
   user: {
     select: {
       id: true,
@@ -52,6 +56,7 @@ const view = (s: Row) => ({
   address: s.address,
   photoFileId: s.photoFileId,
   status: s.status,
+  staffType: s.staffType,
   joinedOn: s.joinedOn,
   leftOn: s.leftOn,
   account: s.user
@@ -71,6 +76,7 @@ export class StaffService {
     private readonly audit: AuditService,
     private readonly users: UsersService,
     private readonly files: FilesService,
+    private readonly forms: FormsService,
   ) {}
 
   /**
@@ -92,6 +98,7 @@ export class StaffService {
       ...this.visible(auth),
       ...(q.status ? { status: q.status } : {}),
       ...(q.gender ? { gender: q.gender } : {}),
+      ...(q.staffTypeId ? { staffTypeId: q.staffTypeId } : {}),
       ...(q.designation
         ? { designation: { contains: q.designation, mode: 'insensitive' } }
         : {}),
@@ -144,7 +151,105 @@ export class StaffService {
     });
     // Same answer for "does not exist" and "not yours to see".
     if (!row) throw new NotFoundException('Staff member not found');
-    return view(row);
+    return {
+      ...view(row),
+      onboarding: await this.onboarding(auth, row),
+    };
+  }
+
+  /**
+   * The onboarding form and what was answered, for administrators only: it holds identity papers.
+   * The form shown is the version the answers were filled in with.
+   */
+  private async onboarding(
+    auth: AuthContext,
+    row: { formId: string | null; answers: Prisma.JsonValue },
+  ) {
+    if (!auth.permissions.includes('staff.manage') || !row.formId) return null;
+    const form = await this.prisma.formDefinition.findFirst({
+      where: { id: row.formId, schoolId: auth.schoolId },
+      select: { id: true, version: true, name: true, schema: true },
+    });
+    if (!form) return null;
+    return {
+      formId: form.id,
+      version: form.version,
+      name: form.name,
+      schema: form.schema as unknown as FormSchema,
+      answers: (row.answers ?? {}) as Record<string, unknown>,
+    };
+  }
+
+  /**
+   * Works out the type, form version and checked answers to save. A new type means that type's live form;
+   * the same type keeps the version the record was filled in with. Throws a message that says what to fix.
+   */
+  private async resolveOnboarding(
+    auth: AuthContext,
+    typeId: string | undefined,
+    rawAnswers: Record<string, unknown> | undefined,
+    current?: { staffTypeId: string | null; formId: string | null },
+  ): Promise<{
+    staffTypeId: string;
+    formId: string;
+    answers: Prisma.InputJsonObject;
+  } | null> {
+    if (typeId === undefined && rawAnswers === undefined) return null;
+    const changing = typeId !== undefined && typeId !== current?.staffTypeId;
+    // Naming the same type again, with no answers, changes nothing.
+    if (rawAnswers === undefined && !changing) return null;
+    const staffTypeId = typeId ?? current?.staffTypeId ?? undefined;
+    if (!staffTypeId) {
+      throw new BadRequestException(
+        'Choose a staff type before adding details',
+      );
+    }
+    if (changing) {
+      const type = await this.prisma.staffType.findFirst({
+        where: { id: staffTypeId, schoolId: auth.schoolId, active: true },
+        select: { id: true },
+      });
+      if (!type)
+        throw new BadRequestException('Choose a staff type from the list');
+    }
+    const form =
+      changing || !current?.formId
+        ? await this.forms.ensurePublished(
+            auth.schoolId,
+            `${STAFF_FORM_PREFIX}${staffTypeId}`,
+          )
+        : await this.prisma.formDefinition.findFirstOrThrow({
+            where: { id: current.formId, schoolId: auth.schoolId },
+          });
+    const schema = form.schema as unknown as FormSchema;
+    const raw = rawAnswers ?? {};
+    const [photos, documents] = await Promise.all([
+      this.files.existing(
+        auth.schoolId,
+        'staff-photo',
+        fileIds(schema, raw, 'image'),
+      ),
+      this.files.existing(
+        auth.schoolId,
+        'staff-document',
+        fileIds(schema, raw, 'document'),
+      ),
+    ]);
+    const { answers, errors } = validateAnswers(schema, raw, {
+      classIds: new Set(),
+      fileIds: new Set([...photos, ...documents]),
+    });
+    if (Object.keys(errors).length > 0) {
+      throw new BadRequestException({
+        message: Object.values(errors).join('. '),
+        errors,
+      });
+    }
+    return {
+      staffTypeId,
+      formId: form.id,
+      answers: answers as Prisma.InputJsonObject,
+    };
   }
 
   async create(auth: AuthContext, dto: CreateStaffDto, ip?: string) {
@@ -155,6 +260,11 @@ export class StaffService {
       );
     }
     await this.assertPhoto(auth.schoolId, dto.photoFileId);
+    const onboarding = await this.resolveOnboarding(
+      auth,
+      dto.staffTypeId,
+      dto.answers,
+    );
 
     let temporaryPassword: string | undefined;
     let created: { id: string };
@@ -220,6 +330,7 @@ export class StaffService {
             photoFileId: dto.photoFileId ?? null,
             joinedOn: dateOnly(dto.joinedOn ?? todayIso()),
             userId,
+            ...onboarding,
           },
           select: { id: true },
         });
@@ -257,13 +368,34 @@ export class StaffService {
         userId: true,
         firstName: true,
         surname: true,
+        staffTypeId: true,
+        formId: true,
       },
     });
     if (!existing) throw new NotFoundException('Staff member not found');
     await this.assertPhoto(auth.schoolId, dto.photoFileId);
+    const onboarding = await this.resolveOnboarding(
+      auth,
+      dto.staffTypeId,
+      dto.answers,
+      existing,
+    );
 
-    const { dateOfBirth, joinedOn, status, leftOn, ...rest } = dto;
-    const data: Prisma.StaffUpdateInput = { ...rest };
+    const {
+      dateOfBirth,
+      joinedOn,
+      status,
+      leftOn,
+      staffTypeId: _type,
+      answers: _answers,
+      ...rest
+    } = dto;
+    void _type;
+    void _answers;
+    const data: Prisma.StaffUncheckedUpdateInput = {
+      ...rest,
+      ...onboarding,
+    };
     if (dateOfBirth) data.dateOfBirth = dateOnly(dateOfBirth);
     if (joinedOn) data.joinedOn = dateOnly(joinedOn);
 

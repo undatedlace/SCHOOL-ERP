@@ -48,6 +48,7 @@ export function buildControl(field: FormField, answer: unknown): AbstractControl
         validators: field.required ? [Validators.required] : [],
       });
     case 'image':
+    case 'document':
       return new FormControl<string | null>(typeof answer === 'string' ? answer : null, {
         validators: field.required ? [Validators.required] : [],
       });
@@ -107,6 +108,7 @@ function readValue(field: FormField, control: AbstractControl): unknown {
     case 'select':
     case 'radio':
     case 'image':
+    case 'document':
       return typeof v === 'string' && v !== '' ? v : undefined;
     default: {
       const text = typeof v === 'string' ? v.trim() : '';

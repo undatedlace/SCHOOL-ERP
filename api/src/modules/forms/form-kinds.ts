@@ -12,7 +12,10 @@ export interface FormKind {
   initial: FormSchema;
 }
 
-/** The forms the system knows about. Only the admission form for now. */
+/** Key prefix of a staff type's onboarding form: `staff-<staff type id>`. */
+export const STAFF_FORM_PREFIX = 'staff-';
+
+/** The forms that always exist. Each staff type adds an onboarding form of its own (see FormsService). */
 export const FORM_KINDS: Record<string, FormKind> = {
   admission: {
     name: DEFAULT_ADMISSION_FORM_NAME,

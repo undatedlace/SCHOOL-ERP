@@ -14,6 +14,7 @@ import { apiError } from '../../core/api-error';
 import { Assignment, StaffMember } from '../../core/models';
 import { ageText, formatDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { AnswerView } from '../../shared/forms/answer-view';
 import { FormField } from '../../shared/ui/form-field';
 import { genderLabel } from '../../shared/ui/labels';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
@@ -35,6 +36,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
     HasPermission,
     StaffForm,
     TempPasswordDialog,
+    AnswerView,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -57,7 +59,11 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           <div>
             <h1 class="text-2xl font-semibold">{{ s.fullName }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">
-              {{ s.designation }} &middot; Employee no. {{ s.employeeNo }}
+              {{ s.designation }}
+              @if (s.staffType) {
+                &middot; {{ s.staffType.name }}
+              }
+              &middot; Employee no. {{ s.employeeNo }}
             </p>
             @if (s.dateOfBirth) {
               <p class="text-sm text-muted-foreground">
@@ -137,6 +143,19 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
             }
           </dl>
         </section>
+
+        @if (s.onboarding; as o) {
+          <section
+            class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2"
+            aria-label="Onboarding details"
+          >
+            <h2 class="mb-1 font-semibold">{{ s.staffType?.name }} details and documents</h2>
+            <p class="mb-4 text-xs text-muted-foreground">
+              Visible to administrators only. Filled in with version {{ o.version }} of the form.
+            </p>
+            <app-answer-view [schema]="o.schema" [answers]="o.answers" />
+          </section>
+        }
 
         @if (teaching().length) {
           <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">

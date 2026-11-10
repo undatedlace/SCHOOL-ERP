@@ -174,3 +174,25 @@ describe('form values', () => {
     });
   });
 });
+
+describe('document fields', () => {
+  const field = (required = false): FormField => ({
+    id: 'idProof',
+    type: 'document',
+    label: 'Identity proof',
+    required,
+  });
+
+  it('start from the saved file id, and come back as the id', () => {
+    const group = buildGroup([field()], { idProof: 'f1' });
+    expect(group.get('idProof')?.value).toBe('f1');
+    expect(readAnswers([field()], group)).toEqual({ idProof: 'f1' });
+  });
+
+  it('are left out when empty, and block saving when required and missing', () => {
+    const empty = buildGroup([field()], {});
+    expect(readAnswers([field()], empty)).toEqual({});
+    expect(buildGroup([field(true)], {}).valid).toBe(false);
+    expect(buildGroup([field(true)], { idProof: 'f1' }).valid).toBe(true);
+  });
+});

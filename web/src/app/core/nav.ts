@@ -115,6 +115,12 @@ const users: NavItem = {
   description: 'Staff and parent accounts, roles and passwords',
   permission: 'users.manage',
 };
+const staffTypes: NavItem = {
+  label: 'Staff types',
+  path: '/app/settings/staff-types',
+  description: 'Teacher, clerk, peon and so on, each with its own onboarding form',
+  permission: 'forms.manage',
+};
 const schoolSettings: NavItem = {
   label: 'School settings',
   path: '/app/settings/school',
@@ -148,7 +154,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: 'Settings',
     icon: 'settings',
     section: 'other',
-    items: [schoolSettings, users, auditLog],
+    items: [schoolSettings, users, staffTypes, auditLog],
   },
 ];
 

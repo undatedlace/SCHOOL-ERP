@@ -27,6 +27,13 @@ export const FILE_PURPOSES: Record<string, FilePurpose> = {
     maxBytes: 5 * MB,
     kind: 'image',
   },
+  // Identity proof, degrees and the like for a member of staff. Administrators only.
+  'staff-document': {
+    write: 'staff.manage',
+    read: 'staff.manage',
+    maxBytes: 10 * MB,
+    kind: 'document',
+  },
   // Birth certificates and the like. Staff only: a parent does not see the school's paperwork.
   'student-document': {
     write: 'students.manage',

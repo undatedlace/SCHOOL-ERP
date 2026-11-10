@@ -46,13 +46,19 @@ describe('form builder (e2e)', () => {
 
   it('lists the admission form with its published version', async () => {
     const res = await admin.get('/api/forms').expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({
-      key: 'admission',
+    const admission = res.body.find(
+      (f: { key: string }) => f.key === 'admission',
+    );
+    expect(admission).toMatchObject({
       name: 'Application for admission',
       hasDraft: false,
     });
-    expect(res.body[0].publishedVersion).toBeGreaterThanOrEqual(1);
+    expect(admission.publishedVersion).toBeGreaterThanOrEqual(1);
+    // Each kind of staff has an onboarding form of its own.
+    expect(
+      res.body.filter((f: { key: string }) => f.key.startsWith('staff-'))
+        .length,
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it('returns the published form, built from the paper form', async () => {

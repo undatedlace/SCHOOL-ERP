@@ -220,6 +220,19 @@ async function main() {
     (await prisma.school.findFirst({ orderBy: { createdAt: 'asc' } })) ??
     (await prisma.school.create({ data: { name: 'Demo School' } }));
 
+  // The kinds of employee the school starts with. The school adds more (Driver, Librarian...) in Settings.
+  for (const [i, t] of [
+    { name: 'Teacher', isTeaching: true },
+    { name: 'Clerk', isTeaching: false },
+    { name: 'Peon', isTeaching: false },
+  ].entries()) {
+    await prisma.staffType.upsert({
+      where: { schoolId_name: { schoolId: school.id, name: t.name } },
+      update: {},
+      create: { schoolId: school.id, ...t, sortOrder: i + 1 },
+    });
+  }
+
   // The school's admission form, as published version 1. Editable later in the form builder.
   const hasAdmissionForm = await prisma.formDefinition.findFirst({
     where: { schoolId: school.id, key: 'admission' },
