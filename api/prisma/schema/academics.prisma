@@ -8,15 +8,17 @@ model AcademicYear {
   /// Ages are counted as on this date (the paper form's "Age as on"). Empty = the day the form was received.
   ageCutoffDate DateTime? @map("age_cutoff_date") @db.Date
 
-  school          School             @relation(fields: [schoolId], references: [id])
-  applications    Application[]
-  enrollments     Enrollment[]
-  classTeachers   ClassTeacher[]
-  subjectTeachers SubjectTeacher[]
-  feeStructures   FeeStructure[]
-  feeInvoices     FeeInvoice[]
-  payments        Payment[]
-  attendance      AttendanceRecord[]
+  school            School             @relation(fields: [schoolId], references: [id])
+  applications      Application[]
+  enrollments       Enrollment[]
+  leaveEntitlements LeaveEntitlement[]
+  leaveRequests     LeaveRequest[]
+  classTeachers     ClassTeacher[]
+  subjectTeachers   SubjectTeacher[]
+  feeStructures     FeeStructure[]
+  feeInvoices       FeeInvoice[]
+  payments          Payment[]
+  attendance        AttendanceRecord[]
 
   @@unique([schoolId, name])
   @@map("academic_years")

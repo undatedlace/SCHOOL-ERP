@@ -13,8 +13,9 @@ import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { Api } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { apiError } from '../../core/api-error';
-import { CalendarEvent } from '../../core/models';
+import { CalendarEvent, LeaveCalendarItem } from '../../core/models';
 import { fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { Icon } from '../../shared/ui/icon';
@@ -37,6 +38,24 @@ import { EventDialog } from './event-dialog';
 import { MonthGrid } from './month-grid';
 import { TimeGrid } from './time-grid';
 import { YearGrid } from './year-grid';
+
+/** A leave from the staff calendar, shaped like an event so every view can draw it. It cannot be changed here. */
+const leaveAsEvent = (l: LeaveCalendarItem): CalendarEvent => ({
+  id: `leave-${l.id}`,
+  title: l.title,
+  description: null,
+  category: 'LEAVE',
+  startsOn: l.startsOn,
+  endsOn: l.endsOn,
+  startTime: null,
+  endTime: null,
+  audience: 'STAFF',
+  classes: [],
+  divisions: [],
+  announced: false,
+  canChange: false,
+});
+const byStart = (a: CalendarEvent, b: CalendarEvent) => a.startsOn.localeCompare(b.startsOn);
 
 const VIEWS: CalendarView[] = ['day', 'week', 'month', 'year'];
 const VIEW_KEY = 'calendar-view';
@@ -165,7 +184,7 @@ function savedView(): CalendarView {
         }
 
         <ul class="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground" aria-label="Key">
-          @for (c of categoryKeys; track c) {
+          @for (c of categoryKeys(); track c) {
             <li class="flex items-center gap-1.5">
               <span class="size-3 rounded" [class]="categoryClass[c]"></span>{{ categoryLabel[c] }}
             </li>
@@ -187,7 +206,9 @@ function savedView(): CalendarView {
             @if (e.description) {
               <p class="mt-1 text-sm whitespace-pre-line">{{ e.description }}</p>
             }
-            <p class="mt-1 text-xs">For: {{ audienceOf(e) }}</p>
+            @if (e.category !== 'LEAVE') {
+              <p class="mt-1 text-xs">For: {{ audienceOf(e) }}</p>
+            }
             @if (e.canChange) {
               <div class="mt-2 flex gap-2">
                 <button
@@ -224,6 +245,7 @@ function savedView(): CalendarView {
 })
 export class CalendarPage {
   private readonly api = inject(Api);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(MessageService);
   private readonly confirm = inject(ConfirmationService);
   protected readonly dialog = viewChild.required(EventDialog);
@@ -233,7 +255,11 @@ export class CalendarPage {
   protected readonly viewLabel = VIEW_LABEL;
   protected readonly categoryClass = CATEGORY_CLASS;
   protected readonly categoryLabel = CATEGORY_LABEL;
-  protected readonly categoryKeys = ['EVENT', 'HOLIDAY', 'EXAM', 'MEETING'] as const;
+  protected readonly categoryKeys = computed(() =>
+    this.auth.has('leave.apply')
+      ? (['EVENT', 'HOLIDAY', 'EXAM', 'MEETING', 'LEAVE'] as const)
+      : (['EVENT', 'HOLIDAY', 'EXAM', 'MEETING'] as const),
+  );
   protected readonly dateRange = dateRangeText;
   protected readonly timeRange = timeRangeText;
   protected readonly audienceOf = audienceText;
@@ -305,7 +331,14 @@ export class CalendarPage {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.events.set(await firstValueFrom(this.api.calendarEvents(from, to)));
+      // Staff leave is asked for at the same time, but only by people who may see it (their own, or
+      // everyone's for an administrator). Without it the page behaves exactly as before.
+      const leaveRequest = this.auth.has('leave.apply')
+        ? firstValueFrom(this.api.leaveCalendar(from, to)).catch(() => [] as LeaveCalendarItem[])
+        : null;
+      const events = await firstValueFrom(this.api.calendarEvents(from, to));
+      const leave = leaveRequest ? await leaveRequest : [];
+      this.events.set([...events, ...leave.map(leaveAsEvent)].sort(byStart));
     } catch (error) {
       this.error.set(apiError(error));
     } finally {

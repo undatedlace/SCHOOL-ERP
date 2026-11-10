@@ -197,3 +197,22 @@ describe('MyAttendancePage', () => {
     );
   });
 });
+
+describe('StaffAttendancePage approved leave', () => {
+  it('shows who is on approved leave, and offers no Remove for a status that came from leave', async () => {
+    const http = setup(['staff_attendance.read_all', 'staff_attendance.manage']);
+    const fixture = TestBed.createComponent(StaffAttendancePage);
+    fixture.detectChanges();
+    const r = roster();
+    r.staff[1] = { ...r.staff[1], status: 'ON_LEAVE', fromLeave: 'Casual leave' };
+    http.expectOne((x) => x.url === '/api/staff-attendance').flush(r);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('On approved leave: Casual leave');
+    // Asha has a saved mark; Meera's status is from leave, so only one Remove button.
+    expect(el.querySelectorAll('button[aria-label^="Remove the saved mark"]').length).toBe(1);
+    // Nothing to save: the leave status is already what the page shows.
+    expect(el.textContent).not.toContain('change to save');
+  });
+});

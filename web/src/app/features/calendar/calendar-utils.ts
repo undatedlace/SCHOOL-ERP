@@ -6,6 +6,7 @@ export const CATEGORY_LABEL: Record<CalendarCategory, string> = {
   HOLIDAY: 'Holiday',
   EXAM: 'Exam',
   MEETING: 'Meeting',
+  LEAVE: 'Staff leave',
 };
 
 /** Tile colours (the label is always written too, so colour is never the only cue). */
@@ -14,6 +15,7 @@ export const CATEGORY_CLASS: Record<CalendarCategory, string> = {
   HOLIDAY: 'bg-sun',
   EXAM: 'bg-sky',
   MEETING: 'bg-muted',
+  LEAVE: 'bg-accent',
 };
 
 export interface MonthCell {

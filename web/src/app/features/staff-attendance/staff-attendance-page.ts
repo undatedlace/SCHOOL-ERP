@@ -137,6 +137,11 @@ type Tab = 'take' | 'report';
             <li class="flex flex-wrap items-center gap-3 p-3">
               <div class="min-w-40 flex-1">
                 <div class="font-medium">{{ s.name }}</div>
+                @if (s.fromLeave) {
+                  <div class="text-xs text-muted-foreground">
+                    On approved leave: {{ s.fromLeave }}
+                  </div>
+                }
                 <div class="text-xs text-muted-foreground">
                   {{ s.designation }} &middot; No. {{ s.employeeNo }}
                 </div>
@@ -157,7 +162,7 @@ type Tab = 'take' | 'report';
                   </button>
                 }
               </div>
-              @if (r.canMark && s.status) {
+              @if (r.canMark && s.status && !s.fromLeave) {
                 <button
                   type="button"
                   class="h-9 rounded-md border px-3 text-sm text-destructive hover:bg-accent"

@@ -626,6 +626,8 @@ export interface StaffAttendanceRoster {
     status: AttendanceStatus | null;
     note: string | null;
     markedBy: string | null;
+    /** The kind of leave, when the status comes from approved leave and not from a mark. */
+    fromLeave?: string | null;
   }[];
 }
 
@@ -747,9 +749,67 @@ export interface SearchGroup {
   more: boolean;
 }
 
+// ---------- Staff leave ----------
+
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface LeaveType {
+  id: string;
+  name: string;
+  unlimited: boolean;
+  active: boolean;
+}
+
+export interface LeaveBalanceRow {
+  leaveType: { id: string; name: string; unlimited: boolean };
+  entitled: number;
+  taken: number;
+  upcoming: number;
+  pending: number;
+  /** Null for a kind with no yearly limit. */
+  remaining: number | null;
+}
+
+export interface LeaveBalance {
+  staff: { id: string; name: string };
+  academicYear: { id: string; name: string };
+  balances: LeaveBalanceRow[];
+}
+
+export interface LeaveRequest {
+  id: string;
+  staff: { id: string; name: string; designation: string };
+  leaveType: { id: string; name: string };
+  startsOn: string;
+  endsOn: string;
+  halfDay: boolean;
+  days: number;
+  reason: string;
+  status: LeaveStatus;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  mine: boolean;
+}
+
+export interface LeaveEntitlementRow {
+  leaveTypeId: string;
+  staffTypeId: string | null;
+  days: number;
+}
+
+export interface LeaveCalendarItem {
+  id: string;
+  title: string;
+  startsOn: string;
+  endsOn: string;
+  status: 'PENDING' | 'APPROVED';
+  halfDay: boolean;
+}
+
 // ---------- Calendar ----------
 
-export type CalendarCategory = 'EVENT' | 'HOLIDAY' | 'EXAM' | 'MEETING';
+export type CalendarCategory = 'EVENT' | 'HOLIDAY' | 'EXAM' | 'MEETING' | 'LEAVE';
 
 export interface CalendarEvent {
   id: string;
