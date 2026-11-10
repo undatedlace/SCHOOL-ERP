@@ -10,6 +10,7 @@ import {
   FeesInsight,
   StaffInsight,
   CalendarEvent,
+  SearchGroup,
   CalendarEventInput,
   Notice,
   NoticeAudiences,
@@ -182,6 +183,9 @@ export class Api {
     search?: string;
     status?: string | null;
     classId?: string | null;
+    receivedFrom?: string | null;
+    receivedTo?: string | null;
+    admitted?: string | null;
   }) =>
     this.http.get<Page<ApplicationListItem>>('/api/admissions/applications', { params: params(q) });
   applicationsSummary = () =>
@@ -224,6 +228,10 @@ export class Api {
     status?: string | null;
     classId?: string | null;
     divisionId?: string | null;
+    gender?: string | null;
+    joinedFrom?: string | null;
+    joinedTo?: string | null;
+    hasLogin?: string | null;
   }) => this.http.get<Page<StudentListItem>>('/api/students', { params: params(q) });
   student = (id: string) => this.http.get<StudentDetail>(`/api/students/${id}`);
   updateStudent = (
@@ -309,8 +317,18 @@ export class Api {
     this.http.delete<void>(`/api/students/${studentId}/guardians/${guardianId}`);
 
   // ---------- Staff ----------
-  staffList = (q: { page: number; pageSize: number; search?: string; status?: string | null }) =>
-    this.http.get<Page<StaffMember>>('/api/staff', { params: params(q) });
+  staffList = (q: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    status?: string | null;
+    gender?: string | null;
+    designation?: string | null;
+    joinedFrom?: string | null;
+    joinedTo?: string | null;
+    hasLogin?: string | null;
+    role?: string | null;
+  }) => this.http.get<Page<StaffMember>>('/api/staff', { params: params(q) });
   staffMember = (id: string) => this.http.get<StaffMember>(`/api/staff/${id}`);
   createStaff = (body: NewStaff) => this.http.post<StaffMember>('/api/staff', body);
   updateStaff = (
@@ -391,6 +409,10 @@ export class Api {
     });
   myStaffAttendance = (q: { from?: string; to?: string }) =>
     this.http.get<MyStaffAttendance>('/api/staff-attendance/me', { params: params(q) });
+
+  // ---------- Search ----------
+  search = (q: string) =>
+    this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
 
   // ---------- Calendar ----------
   calendarEvents = (from: string, to: string) =>

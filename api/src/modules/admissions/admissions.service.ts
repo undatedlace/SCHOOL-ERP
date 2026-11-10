@@ -100,6 +100,17 @@ export class AdmissionsService {
       ...(yearId ? { academicYearId: yearId } : {}),
       ...(q.status ? { status: q.status } : {}),
       ...(q.classId ? { classId: q.classId } : {}),
+      ...(q.receivedFrom || q.receivedTo
+        ? {
+            receivedOn: {
+              ...(q.receivedFrom ? { gte: dateOnly(q.receivedFrom) } : {}),
+              ...(q.receivedTo ? { lte: dateOnly(q.receivedTo) } : {}),
+            },
+          }
+        : {}),
+      ...(q.admitted === undefined
+        ? {}
+        : { studentId: q.admitted ? { not: null } : null }),
       ...(q.search
         ? {
             OR: [

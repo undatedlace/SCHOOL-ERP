@@ -155,6 +155,18 @@ export class StudentsService {
       // In an AND of its own: the scope and the search both use OR, and one must not replace the other.
       AND: [await this.visible(auth)],
       ...(q.status ? { status: q.status } : {}),
+      ...(q.gender ? { gender: q.gender } : {}),
+      ...(q.joinedFrom || q.joinedTo
+        ? {
+            joinedOn: {
+              ...(q.joinedFrom ? { gte: dateOnly(q.joinedFrom) } : {}),
+              ...(q.joinedTo ? { lte: dateOnly(q.joinedTo) } : {}),
+            },
+          }
+        : {}),
+      ...(q.hasLogin === undefined
+        ? {}
+        : { userId: q.hasLogin ? { not: null } : null }),
       ...(q.divisionId || q.classId
         ? { enrollments: { some: classFilter } }
         : {}),
@@ -165,6 +177,21 @@ export class StudentsService {
               { fatherName: { contains: q.search, mode: 'insensitive' } },
               { surname: { contains: q.search, mode: 'insensitive' } },
               { admissionNo: { contains: q.search, mode: 'insensitive' } },
+              // A parent's name or phone number finds the child.
+              {
+                guardians: {
+                  some: {
+                    guardian: {
+                      OR: [
+                        {
+                          fullName: { contains: q.search, mode: 'insensitive' },
+                        },
+                        { mobile: { contains: q.search } },
+                      ],
+                    },
+                  },
+                },
+              },
             ],
           }
         : {}),
