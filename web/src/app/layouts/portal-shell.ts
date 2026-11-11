@@ -59,6 +59,7 @@ export class PortalShell {
     { label: 'Home', path: '/portal' },
     { label: 'Attendance', path: '/portal/attendance' },
     { label: 'Fees', path: '/portal/fees' },
+    { label: 'Homework', path: '/portal/homework' },
     { label: 'Calendar', path: '/portal/calendar' },
     { label: 'Notices', path: '/portal/notices' },
   ];

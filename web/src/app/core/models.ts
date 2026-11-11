@@ -749,6 +749,33 @@ export interface SearchGroup {
   more: boolean;
 }
 
+// ---------- Homework ----------
+
+export interface Homework {
+  id: string;
+  title: string;
+  instructions: string;
+  subject: { id: string; name: string } | null;
+  dueOn: string | null;
+  overdue: boolean;
+  createdBy: { id: string; fullName: string };
+  createdAt: string;
+  divisions: { id: string; label: string }[];
+  students: { id: string; name: string }[];
+  /** For a parent or student: which of their children it is for. */
+  forChildren: string[];
+  canChange: boolean;
+}
+
+export interface HomeworkInput {
+  title: string;
+  instructions: string;
+  subjectId?: string;
+  dueOn?: string;
+  divisionIds?: string[];
+  studentIds?: string[];
+}
+
 // ---------- Notifications ----------
 
 export interface AppNotification {

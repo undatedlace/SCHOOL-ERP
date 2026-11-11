@@ -148,6 +148,12 @@ export const routes: Routes = [
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
       },
       {
+        path: 'homework',
+        canActivate: [permissionGuard('homework.manage')],
+        loadComponent: () =>
+          import('./features/homework/homework-page').then((m) => m.HomeworkPage),
+      },
+      {
         path: 'leave',
         canActivate: [permissionGuard('leave.manage')],
         loadComponent: () => import('./features/leave/leave-requests').then((m) => m.LeaveRequests),
@@ -227,6 +233,11 @@ export const routes: Routes = [
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
+      },
+      {
+        path: 'homework',
+        loadComponent: () =>
+          import('./features/homework/portal-homework').then((m) => m.PortalHomework),
       },
       {
         path: 'notices',

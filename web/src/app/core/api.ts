@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
   AppNotification,
+  Homework,
+  HomeworkInput,
   Collection,
   PaymentRow,
   CopyResult,
@@ -440,6 +442,23 @@ export class Api {
   // ---------- Search ----------
   search = (q: string) =>
     this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
+
+  // ---------- Homework ----------
+  homework = (q: {
+    page: number;
+    pageSize: number;
+    status?: 'open' | 'all';
+    divisionId?: string | null;
+    subjectId?: string | null;
+  }) => this.http.get<Page<Homework>>('/api/homework', { params: params(q) });
+  homeworkAudiences = () =>
+    this.http.get<{ divisions: { id: string; classId: string; label: string }[] }>(
+      '/api/homework/audiences',
+    );
+  createHomework = (body: HomeworkInput) => this.http.post<Homework>('/api/homework', body);
+  updateHomework = (id: string, body: Partial<HomeworkInput>) =>
+    this.http.patch<Homework>(`/api/homework/${id}`, body);
+  archiveHomework = (id: string) => this.http.delete<void>(`/api/homework/${id}`);
 
   // ---------- Notifications ----------
   notifications = (q: { page: number; pageSize: number; unread?: boolean }) =>
