@@ -1,0 +1,25 @@
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+/// A phone or browser that can receive push messages for one person. Registered by the mobile app after
+/// sign-in; the push channel (not built yet) reads this table. A token belongs to one person at a time.
+model Device {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  schoolId   String         @map("school_id") @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  platform   DevicePlatform
+  /// The push token the platform (FCM or APNs) gave the app.
+  pushToken  String         @unique @map("push_token")
+  appVersion String?        @map("app_version")
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  school School @relation(fields: [schoolId], references: [id])
+  user   User   @relation("UserDevices", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("devices")
+}

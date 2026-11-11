@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import type { Response } from 'express';
 import type { AuthedRequest } from '../../common/auth-context.js';
+import { bearerToken } from '../../common/bearer.js';
 import { ALLOW_PASSWORD_CHANGE_KEY } from '../../common/decorators/allow-password-change.decorator.js';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -38,7 +39,8 @@ export class SessionGuard implements CanActivate {
 
     const http = ctx.switchToHttp();
     const req = http.getRequest<AuthedRequest>();
-    const token: unknown = req.cookies?.[SESSION_COOKIE];
+    const bearer = bearerToken(req);
+    const token: unknown = bearer ?? req.cookies?.[SESSION_COOKIE];
     if (typeof token !== 'string' || !token) throw new UnauthorizedException();
 
     const session = await this.prisma.session.findUnique({
@@ -80,7 +82,7 @@ export class SessionGuard implements CanActivate {
           ...(sliding ? { expiresAt: new Date(now + PORTAL_SESSION_MS) } : {}),
         },
       });
-      if (sliding) {
+      if (sliding && !bearer) {
         http
           .getResponse<Response>()
           .cookie(

@@ -26,6 +26,7 @@ model User {
   noticesWritten        Notice[]                @relation("NoticeAuthor")
   eventsWritten         CalendarEvent[]         @relation("EventAuthor")
   notifications         Notification[]          @relation("NotificationRecipient")
+  devices               Device[]                @relation("UserDevices")
   homeworkWritten       Homework[]              @relation("HomeworkAuthor")
   assessmentsWritten    Assessment[]            @relation("AssessmentAuthor")
   staffAttendanceMarked StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
