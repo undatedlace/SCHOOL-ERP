@@ -140,9 +140,8 @@ describe('MyLeave', () => {
       fixture.detectChanges();
     };
     const setDate = (i: number, value: string) => {
-      fixture.debugElement
-        .queryAll(By.directive(DateField))
-        [i].componentInstance.valueChange.emit(value);
+      const fields = fixture.debugElement.queryAll(By.directive(DateField));
+      fields[i].componentInstance.valueChange.emit(value);
       fixture.detectChanges();
     };
     const set = (id: string, value: string) => {
@@ -196,9 +195,8 @@ describe('MyLeave', () => {
       fixture.detectChanges();
     };
     const setDate = (i: number, value: string) => {
-      fixture.debugElement
-        .queryAll(By.directive(DateField))
-        [i].componentInstance.valueChange.emit(value);
+      const fields = fixture.debugElement.queryAll(By.directive(DateField));
+      fields[i].componentInstance.valueChange.emit(value);
       fixture.detectChanges();
     };
     const set = (id: string, value: string) => {
