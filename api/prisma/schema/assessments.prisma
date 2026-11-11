@@ -1,0 +1,57 @@
+enum AssessmentKind {
+  UNIT
+  MOCK
+  TERM
+  OTHER
+}
+
+/// A test or exam for one subject in one division, with a maximum mark. Marks are entered by the teacher,
+/// then published so parents and students can see them. Grades and report cards sit on top later, once the
+/// school's board and grading scheme are known. Archived, never deleted.
+model Assessment {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  schoolId       String         @map("school_id") @db.Uuid
+  academicYearId String         @map("academic_year_id") @db.Uuid
+  name           String
+  kind           AssessmentKind @default(OTHER)
+  subjectId      String         @map("subject_id") @db.Uuid
+  divisionId     String         @map("division_id") @db.Uuid
+  maxMarks       Decimal        @map("max_marks") @db.Decimal(6, 2)
+  conductedOn    DateTime       @map("conducted_on") @db.Date
+  createdById    String         @map("created_by_id") @db.Uuid
+  publishedAt    DateTime?      @map("published_at")
+  publishedById  String?        @map("published_by_id") @db.Uuid
+  archivedAt     DateTime?      @map("archived_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  school       School           @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear     @relation(fields: [academicYearId], references: [id])
+  subject      Subject          @relation(fields: [subjectId], references: [id])
+  division     Division         @relation(fields: [divisionId], references: [id])
+  createdBy    User             @relation("AssessmentAuthor", fields: [createdById], references: [id])
+  marks        AssessmentMark[]
+
+  @@index([schoolId, academicYearId, divisionId])
+  @@index([createdById])
+  @@map("assessments")
+}
+
+/// One student's result in one test: marks, or absent, with an optional remark.
+model AssessmentMark {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  assessmentId String   @map("assessment_id") @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  marks        Decimal? @db.Decimal(6, 2)
+  absent       Boolean  @default(false)
+  remark       String?
+  enteredById  String   @map("entered_by_id") @db.Uuid
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id])
+
+  @@unique([assessmentId, studentId])
+  @@index([studentId])
+  @@map("assessment_marks")
+}

@@ -60,6 +60,7 @@ export class PortalShell {
     { label: 'Attendance', path: '/portal/attendance' },
     { label: 'Fees', path: '/portal/fees' },
     { label: 'Homework', path: '/portal/homework' },
+    { label: 'Results', path: '/portal/results' },
     { label: 'Calendar', path: '/portal/calendar' },
     { label: 'Notices', path: '/portal/notices' },
   ];

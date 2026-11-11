@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { StudentAttendanceSection } from '../students/student-attendance';
+import { StudentResultsSection } from '../results/student-results';
 import { StudentFees } from '../students/student-fees';
 import { ChildSwitcher } from './child-switcher';
 import { PortalChildren } from './portal-children';
@@ -9,7 +10,13 @@ import { PortalChildren } from './portal-children';
 /** One child's attendance or fees, for the page the route chose. */
 @Component({
   selector: 'app-portal-child-page',
-  imports: [MessageModule, ChildSwitcher, StudentAttendanceSection, StudentFees],
+  imports: [
+    MessageModule,
+    ChildSwitcher,
+    StudentAttendanceSection,
+    StudentFees,
+    StudentResultsSection,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-child-switcher />
@@ -26,6 +33,9 @@ import { PortalChildren } from './portal-children';
         @case ('attendance') {
           <app-student-attendance [studentId]="child.id" />
         }
+        @case ('results') {
+          <app-student-results [studentId]="child.id" />
+        }
         @case ('fees') {
           <app-student-fees [studentId]="child.id" />
         }
@@ -41,8 +51,9 @@ import { PortalChildren } from './portal-children';
 })
 export class PortalChildPage {
   protected readonly portal = inject(PortalChildren);
-  /** Set by the route's data: 'attendance' or 'fees'. */
-  protected readonly kind = inject(ActivatedRoute).snapshot.data['kind'] as 'attendance' | 'fees';
+  /** Set by the route's data: 'attendance', 'fees' or 'results'. */
+  protected readonly kind = inject(ActivatedRoute).snapshot.data['kind'] as
+    'attendance' | 'fees' | 'results';
 
   constructor() {
     void this.portal.load();
