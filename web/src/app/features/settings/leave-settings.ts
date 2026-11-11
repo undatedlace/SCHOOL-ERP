@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 import { DialogModule } from '@openng/optimus-ui/dialog';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { FormsModule } from '@angular/forms';
 import { TagModule } from '@openng/optimus-ui/tag';
@@ -20,7 +23,17 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
  */
 @Component({
   selector: 'app-leave-settings',
-  imports: [FormsModule, ButtonModule, DialogModule, SelectModule, TagModule, PageHeader],
+  imports: [
+    FormsModule,
+    ButtonModule,
+    CheckboxModule,
+    DialogModule,
+    InputNumberModule,
+    InputTextModule,
+    SelectModule,
+    TagModule,
+    PageHeader,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -43,6 +56,12 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
             <span class="font-medium">{{ t.name }}</span>
             @if (t.unlimited) {
               <p-tag value="No yearly limit" severity="info" />
+            }
+            @if (t.carryForwardDays > 0) {
+              <p-tag
+                [value]="'Carries up to ' + t.carryForwardDays + ' days'"
+                severity="secondary"
+              />
             }
             @if (!t.active) {
               <p-tag value="Switched off" severity="secondary" />
@@ -176,31 +195,50 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
       [style]="{ width: '28rem', 'max-width': '95vw' }"
     >
       <div class="flex flex-col gap-3">
-        <label class="flex flex-col gap-1 text-sm" for="lt-name">
-          Name
+        <div class="flex flex-col gap-1 text-sm">
+          <span id="lt-name-label">Name</span>
           <input
-            id="lt-name"
-            class="h-10 rounded-md border bg-background px-3"
+            pInputText
+            aria-labelledby="lt-name-label"
             maxlength="60"
             placeholder="For example Casual leave"
+            [fluid]="true"
             [value]="typeName()"
             (input)="typeName.set($any($event.target).value)"
           />
-        </label>
-        <label class="flex items-start gap-2 text-sm" for="lt-unlimited">
-          <input
-            id="lt-unlimited"
-            type="checkbox"
-            class="mt-1"
-            [checked]="typeUnlimited()"
-            (change)="typeUnlimited.set($any($event.target).checked)"
+        </div>
+        <div class="flex items-start gap-2 text-sm">
+          <p-checkbox
+            [binary]="true"
+            ariaLabel="No yearly limit"
+            [ngModel]="typeUnlimited()"
+            (ngModelChange)="setUnlimited($event)"
           />
           <span
             >No yearly limit<span class="block text-muted-foreground"
               >For example unpaid leave. The days are not checked.</span
             ></span
           >
-        </label>
+        </div>
+        @if (!typeUnlimited()) {
+          <div class="flex flex-col gap-1 text-sm">
+            <span id="lt-carry-label">Days that can carry into the next year</span>
+            <p-inputnumber
+              [min]="0"
+              [max]="365"
+              [step]="0.5"
+              [maxFractionDigits]="1"
+              ariaLabelledBy="lt-carry-label"
+              [ngModel]="typeCarry()"
+              (ngModelChange)="typeCarry.set($event ?? 0)"
+              styleClass="w-32"
+            />
+            <small class="text-muted-foreground"
+              >Unused days up to this many move into next year's balance. 0 means none carry
+              over.</small
+            >
+          </div>
+        }
         @if (typeError()) {
           <p class="text-sm text-destructive" role="alert">{{ typeError() }}</p>
         }
@@ -236,6 +274,7 @@ export class LeaveSettings {
   protected readonly editing = signal<LeaveType | null>(null);
   protected readonly typeName = signal('');
   protected readonly typeUnlimited = signal(false);
+  protected readonly typeCarry = signal(0);
   protected readonly typeError = signal<string | null>(null);
 
   constructor() {
@@ -320,17 +359,27 @@ export class LeaveSettings {
     }
   }
 
+  protected setUnlimited(on: boolean) {
+    this.typeUnlimited.set(on);
+    if (on) this.typeCarry.set(0);
+  }
+
   protected openType(t: LeaveType | null) {
     this.editing.set(t);
     this.typeName.set(t?.name ?? '');
     this.typeUnlimited.set(t?.unlimited ?? false);
+    this.typeCarry.set(t?.carryForwardDays ?? 0);
     this.typeError.set(null);
     this.typeOpen.set(true);
   }
 
   protected async saveType() {
     const t = this.editing();
-    const body = { name: this.typeName().trim(), unlimited: this.typeUnlimited() };
+    const body = {
+      name: this.typeName().trim(),
+      unlimited: this.typeUnlimited(),
+      carryForwardDays: this.typeUnlimited() ? 0 : this.typeCarry(),
+    };
     try {
       await firstValueFrom(
         t ? this.api.updateLeaveType(t.id, body) : this.api.createLeaveType(body),

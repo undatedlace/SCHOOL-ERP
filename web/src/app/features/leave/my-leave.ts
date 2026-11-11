@@ -50,9 +50,16 @@ import { STATUS_LABEL, STATUS_SEVERITY, canWithdraw, daysText } from './leave-ut
                   No limit
                 } @else {
                   {{ row.remaining }}
-                  <span class="text-sm font-normal">of {{ row.entitled }} left</span>
+                  <span class="text-sm font-normal"
+                    >of {{ row.entitled + row.carriedOver }} left</span
+                  >
                 }
               </div>
+              @if (row.carriedOver > 0) {
+                <div class="mt-1 text-xs">
+                  Includes {{ row.carriedOver }} day(s) carried over from last year
+                </div>
+              }
               <div class="mt-1 text-xs">
                 Taken {{ row.taken }} &middot; Coming up {{ row.upcoming }} &middot; Waiting
                 {{ row.pending }}

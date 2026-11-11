@@ -537,10 +537,12 @@ export class Api {
   // ---------- Staff leave ----------
   leaveTypes = (all = false) =>
     this.http.get<LeaveType[]>('/api/leave/types', { params: all ? { all: 'true' } : {} });
-  createLeaveType = (body: { name: string; unlimited: boolean }) =>
+  createLeaveType = (body: { name: string; unlimited: boolean; carryForwardDays?: number }) =>
     this.http.post<LeaveType>('/api/leave/types', body);
-  updateLeaveType = (id: string, body: { name?: string; unlimited?: boolean; active?: boolean }) =>
-    this.http.patch<LeaveType>(`/api/leave/types/${id}`, body);
+  updateLeaveType = (
+    id: string,
+    body: { name?: string; unlimited?: boolean; active?: boolean; carryForwardDays?: number },
+  ) => this.http.patch<LeaveType>(`/api/leave/types/${id}`, body);
   leaveEntitlements = (academicYearId?: string) =>
     this.http.get<{ academicYear: { id: string; name: string }; items: LeaveEntitlementRow[] }>(
       '/api/leave/entitlements',

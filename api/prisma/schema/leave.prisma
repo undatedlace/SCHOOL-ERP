@@ -7,14 +7,16 @@ enum LeaveStatus {
 
 /// A kind of staff leave the school gives (casual, sick, earned, unpaid...). Switched off, never deleted.
 model LeaveType {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  schoolId  String   @map("school_id") @db.Uuid
-  name      String
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  schoolId             String   @map("school_id") @db.Uuid
+  name                 String
   /// No yearly limit (for example unpaid leave): the balance is not checked.
-  unlimited Boolean  @default(false)
-  active    Boolean  @default(true)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
+  unlimited            Boolean  @default(false)
+  active               Boolean  @default(true)
+  /// How many half days of unused allowance move into the next academic year (0 = none).
+  carryForwardHalfDays Int      @default(0) @map("carry_forward_half_days")
+  sortOrder            Int      @default(0) @map("sort_order")
+  createdAt            DateTime @default(now()) @map("created_at")
 
   school       School             @relation(fields: [schoolId], references: [id])
   entitlements LeaveEntitlement[]

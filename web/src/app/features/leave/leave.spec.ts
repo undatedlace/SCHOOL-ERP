@@ -18,8 +18,8 @@ const settle = async (f: { whenStable(): Promise<unknown>; detectChanges(): void
 };
 
 const types: LeaveType[] = [
-  { id: 'c', name: 'Casual leave', unlimited: false, active: true },
-  { id: 'u', name: 'Unpaid leave', unlimited: true, active: true },
+  { id: 'c', name: 'Casual leave', unlimited: false, active: true, carryForwardDays: 0 },
+  { id: 'u', name: 'Unpaid leave', unlimited: true, active: true, carryForwardDays: 0 },
 ];
 const balance = (over: Partial<LeaveBalance> = {}): LeaveBalance => ({
   staff: { id: 's1', name: 'Asha Rao' },
@@ -28,6 +28,7 @@ const balance = (over: Partial<LeaveBalance> = {}): LeaveBalance => ({
     {
       leaveType: { id: 'c', name: 'Casual leave', unlimited: false },
       entitled: 8,
+      carriedOver: 0,
       taken: 1,
       upcoming: 2,
       pending: 1,
@@ -36,6 +37,7 @@ const balance = (over: Partial<LeaveBalance> = {}): LeaveBalance => ({
     {
       leaveType: { id: 'u', name: 'Unpaid leave', unlimited: true },
       entitled: 0,
+      carriedOver: 0,
       taken: 0,
       upcoming: 0,
       pending: 0,
