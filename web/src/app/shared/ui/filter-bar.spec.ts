@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { FilterBar, FilterField, FilterValues } from './filter-bar';
 
 @Component({
@@ -34,35 +35,64 @@ function setup() {
   const fixture = TestBed.createComponent(Host);
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  const select = (label: string) =>
-    el.querySelector(`[aria-label="${label}"]`) as HTMLSelectElement & HTMLInputElement;
-  const change = async (control: HTMLElement, value: string, event = 'change') => {
-    (control as HTMLInputElement).value = value;
-    control.dispatchEvent(new Event(event, { bubbles: true }));
+  const settle = async () => {
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
   };
-  return { fixture, el, select, change, host: fixture.componentInstance };
+  /** The nth drop-down list on the bar (class, then division). */
+  const select = (i: number) => fixture.debugElement.queryAll(By.css('p-select'))[i];
+  const date = () => fixture.debugElement.query(By.css('p-datepicker'));
+  const searchBox = () => el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
+  const pick = async (i: number, value: string | null) => {
+    select(i).triggerEventHandler('ngModelChange', value);
+    await settle();
+  };
+  const clearButton = () => fixture.debugElement.query(By.css('p-button'));
+  return {
+    fixture,
+    el,
+    select,
+    date,
+    searchBox,
+    pick,
+    clearButton,
+    settle,
+    host: fixture.componentInstance,
+  };
 }
 
 describe('FilterBar', () => {
+  it('draws every filter with Optimus components, not bare browser controls', () => {
+    const { el, fixture } = setup();
+    expect(fixture.debugElement.queryAll(By.css('p-select')).length).toBe(2);
+    expect(fixture.debugElement.queryAll(By.css('p-datepicker')).length).toBe(1);
+    expect(el.querySelector('input[aria-label="Search"]')!.classList.contains('p-inputtext')).toBe(
+      true,
+    );
+    expect(el.querySelector('select')).toBeNull();
+    expect(el.querySelector('input[type="date"]')).toBeNull();
+  });
+
   it('emits only the filters that are set, as each is chosen', async () => {
-    const { select, change, host } = setup();
-    await change(select('Class'), 'c1');
+    const { pick, date, settle, host } = setup();
+    await pick(0, 'c1');
     expect(host.seen.at(-1)).toEqual({ classId: 'c1' });
-    await change(select('From'), '2026-11-01');
+    date().triggerEventHandler('ngModelChange', new Date(2026, 10, 1));
+    await settle();
     expect(host.seen.at(-1)).toEqual({ classId: 'c1', from: '2026-11-01' });
-    await change(select('Class'), '');
+    await pick(0, null);
     expect(host.seen.at(-1)).toEqual({ from: '2026-11-01' });
   });
 
   it('waits for a pause in typing before searching', async () => {
     vi.useFakeTimers();
     try {
-      const { select, change, host } = setup();
-      const box = select('Search');
-      await change(box, 'no', 'input');
-      await change(box, 'noor', 'input');
+      const { searchBox, host } = setup();
+      for (const v of ['no', 'noor']) {
+        searchBox().value = v;
+        searchBox().dispatchEvent(new Event('input', { bubbles: true }));
+      }
       expect(host.seen.length).toBe(0);
       vi.advanceTimersByTime(300);
       expect(host.seen).toEqual([{ search: 'noor' }]);
@@ -72,35 +102,32 @@ describe('FilterBar', () => {
   });
 
   it('clears a dependent filter when the one it depends on changes', async () => {
-    const { select, change, host } = setup();
-    await change(select('Class'), 'c1');
-    await change(select('Division'), 'd1');
+    const { pick, host } = setup();
+    await pick(0, 'c1');
+    await pick(1, 'd1');
     expect(host.seen.at(-1)).toEqual({ classId: 'c1', divisionId: 'd1' });
-    await change(select('Class'), 'c2');
+    await pick(0, 'c2');
     expect(host.seen.at(-1)).toEqual({ classId: 'c2' });
   });
 
   it('counts the active filters and clears them all with one button', async () => {
-    const { fixture, el, select, change, host } = setup();
+    const { el, pick, date, settle, clearButton, host } = setup();
     expect(el.textContent).not.toContain('Clear filters');
-    await change(select('Class'), 'c1');
-    await change(select('From'), '2026-11-01');
+    await pick(0, 'c1');
+    date().triggerEventHandler('ngModelChange', new Date(2026, 10, 1));
+    await settle();
     expect(el.textContent).toContain('Clear filters (2)');
-    const clear = Array.from(el.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Clear filters'),
-    ) as HTMLButtonElement;
-    clear.click();
-    fixture.detectChanges();
+    clearButton().triggerEventHandler('onClick', {});
+    await settle();
     expect(host.seen.at(-1)).toEqual({});
     expect(el.textContent).not.toContain('Clear filters');
   });
 
   it('drops a value whose field has gone away', async () => {
-    const { fixture, select, change, host } = setup();
-    await change(select('Class'), 'c1');
+    const { pick, settle, host } = setup();
+    await pick(0, 'c1');
     host.fields.update((f) => f.filter((x) => x.key !== 'classId'));
-    fixture.detectChanges();
-    await fixture.whenStable();
+    await settle();
     expect(host.seen.at(-1)).toEqual({});
   });
 });

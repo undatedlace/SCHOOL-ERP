@@ -11,6 +11,9 @@ import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { FormsModule } from '@angular/forms';
+import { DateField } from '../../shared/ui/date-field';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { LeaveRequest, LeaveType } from '../../core/models';
@@ -19,7 +22,7 @@ import { toIsoDate } from '../../shared/dates';
 /** Ask for leave, or (for an administrator) record leave for a member of staff, which is approved at once. */
 @Component({
   selector: 'app-leave-apply-dialog',
-  imports: [DialogModule, ButtonModule],
+  imports: [FormsModule, DialogModule, ButtonModule, SelectModule, DateField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -31,57 +34,59 @@ import { toIsoDate } from '../../shared/dates';
     >
       <div class="flex flex-col gap-3">
         @if (staff()) {
-          <label class="flex flex-col gap-1 text-sm" for="lv-staff">
-            Staff member
-            <select
-              id="lv-staff"
-              class="h-10 rounded-md border bg-background px-3"
-              [value]="staffId()"
-              (change)="staffId.set($any($event.target).value)"
-            >
-              <option value="">Choose a person</option>
-              @for (s of staff(); track s.id) {
-                <option [value]="s.id">{{ s.name }}</option>
-              }
-            </select>
-          </label>
+          <div class="flex flex-col gap-1 text-sm">
+            <span>Staff member</span>
+            <p-select
+              inputId="lv-staff"
+              [options]="staff() ?? []"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Choose a person"
+              [filter]="true"
+              [ngModel]="staffId() || null"
+              (ngModelChange)="staffId.set($event ?? '')"
+              ariaLabel="Staff member"
+              appendTo="body"
+              [fluid]="true"
+            />
+          </div>
         }
-        <label class="flex flex-col gap-1 text-sm" for="lv-type">
-          Kind of leave
-          <select
-            id="lv-type"
-            class="h-10 rounded-md border bg-background px-3"
-            [value]="typeId()"
-            (change)="typeId.set($any($event.target).value)"
-          >
-            <option value="">Choose a kind</option>
-            @for (t of types(); track t.id) {
-              <option [value]="t.id">{{ t.name }}</option>
-            }
-          </select>
-        </label>
+        <div class="flex flex-col gap-1 text-sm">
+          <span>Kind of leave</span>
+          <p-select
+            inputId="lv-type"
+            [options]="types()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Choose a kind"
+            [ngModel]="typeId() || null"
+            (ngModelChange)="typeId.set($event ?? '')"
+            ariaLabel="Kind of leave"
+            appendTo="body"
+            [fluid]="true"
+          />
+        </div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <label class="flex flex-col gap-1 text-sm" for="lv-start">
-            First day
-            <input
-              id="lv-start"
-              type="date"
-              class="h-10 rounded-md border bg-background px-3"
+          <div class="flex flex-col gap-1 text-sm">
+            <span>First day</span>
+            <app-date-field
+              label="First day"
+              inputId="lv-start"
               [min]="staff() ? '' : today"
               [value]="start()"
-              (input)="start.set($any($event.target).value)"
+              (valueChange)="start.set($event)"
             />
-          </label>
-          <label class="flex flex-col gap-1 text-sm" for="lv-end">
-            Last day (optional)
-            <input
-              id="lv-end"
-              type="date"
-              class="h-10 rounded-md border bg-background px-3"
+          </div>
+          <div class="flex flex-col gap-1 text-sm">
+            <span>Last day (optional)</span>
+            <app-date-field
+              label="Last day"
+              inputId="lv-end"
+              [clearable]="true"
               [value]="end()"
-              (input)="end.set($any($event.target).value)"
+              (valueChange)="end.set($event)"
             />
-          </label>
+          </div>
         </div>
         <label class="flex items-center gap-2 text-sm" for="lv-half">
           <input

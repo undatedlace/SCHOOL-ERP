@@ -1,9 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { LeaveBalance, LeaveRequest, LeaveType } from '../../core/models';
+import { DateField } from '../../shared/ui/date-field';
 import { LeaveRequests } from './leave-requests';
 import { canWithdraw, daysText, parseDays } from './leave-utils';
 import { MyLeave } from './my-leave';
@@ -131,10 +133,25 @@ describe('MyLeave', () => {
       ) as HTMLButtonElement
     ).click();
     fixture.detectChanges();
-    const set = (id: string, value: string, event = 'input') => {
+    const setType = (value: string) => {
+      fixture.debugElement
+        .query(By.css('app-leave-apply-dialog p-select'))
+        .triggerEventHandler('ngModelChange', value);
+      fixture.detectChanges();
+    };
+    const setDate = (i: number, value: string) => {
+      fixture.debugElement
+        .queryAll(By.directive(DateField))
+        [i].componentInstance.valueChange.emit(value);
+      fixture.detectChanges();
+    };
+    const set = (id: string, value: string) => {
+      if (id === 'lv-type') return setType(value);
+      if (id === 'lv-start') return setDate(0, value);
+      if (id === 'lv-end') return setDate(1, value);
       const c = document.getElementById(id) as HTMLInputElement;
       c.value = value;
-      c.dispatchEvent(new Event(event, { bubbles: true }));
+      c.dispatchEvent(new Event('input', { bubbles: true }));
       fixture.detectChanges();
     };
     const send = () =>
@@ -142,7 +159,7 @@ describe('MyLeave', () => {
         (b) => b.textContent?.trim() === 'Send request',
       ) as HTMLButtonElement;
     expect(send().disabled).toBe(true);
-    set('lv-type', 'c', 'change');
+    set('lv-type', 'c');
     set('lv-start', '2099-06-01');
     set('lv-end', '2099-06-02');
     set('lv-reason', 'Family function');
@@ -172,12 +189,28 @@ describe('MyLeave', () => {
       ) as HTMLButtonElement
     ).click();
     fixture.detectChanges();
-    const set = (id: string, value: string, event = 'input') => {
+    const setType = (value: string) => {
+      fixture.debugElement
+        .query(By.css('app-leave-apply-dialog p-select'))
+        .triggerEventHandler('ngModelChange', value);
+      fixture.detectChanges();
+    };
+    const setDate = (i: number, value: string) => {
+      fixture.debugElement
+        .queryAll(By.directive(DateField))
+        [i].componentInstance.valueChange.emit(value);
+      fixture.detectChanges();
+    };
+    const set = (id: string, value: string) => {
+      if (id === 'lv-type') return setType(value);
+      if (id === 'lv-start') return setDate(0, value);
+      if (id === 'lv-end') return setDate(1, value);
       const c = document.getElementById(id) as HTMLInputElement;
       c.value = value;
-      c.dispatchEvent(new Event(event, { bubbles: true }));
+      c.dispatchEvent(new Event('input', { bubbles: true }));
+      fixture.detectChanges();
     };
-    set('lv-type', 'c', 'change');
+    set('lv-type', 'c');
     set('lv-start', '2099-06-01');
     set('lv-reason', 'Because');
     fixture.detectChanges();

@@ -3,6 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { FormsModule } from '@angular/forms';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
@@ -18,7 +20,7 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
  */
 @Component({
   selector: 'app-leave-settings',
-  imports: [ButtonModule, DialogModule, TagModule, PageHeader],
+  imports: [FormsModule, ButtonModule, DialogModule, SelectModule, TagModule, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -63,33 +65,36 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
     <section aria-labelledby="allowance">
       <div class="mb-3 flex flex-wrap items-end gap-3">
         <h2 id="allowance" class="mr-auto font-semibold">Days a year</h2>
-        <label class="flex flex-col gap-1 text-xs text-muted-foreground" for="ls-year">
-          Academic year
-          <select
-            id="ls-year"
-            class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
-            [value]="yearId()"
-            (change)="pickYear($any($event.target).value)"
-          >
-            @for (y of years(); track y.id) {
-              <option [value]="y.id" [selected]="y.id === yearId()">{{ y.name }}</option>
-            }
-          </select>
-        </label>
-        <label class="flex flex-col gap-1 text-xs text-muted-foreground" for="ls-copy">
-          Start from another year
-          <select
-            id="ls-copy"
-            class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
-            [value]="copyFrom()"
-            (change)="copyFrom.set($any($event.target).value)"
-          >
-            <option value="">Choose a year</option>
-            @for (y of otherYears(); track y.id) {
-              <option [value]="y.id">{{ y.name }}</option>
-            }
-          </select>
-        </label>
+        <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+          <span>Academic year</span>
+          <p-select
+            inputId="ls-year"
+            [options]="years()"
+            optionLabel="name"
+            optionValue="id"
+            [ngModel]="yearId() || null"
+            (ngModelChange)="pickYear($event)"
+            ariaLabel="Academic year"
+            appendTo="body"
+            styleClass="min-w-44"
+          />
+        </div>
+        <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+          <span>Start from another year</span>
+          <p-select
+            inputId="ls-copy"
+            [options]="otherYears()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Choose a year"
+            [showClear]="true"
+            [ngModel]="copyFrom() || null"
+            (ngModelChange)="copyFrom.set($event ?? '')"
+            ariaLabel="Start from another year"
+            appendTo="body"
+            styleClass="min-w-44"
+          />
+        </div>
         <p-button
           label="Copy"
           severity="secondary"

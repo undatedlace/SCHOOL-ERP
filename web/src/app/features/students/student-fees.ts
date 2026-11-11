@@ -84,22 +84,30 @@ const moneyValidator = (c: { value: string }) =>
       @if (error()) {
         <p-message severity="error" [text]="error()!" />
       } @else if (ledger(); as l) {
-        <dl class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div class="rounded-md bg-muted p-3">
+        <dl class="mb-5 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+          <div class="min-w-0 rounded-md bg-muted p-3">
             <dt class="text-xs text-muted-foreground">Billed</dt>
-            <dd class="text-lg font-semibold">{{ money(l.totals.gross) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(l.totals.gross) }}
+            </dd>
           </div>
-          <div class="rounded-md bg-muted p-3">
+          <div class="min-w-0 rounded-md bg-muted p-3">
             <dt class="text-xs text-muted-foreground">Concessions</dt>
-            <dd class="text-lg font-semibold">{{ money(l.totals.concessions) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(l.totals.concessions) }}
+            </dd>
           </div>
-          <div class="rounded-md bg-muted p-3">
+          <div class="min-w-0 rounded-md bg-muted p-3">
             <dt class="text-xs text-muted-foreground">Paid</dt>
-            <dd class="text-lg font-semibold">{{ money(l.totals.paid) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(l.totals.paid) }}
+            </dd>
           </div>
-          <div class="rounded-md border p-3">
+          <div class="min-w-0 rounded-md border p-3">
             <dt class="text-xs text-muted-foreground">Still to pay</dt>
-            <dd class="text-lg font-semibold">{{ money(l.totals.pending) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(l.totals.pending) }}
+            </dd>
           </div>
         </dl>
 
@@ -124,7 +132,7 @@ const moneyValidator = (c: { value: string }) =>
                 />
               </div>
             </div>
-            <table class="w-full text-sm">
+            <table class="block w-full overflow-x-auto text-sm">
               <thead class="text-left text-xs text-muted-foreground">
                 <tr>
                   <th class="p-2 pl-3">Instalment</th>

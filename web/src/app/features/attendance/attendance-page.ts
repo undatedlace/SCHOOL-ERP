@@ -17,6 +17,7 @@ import {
   AttendanceStatus,
 } from '../../core/models';
 import { formatDate, toIsoDate } from '../../shared/dates';
+import { DateField } from '../../shared/ui/date-field';
 import { PageHeader } from '../../shared/ui/page-header';
 import { AttendanceGrid } from './attendance-grid';
 import {
@@ -35,6 +36,7 @@ type Tab = 'take' | 'report';
 @Component({
   selector: 'app-attendance-page',
   imports: [
+    DateField,
     FormsModule,
     ButtonModule,
     MessageModule,
@@ -95,40 +97,34 @@ type Tab = 'take' | 'report';
           class="w-56"
         />
         @if (tab() === 'take') {
-          <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-            Date
-            <input
-              type="date"
-              class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+          <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+            <span aria-hidden="true">Date</span
+            ><app-date-field
+              label="Date"
               [max]="today"
-              [ngModel]="date()"
-              (ngModelChange)="onDate($event)"
-              aria-label="Date"
+              [value]="date()"
+              (valueChange)="onDate($event)"
             />
-          </label>
+          </div>
         } @else {
-          <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-            From
-            <input
-              type="date"
-              class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+          <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+            <span aria-hidden="true">From</span
+            ><app-date-field
+              label="From"
               [max]="today"
-              [ngModel]="from()"
-              (ngModelChange)="onRange('from', $event)"
-              aria-label="From"
+              [value]="from()"
+              (valueChange)="onRange('from', $event)"
             />
-          </label>
-          <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-            To
-            <input
-              type="date"
-              class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+          </div>
+          <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+            <span aria-hidden="true">To</span
+            ><app-date-field
+              label="To"
               [max]="today"
-              [ngModel]="to()"
-              (ngModelChange)="onRange('to', $event)"
-              aria-label="To"
+              [value]="to()"
+              (valueChange)="onRange('to', $event)"
             />
-          </label>
+          </div>
           <div class="flex gap-1" role="group" aria-label="Quick range">
             <button
               type="button"

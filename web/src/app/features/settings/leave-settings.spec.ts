@@ -1,6 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { NgModel } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { MessageService } from '@openng/optimus-ui/api';
 import { LeaveSettings } from './leave-settings';
 
@@ -72,8 +74,9 @@ async function setup() {
 
 describe('LeaveSettings', () => {
   it('opens on the current year with the saved allowance, a column for each staff type, and only kinds in use', async () => {
-    const { el, box } = await setup();
-    expect((el.querySelector('#ls-year') as HTMLSelectElement).value).toBe('y1');
+    const { fixture, el, box } = await setup();
+    const year = fixture.debugElement.queryAll(By.css('p-select'))[0];
+    expect(year.injector.get(NgModel).model).toBe('y1');
     expect(box('Casual leave, everyone').value).toBe('12');
     expect(box('Casual leave, Teacher').value).toBe('');
     expect(box('Unpaid leave, Clerk')).not.toBeNull();
@@ -120,9 +123,7 @@ describe('LeaveSettings', () => {
 
   it('shows another year when picked, and copies into this year from another', async () => {
     const { fixture, http, el } = await setup();
-    const copy = el.querySelector('#ls-copy') as HTMLSelectElement;
-    copy.value = 'y2';
-    copy.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.debugElement.queryAll(By.css('p-select'))[1].triggerEventHandler('ngModelChange', 'y2');
     fixture.detectChanges();
     (
       Array.from(el.querySelectorAll('button')).find(

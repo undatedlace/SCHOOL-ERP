@@ -8,7 +8,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
@@ -42,6 +42,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
 @Component({
   selector: 'app-student-page',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
     ButtonModule,
@@ -161,8 +162,8 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
         <p-message class="mb-4 block" severity="info" [text]="note" />
       }
 
-      <div class="grid gap-6 lg:grid-cols-3">
-        <section class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-2">
+      <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <section class="min-w-0 rounded-xl border-0 bg-card shadow-sm p-5">
           <div class="mb-3 flex items-center justify-between">
             <h2 class="font-semibold">Parents and guardians</h2>
             <p-button
@@ -469,35 +470,37 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
           with the student; fees already billed are not changed.
         </p>
         <div class="mb-3 flex flex-col gap-3">
-          <label class="flex flex-col gap-1 text-sm" for="move-class">
-            Class
-            <select
-              id="move-class"
-              class="h-10 rounded-md border bg-background px-3"
-              [value]="moveClassId()"
-              (change)="moveClassId.set($any($event.target).value); moveDivisionId.set('')"
-            >
-              <option value="">Choose a class</option>
-              @for (c of classes(); track c.id) {
-                <option [value]="c.id" [selected]="c.id === moveClassId()">{{ c.name }}</option>
-              }
-            </select>
-          </label>
-          <label class="flex flex-col gap-1 text-sm" for="move-division">
-            Division
-            <select
-              id="move-division"
-              class="h-10 rounded-md border bg-background px-3"
+          <div class="flex flex-col gap-1 text-sm">
+            <span>Class</span>
+            <p-select
+              inputId="move-class"
+              [options]="classes()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Choose a class"
+              [ngModel]="moveClassId() || null"
+              (ngModelChange)="moveClassId.set($event ?? ''); moveDivisionId.set('')"
+              ariaLabel="Class"
+              appendTo="body"
+              [fluid]="true"
+            />
+          </div>
+          <div class="flex flex-col gap-1 text-sm">
+            <span>Division</span>
+            <p-select
+              inputId="move-division"
+              [options]="moveDivisions()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Choose a division"
               [disabled]="!moveClassId()"
-              [value]="moveDivisionId()"
-              (change)="moveDivisionId.set($any($event.target).value)"
-            >
-              <option value="">Choose a division</option>
-              @for (d of moveDivisions(); track d.id) {
-                <option [value]="d.id" [selected]="d.id === moveDivisionId()">{{ d.name }}</option>
-              }
-            </select>
-          </label>
+              [ngModel]="moveDivisionId() || null"
+              (ngModelChange)="moveDivisionId.set($event ?? '')"
+              ariaLabel="Division"
+              appendTo="body"
+              [fluid]="true"
+            />
+          </div>
         </div>
         @if (moveError()) {
           <p class="mb-3 text-sm text-destructive" role="alert">{{ moveError() }}</p>
