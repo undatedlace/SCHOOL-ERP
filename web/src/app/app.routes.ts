@@ -143,6 +143,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
+      },
+      {
         path: 'leave',
         canActivate: [permissionGuard('leave.manage')],
         loadComponent: () => import('./features/leave/leave-requests').then((m) => m.LeaveRequests),
@@ -217,6 +222,11 @@ export const routes: Routes = [
         path: 'calendar',
         loadComponent: () =>
           import('./features/calendar/calendar-page').then((m) => m.CalendarPage),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
       },
       {
         path: 'notices',

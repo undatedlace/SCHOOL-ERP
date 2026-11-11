@@ -4,12 +4,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { School } from '../core/models';
 import { PortalChildren } from '../features/portal/portal-children';
+import { NotificationBell } from '../shared/ui/notification-bell';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 
 /** Parent and student portal: mobile first, a single column. */
 @Component({
   selector: 'app-portal-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle, NotificationBell],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-background">
@@ -21,6 +22,7 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
           <p class="truncate text-xs text-muted-foreground">{{ auth.me()?.fullName }}</p>
         </div>
         <div class="flex items-center gap-2">
+          <app-notification-bell allLink="/portal/notifications" />
           <app-theme-toggle />
           <button
             type="button"

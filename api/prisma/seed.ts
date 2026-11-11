@@ -59,6 +59,7 @@ const PERMISSIONS = [
   'admins.manage',
   'leave.apply',
   'leave.manage',
+  'fees.reminder.send',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -121,6 +122,7 @@ const ROLES: Record<string, RoleDef> = {
       'fees.read_all',
       'fees.structure.manage',
       'fees.payment.create',
+      'fees.reminder.send',
       'notices.read',
       'calendar.read',
       'notices.read_all',
