@@ -114,14 +114,12 @@ describe('homework (e2e)', () => {
   }
 
   const set = (who: Agent, over: Record<string, unknown> = {}) =>
-    who
-      .post('/api/homework')
-      .send({
-        title: unique('Chapter 3'),
-        instructions: 'Do exercise 3.2',
-        divisionIds: [divA],
-        ...over,
-      });
+    who.post('/api/homework').send({
+      title: unique('Chapter 3'),
+      instructions: 'Do exercise 3.2',
+      divisionIds: [divA],
+      ...over,
+    });
   const mine = async (who: Agent, qs = '') =>
     (await who.get(`/api/homework?pageSize=100${qs}`).expect(200)).body as {
       items: {
