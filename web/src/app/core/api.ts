@@ -472,7 +472,12 @@ export class Api {
   ) => this.http.patch<AssessmentDetail>(`/api/assessments/${id}`, body);
   saveMarks = (
     id: string,
-    entries: { studentId: string; marks?: number | null; absent?: boolean; remark?: string | null }[],
+    entries: {
+      studentId: string;
+      marks?: number | null;
+      absent?: boolean;
+      remark?: string | null;
+    }[],
   ) => this.http.put<AssessmentDetail>(`/api/assessments/${id}/marks`, { entries });
   publishAssessment = (id: string) =>
     this.http.post<AssessmentDetail>(`/api/assessments/${id}/publish`, {});
