@@ -14,9 +14,9 @@ const settle = async (f: { whenStable(): Promise<unknown>; detectChanges(): void
 };
 
 const types = [
-  { id: 'c', name: 'Casual leave', unlimited: false, active: true },
-  { id: 'u', name: 'Unpaid leave', unlimited: true, active: true },
-  { id: 'o', name: 'Old kind', unlimited: false, active: false },
+  { id: 'c', name: 'Casual leave', unlimited: false, active: true, carryForwardDays: 0 },
+  { id: 'u', name: 'Unpaid leave', unlimited: true, active: true, carryForwardDays: 0 },
+  { id: 'o', name: 'Old kind', unlimited: false, active: false, carryForwardDays: 0 },
 ];
 const staffTypes = [
   { id: 't', name: 'Teacher', isTeaching: true, active: true, staffCount: 3, formKey: 'staff-t' },
@@ -162,5 +162,34 @@ describe('LeaveSettings', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'Add a kind of leave above first.',
     );
+  });
+
+  it('sends how many days a kind may carry into the next year, and hides it for no-limit kinds', async () => {
+    const { fixture, http } = await setup();
+    const change = fixture.debugElement
+      .queryAll(By.css('button.app-link'))
+      .find((b) => b.nativeElement.textContent.trim() === 'Change')!;
+    change.nativeElement.click();
+    fixture.detectChanges();
+    await settle(fixture);
+
+    const carry = fixture.debugElement.query(By.css('p-inputnumber'));
+    expect(carry).not.toBeNull();
+    carry.triggerEventHandler('ngModelChange', 3.5);
+    fixture.detectChanges();
+    const save = fixture.debugElement
+      .queryAll(By.css('p-button'))
+      .find((b) => b.componentInstance.label === 'Save')!;
+    save.componentInstance.onClick.emit(new Event('click'));
+    const req = http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/leave/types/c');
+    expect(req.request.body).toEqual({
+      name: 'Casual leave',
+      unlimited: false,
+      carryForwardDays: 3.5,
+    });
+    req.flush({ ...types[0], carryForwardDays: 3.5 });
+    await settle(fixture);
+    http.expectOne((r) => r.url === '/api/leave/types').flush(types);
+    await settle(fixture);
   });
 });

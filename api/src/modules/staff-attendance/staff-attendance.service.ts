@@ -17,6 +17,7 @@ import {
   todayInIndia,
 } from '../attendance/attendance-rules.js';
 import { AuditService } from '../audit/audit.service.js';
+import { holidayDates } from '../leave/holidays.js';
 import { leaveDates } from '../leave/leave-rules.js';
 import { MarkStaffAttendanceDto } from './dto/staff-attendance.dto.js';
 
@@ -98,12 +99,14 @@ export class StaffAttendanceService {
         leaveType: { select: { name: true } },
       },
     });
+    const holidays = await holidayDates(this.prisma, schoolId, from, to);
     const out = new Map<string, Map<string, string>>();
     for (const r of rows) {
       const start = toIso(r.startsOn) < from ? from : toIso(r.startsOn);
       const end = toIso(r.endsOn) > to ? to : toIso(r.endsOn);
       const days = out.get(r.staffId) ?? new Map<string, string>();
-      for (const d of leaveDates(start, end)) days.set(d, r.leaveType.name);
+      for (const d of leaveDates(start, end, holidays))
+        days.set(d, r.leaveType.name);
       out.set(r.staffId, days);
     }
     return out;

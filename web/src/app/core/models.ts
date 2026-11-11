@@ -917,11 +917,15 @@ export interface LeaveType {
   name: string;
   unlimited: boolean;
   active: boolean;
+  /** Days of unused allowance that move into the next academic year, at most (0 = none). */
+  carryForwardDays: number;
 }
 
 export interface LeaveBalanceRow {
   leaveType: { id: string; name: string; unlimited: boolean };
   entitled: number;
+  /** Unused days brought in from earlier years. */
+  carriedOver: number;
   taken: number;
   upcoming: number;
   pending: number;
