@@ -8,7 +8,9 @@ import {
   AssessmentOptions,
   AssessmentSummary,
   StudentResults,
+  HandInRoster,
   Homework,
+  HomeworkSubmission,
   HomeworkInput,
   Collection,
   PaymentRow,
@@ -503,6 +505,18 @@ export class Api {
   updateHomework = (id: string, body: Partial<HomeworkInput>) =>
     this.http.patch<Homework>(`/api/homework/${id}`, body);
   archiveHomework = (id: string) => this.http.delete<void>(`/api/homework/${id}`);
+  /** Where a file of a homework (attachment or hand-in) is downloaded from. */
+  homeworkFileUrl = (id: string, fileId: string) => `/api/homework/${id}/files/${fileId}`;
+  handIns = (id: string) => this.http.get<HandInRoster>(`/api/homework/${id}/hand-ins`);
+  submitHandIn = (id: string, studentId: string, body: { note?: string; fileIds?: string[] }) =>
+    this.http.put<HomeworkSubmission>(`/api/homework/${id}/students/${studentId}/hand-in`, body);
+  withdrawHandIn = (id: string, studentId: string) =>
+    this.http.delete<void>(`/api/homework/${id}/students/${studentId}/hand-in`);
+  reviewHandIn = (
+    id: string,
+    studentId: string,
+    body: { status: 'REVIEWED' | 'REDO'; marks?: number; feedback?: string },
+  ) => this.http.put<HomeworkSubmission>(`/api/homework/${id}/students/${studentId}/review`, body);
 
   // ---------- Notifications ----------
   notifications = (q: { page: number; pageSize: number; unread?: boolean }) =>

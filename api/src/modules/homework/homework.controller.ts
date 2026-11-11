@@ -9,17 +9,23 @@ import {
   Patch,
   Post,
   Query,
+  Put,
   Req,
+  Res,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type { AuthContext } from '../../common/auth-context.js';
 import { CurrentAuth } from '../../common/decorators/current-auth.decorator.js';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
+import { fileResponse } from '../files/files.controller.js';
 import {
   CreateHomeworkDto,
   ListHomeworkQueryDto,
+  ReviewHomeworkDto,
+  SubmitHomeworkDto,
   UpdateHomeworkDto,
 } from './dto/homework.dto.js';
+import { HomeworkSubmissionsService } from './homework-submissions.service.js';
 import { HomeworkService } from './homework.service.js';
 
 /**
@@ -29,7 +35,10 @@ import { HomeworkService } from './homework.service.js';
  */
 @Controller('homework')
 export class HomeworkController {
-  constructor(private readonly homework: HomeworkService) {}
+  constructor(
+    private readonly homework: HomeworkService,
+    private readonly submissions: HomeworkSubmissionsService,
+  ) {}
 
   @Get()
   list(@CurrentAuth() auth: AuthContext, @Query() q: ListHomeworkQueryDto) {
@@ -41,6 +50,65 @@ export class HomeworkController {
   @RequirePermissions('homework.manage')
   audiences(@CurrentAuth() auth: AuthContext) {
     return this.homework.audiences(auth);
+  }
+
+  @Get(':id/files/:fileId')
+  async file(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { file, stream } = await this.submissions.openFile(auth, id, fileId);
+    return fileResponse(res, file, stream);
+  }
+
+  /** Everyone the homework reaches with their hand-in. The author or an administrator. */
+  @Get(':id/hand-ins')
+  @RequirePermissions('homework.manage')
+  handIns(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.submissions.roster(auth, id);
+  }
+
+  /** A parent or student hands work in (or hands in again). */
+  @Put(':id/students/:studentId/hand-in')
+  @RequirePermissions('homework.read')
+  handIn(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: SubmitHomeworkDto,
+    @Req() req: Request,
+  ) {
+    return this.submissions.submit(auth, id, studentId, dto, req.ip);
+  }
+
+  @Delete(':id/students/:studentId/hand-in')
+  @HttpCode(204)
+  @RequirePermissions('homework.read')
+  withdraw(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Req() req: Request,
+  ) {
+    return this.submissions.withdraw(auth, id, studentId, req.ip);
+  }
+
+  /** The teacher marks a hand-in, or sends it back to be done again. */
+  @Put(':id/students/:studentId/review')
+  @RequirePermissions('homework.manage')
+  review(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: ReviewHomeworkDto,
+    @Req() req: Request,
+  ) {
+    return this.submissions.review(auth, id, studentId, dto, req.ip);
   }
 
   @Get(':id')

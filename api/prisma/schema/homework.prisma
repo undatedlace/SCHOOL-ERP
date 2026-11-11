@@ -9,16 +9,24 @@ model Homework {
   instructions   String
   subjectId      String?   @map("subject_id") @db.Uuid
   dueOn          DateTime? @map("due_on") @db.Date
+  /// Whether students hand work in through the app (photos or PDFs of their work, and a note).
+  handIn         Boolean   @default(false) @map("hand_in")
+  /// When set, the teacher gives marks out of this number when marking a hand-in.
+  maxMarks       Decimal?  @map("max_marks") @db.Decimal(6, 2)
+  /// Set when the "due tomorrow" reminder has been sent, so it is sent only once.
+  reminderSentAt DateTime? @map("reminder_sent_at")
   createdById    String    @map("created_by_id") @db.Uuid
   archivedAt     DateTime? @map("archived_at")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  school       School           @relation(fields: [schoolId], references: [id])
-  academicYear AcademicYear     @relation(fields: [academicYearId], references: [id])
-  subject      Subject?         @relation(fields: [subjectId], references: [id])
-  createdBy    User             @relation("HomeworkAuthor", fields: [createdById], references: [id])
+  school       School               @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear         @relation(fields: [academicYearId], references: [id])
+  subject      Subject?             @relation(fields: [subjectId], references: [id])
+  createdBy    User                 @relation("HomeworkAuthor", fields: [createdById], references: [id])
   targets      HomeworkTarget[]
+  attachments  HomeworkAttachment[]
+  submissions  HomeworkSubmission[]
 
   @@index([schoolId, createdAt])
   @@index([createdById])
@@ -40,4 +48,70 @@ model HomeworkTarget {
   @@index([divisionId])
   @@index([studentId])
   @@map("homework_targets")
+}
+
+/// A worksheet or picture the teacher attaches to the homework.
+model HomeworkAttachment {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  homeworkId String   @map("homework_id") @db.Uuid
+  fileId     String   @unique @map("file_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  homework Homework   @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  file     StoredFile @relation("HomeworkAttachmentFile", fields: [fileId], references: [id])
+
+  @@index([homeworkId])
+  @@map("homework_attachments")
+}
+
+enum SubmissionStatus {
+  /// Handed in, waiting for the teacher.
+  SUBMITTED
+  /// Marked by the teacher; locked.
+  REVIEWED
+  /// The teacher asked for it to be done again; the student may hand in once more.
+  REDO
+}
+
+/// One student's hand-in for one homework (one row per student, replaced when handed in again).
+model HomeworkSubmission {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  schoolId      String           @map("school_id") @db.Uuid
+  homeworkId    String           @map("homework_id") @db.Uuid
+  studentId     String           @map("student_id") @db.Uuid
+  /// The parent or the student who handed it in.
+  submittedById String           @map("submitted_by_id") @db.Uuid
+  /// Plain text, shown as written.
+  note          String?
+  submittedAt   DateTime         @default(now()) @map("submitted_at")
+  status        SubmissionStatus @default(SUBMITTED)
+  marks         Decimal?         @db.Decimal(6, 2)
+  /// The teacher's comment, plain text.
+  feedback      String?
+  reviewedById  String?          @map("reviewed_by_id") @db.Uuid
+  reviewedAt    DateTime?        @map("reviewed_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  homework    Homework                 @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  student     Student                  @relation("StudentSubmissions", fields: [studentId], references: [id])
+  submittedBy User                     @relation("SubmissionAuthor", fields: [submittedById], references: [id])
+  reviewedBy  User?                    @relation("SubmissionReviewer", fields: [reviewedById], references: [id])
+  files       HomeworkSubmissionFile[]
+
+  @@unique([homeworkId, studentId])
+  @@index([studentId])
+  @@map("homework_submissions")
+}
+
+model HomeworkSubmissionFile {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  submissionId String   @map("submission_id") @db.Uuid
+  fileId       String   @unique @map("file_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  submission HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  file       StoredFile         @relation("SubmissionFile", fields: [fileId], references: [id])
+
+  @@index([submissionId])
+  @@map("homework_submission_files")
 }

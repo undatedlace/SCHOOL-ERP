@@ -41,7 +41,7 @@ import { HomeworkCard } from './homework-card';
     }
     <div class="flex flex-col gap-3">
       @for (h of items(); track h.id) {
-        <app-homework-card [homework]="h" [forFamily]="true" />
+        <app-homework-card [homework]="h" [forFamily]="true" (changed)="load()" />
       } @empty {
         <p class="text-sm text-muted-foreground">
           {{ loaded() ? 'No homework right now.' : 'Loading...' }}
@@ -66,7 +66,7 @@ export class PortalHomework {
     void this.load();
   }
 
-  private async load() {
+  protected async load() {
     this.error.set(null);
     try {
       const page = await firstValueFrom(

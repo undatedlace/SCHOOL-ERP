@@ -838,6 +838,48 @@ export interface Homework {
   /** For a parent or student: which of their children it is for. */
   forChildren: string[];
   canChange: boolean;
+  /** Whether students hand work in through the app. */
+  handIn: boolean;
+  /** Marks are given out of this number (a decimal as text), if any. */
+  maxMarks: string | null;
+  attachments: FileRef[];
+  /** For a parent or student: each child it is for, with the hand-in so far. */
+  children: { studentId: string; name: string; submission: HomeworkSubmission | null }[];
+}
+
+export interface FileRef {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+export type SubmissionStatus = 'SUBMITTED' | 'REVIEWED' | 'REDO';
+
+export interface HomeworkSubmission {
+  id: string;
+  studentId: string;
+  status: SubmissionStatus;
+  note: string | null;
+  submittedAt: string;
+  late: boolean;
+  files: FileRef[];
+  marks: string | null;
+  feedback: string | null;
+  reviewedAt: string | null;
+}
+
+export interface HandInRoster {
+  handIn: boolean;
+  maxMarks: string | null;
+  counts: { students: number; handedIn: number; marked: number };
+  students: {
+    studentId: string;
+    name: string;
+    admissionNo: string;
+    division: string;
+    submission: HomeworkSubmission | null;
+  }[];
 }
 
 export interface HomeworkInput {
@@ -847,6 +889,10 @@ export interface HomeworkInput {
   dueOn?: string;
   divisionIds?: string[];
   studentIds?: string[];
+  handIn?: boolean;
+  maxMarks?: number;
+  /** Files uploaded with the purpose "homework-attachment". */
+  attachmentFileIds?: string[];
 }
 
 // ---------- Notifications ----------
