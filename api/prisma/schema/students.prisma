@@ -53,6 +53,7 @@ model Student {
   documents       StudentDocument[]
   feeInvoices     FeeInvoice[]
   homeworkTargets HomeworkTarget[]
+  assessmentMarks AssessmentMark[]
   payments        Payment[]
   attendance      AttendanceRecord[]
 

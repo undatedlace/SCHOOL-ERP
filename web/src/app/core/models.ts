@@ -749,6 +749,79 @@ export interface SearchGroup {
   more: boolean;
 }
 
+// ---------- Tests and results ----------
+
+export type AssessmentKind = 'UNIT' | 'MOCK' | 'TERM' | 'OTHER';
+
+export interface AssessmentSummary {
+  id: string;
+  name: string;
+  kind: AssessmentKind;
+  subject: { id: string; name: string };
+  division: { id: string; label: string };
+  maxMarks: number;
+  conductedOn: string;
+  published: boolean;
+  publishedAt: string | null;
+  createdBy: { id: string; fullName: string };
+  /** Students with marks or marked absent, out of all students in the division. */
+  entered: number;
+  students: number;
+}
+
+export interface AssessmentMarkRow {
+  studentId: string;
+  admissionNo: string;
+  name: string;
+  rollNo: number | null;
+  marks: number | null;
+  absent: boolean;
+  remark: string | null;
+  percent: number | null;
+}
+
+export interface AssessmentStats {
+  entered: number;
+  scored: number;
+  absent: number;
+  average: number | null;
+  highest: number | null;
+  lowest: number | null;
+}
+
+/** A test with every student of the division. (`students` is the list here; in a summary it is a count.) */
+export type AssessmentDetail = Omit<AssessmentSummary, 'students'> & {
+  stats: AssessmentStats;
+  students: AssessmentMarkRow[];
+};
+
+export interface AssessmentOptions {
+  divisions: { id: string; label: string; subjectIds: string[] }[];
+  subjects: { id: string; name: string }[];
+}
+
+export interface StudentResultRow {
+  assessment: {
+    id: string;
+    name: string;
+    kind: AssessmentKind;
+    subject: { id: string; name: string };
+    conductedOn: string;
+    maxMarks: number;
+  };
+  marks: number | null;
+  absent: boolean;
+  remark: string | null;
+  percent: number | null;
+  classAverage: number | null;
+  classHighest: number | null;
+}
+
+export interface StudentResults {
+  student: { id: string; name: string };
+  results: StudentResultRow[];
+}
+
 // ---------- Homework ----------
 
 export interface Homework {

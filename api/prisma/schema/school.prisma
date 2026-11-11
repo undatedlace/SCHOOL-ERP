@@ -30,6 +30,7 @@ model School {
   staffTypes        StaffType[]
   notifications     Notification[]
   homework          Homework[]
+  assessments       Assessment[]
   leaveTypes        LeaveType[]
   leaveEntitlements LeaveEntitlement[]
   leaveRequests     LeaveRequest[]

@@ -3,6 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
   AppNotification,
+  AssessmentDetail,
+  AssessmentKind,
+  AssessmentOptions,
+  AssessmentSummary,
+  StudentResults,
   Homework,
   HomeworkInput,
   Collection,
@@ -442,6 +447,45 @@ export class Api {
   // ---------- Search ----------
   search = (q: string) =>
     this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
+
+  // ---------- Tests and results ----------
+  assessmentOptions = () => this.http.get<AssessmentOptions>('/api/assessments/options');
+  assessments = (q: {
+    page: number;
+    pageSize: number;
+    status?: string | null;
+    divisionId?: string | null;
+    subjectId?: string | null;
+  }) => this.http.get<Page<AssessmentSummary>>('/api/assessments', { params: params(q) });
+  assessment = (id: string) => this.http.get<AssessmentDetail>(`/api/assessments/${id}`);
+  createAssessment = (body: {
+    name: string;
+    kind: AssessmentKind;
+    divisionId: string;
+    subjectId: string;
+    maxMarks: number;
+    conductedOn: string;
+  }) => this.http.post<AssessmentSummary>('/api/assessments', body);
+  updateAssessment = (
+    id: string,
+    body: { name?: string; kind?: AssessmentKind; maxMarks?: number; conductedOn?: string },
+  ) => this.http.patch<AssessmentDetail>(`/api/assessments/${id}`, body);
+  saveMarks = (
+    id: string,
+    entries: {
+      studentId: string;
+      marks?: number | null;
+      absent?: boolean;
+      remark?: string | null;
+    }[],
+  ) => this.http.put<AssessmentDetail>(`/api/assessments/${id}/marks`, { entries });
+  publishAssessment = (id: string) =>
+    this.http.post<AssessmentDetail>(`/api/assessments/${id}/publish`, {});
+  unpublishAssessment = (id: string) =>
+    this.http.post<AssessmentDetail>(`/api/assessments/${id}/unpublish`, {});
+  archiveAssessment = (id: string) => this.http.delete<void>(`/api/assessments/${id}`);
+  studentResults = (studentId: string) =>
+    this.http.get<StudentResults>(`/api/results/students/${studentId}`);
 
   // ---------- Homework ----------
   homework = (q: {

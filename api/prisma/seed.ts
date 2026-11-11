@@ -145,6 +145,7 @@ const ROLES: Record<string, RoleDef> = {
       'staff_attendance.read',
       'leave.apply',
       'marks.enter',
+      'results.read',
       'homework.manage',
       'notices.read',
       'calendar.read',
