@@ -23,6 +23,10 @@ const hw = (over: Partial<Homework> = {}): Homework => ({
   students: [],
   forChildren: [],
   canChange: true,
+  handIn: false,
+  maxMarks: null,
+  attachments: [],
+  children: [],
   ...over,
 });
 const page = (items: Homework[]) => ({ items, total: items.length, page: 1, pageSize: 50 });
@@ -153,6 +157,8 @@ describe('HomeworkPage', () => {
     clickText('Send to families');
     const req = http.expectOne((r) => r.method === 'POST' && r.url === '/api/homework');
     expect(req.request.body).toEqual({
+      handIn: false,
+      attachmentFileIds: [],
       title: 'Chapter 5',
       instructions: 'Read it',
       dueOn: '2099-06-01',

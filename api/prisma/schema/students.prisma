@@ -45,14 +45,15 @@ model Student {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
-  school          School             @relation(fields: [schoolId], references: [id])
-  user            User?              @relation(fields: [userId], references: [id])
+  school          School               @relation(fields: [schoolId], references: [id])
+  user            User?                @relation(fields: [userId], references: [id])
   guardians       StudentGuardian[]
   enrollments     Enrollment[]
   application     Application?
   documents       StudentDocument[]
   feeInvoices     FeeInvoice[]
   homeworkTargets HomeworkTarget[]
+  submissions     HomeworkSubmission[] @relation("StudentSubmissions")
   assessmentMarks AssessmentMark[]
   payments        Payment[]
   attendance      AttendanceRecord[]

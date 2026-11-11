@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
@@ -11,11 +13,13 @@ import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { Homework, Subject } from '../../core/models';
+import { FileRef, Homework, Subject } from '../../core/models';
 import { toIsoDate } from '../../shared/dates';
+import { FilePicker } from '../../shared/ui/file-picker';
 import { DateField } from '../../shared/ui/date-field';
 import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
 import { PageHeader } from '../../shared/ui/page-header';
+import { HandInsDialog } from './hand-ins-dialog';
 import { HomeworkCard } from './homework-card';
 
 type Mode = 'divisions' | 'students';
@@ -36,6 +40,10 @@ type Mode = 'divisions' | 'students';
     FilterBar,
     PageHeader,
     HomeworkCard,
+    CheckboxModule,
+    InputNumberModule,
+    FilePicker,
+    HandInsDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -82,6 +90,16 @@ type Mode = 'divisions' | 'students';
           <app-homework-card [homework]="h" />
           @if (h.canChange) {
             <div class="flex gap-3 px-2 text-sm">
+              @if (h.handIn) {
+                <button
+                  type="button"
+                  class="app-link"
+                  [attr.aria-label]="'Hand-ins for ' + h.title"
+                  (click)="handIns.set(h)"
+                >
+                  Hand-ins
+                </button>
+              }
               <button
                 type="button"
                 class="app-link"
@@ -168,6 +186,64 @@ type Mode = 'divisions' | 'students';
           </div>
         </div>
 
+        <div class="flex flex-col gap-2 text-sm">
+          <span>Attachments (optional, up to 5)</span>
+          @if (attachments().length) {
+            <ul class="flex flex-col gap-1">
+              @for (f of attachments(); track f.id) {
+                <li class="flex items-center gap-3">
+                  <span>{{ f.name }}</span>
+                  <button
+                    type="button"
+                    class="app-link"
+                    [attr.aria-label]="'Remove ' + f.name"
+                    (click)="removeAttachment(f.id)"
+                  >
+                    Remove
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <div>
+            <app-file-picker
+              label="Attach a worksheet or picture"
+              [disabled]="attachments().length >= 5"
+              [busy]="uploading()"
+              (picked)="attach($event)"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <p-checkbox
+              [binary]="true"
+              [disabled]="handInLocked()"
+              [ngModel]="handIn()"
+              (ngModelChange)="setHandIn($event)"
+              ariaLabel="Students hand work in through the app"
+            />
+            Students hand work in through the app
+          </div>
+          @if (handIn()) {
+            <div class="flex items-center gap-2">
+              Marks out of
+              <p-inputnumber
+                [min]="0.01"
+                [max]="1000"
+                [maxFractionDigits]="2"
+                [disabled]="editing() !== null && marksGiven()"
+                placeholder="optional"
+                ariaLabel="Marks out of"
+                [ngModel]="maxMarks()"
+                (ngModelChange)="maxMarks.set($event)"
+                styleClass="w-28"
+              />
+            </div>
+          }
+        </div>
+
         @if (!editing()) {
           <div class="flex flex-col gap-2 text-sm">
             <span>Who is it for?</span>
@@ -237,6 +313,8 @@ type Mode = 'divisions' | 'students';
         </div>
       </div>
     </p-dialog>
+
+    <app-hand-ins-dialog [homework]="handIns()" (closed)="closeHandIns()" />
   `,
 })
 export class HomeworkPage {
@@ -287,6 +365,14 @@ export class HomeworkPage {
   protected readonly studentDivision = signal('');
   protected readonly students = signal<{ id: string; name: string }[]>([]);
   protected readonly studentIds = signal<string[]>([]);
+  protected readonly attachments = signal<FileRef[]>([]);
+  protected readonly uploading = signal(false);
+  protected readonly handIn = signal(false);
+  protected readonly maxMarks = signal<number | null>(null);
+  /** Hand-in cannot be switched off once a student has handed something in; marks cannot change once given. */
+  protected readonly handInLocked = signal(false);
+  protected readonly marksGiven = signal(false);
+  protected readonly handIns = signal<Homework | null>(null);
   protected readonly formError = signal<string | null>(null);
   protected readonly saving = signal(false);
 
@@ -351,6 +437,11 @@ export class HomeworkPage {
     this.studentDivision.set('');
     this.students.set([]);
     this.studentIds.set([]);
+    this.attachments.set([]);
+    this.handIn.set(false);
+    this.maxMarks.set(null);
+    this.handInLocked.set(false);
+    this.marksGiven.set(false);
     this.formError.set(null);
     this.open.set(true);
   }
@@ -361,8 +452,44 @@ export class HomeworkPage {
     this.instructions.set(h.instructions);
     this.subjectId.set(h.subject?.id ?? '');
     this.dueOn.set(h.dueOn ?? '');
+    this.attachments.set(h.attachments);
+    this.handIn.set(h.handIn);
+    this.maxMarks.set(h.maxMarks === null ? null : +h.maxMarks);
+    // The server refuses these once work has been handed in or marked; it explains if tried.
+    this.handInLocked.set(false);
+    this.marksGiven.set(false);
     this.formError.set(null);
     this.open.set(true);
+  }
+
+  protected setHandIn(on: boolean) {
+    this.handIn.set(on);
+    if (!on) this.maxMarks.set(null);
+  }
+
+  protected async attach(file: File) {
+    this.uploading.set(true);
+    this.formError.set(null);
+    try {
+      const saved = await firstValueFrom(this.api.uploadFile(file, 'homework-attachment'));
+      this.attachments.update((all) => [
+        ...all,
+        { id: saved.id, name: file.name, mimeType: saved.mimeType, sizeBytes: saved.sizeBytes },
+      ]);
+    } catch (error) {
+      this.formError.set(apiError(error));
+    } finally {
+      this.uploading.set(false);
+    }
+  }
+
+  protected removeAttachment(id: string) {
+    this.attachments.update((all) => all.filter((f) => f.id !== id));
+  }
+
+  protected closeHandIns() {
+    this.handIns.set(null);
+    void this.load();
   }
 
   protected setMode(mode: Mode) {
@@ -394,6 +521,9 @@ export class HomeworkPage {
       title: this.title().trim(),
       instructions: this.instructions().trim(),
       ...(this.subjectId() ? { subjectId: this.subjectId() } : {}),
+      handIn: this.handIn(),
+      ...(this.handIn() && this.maxMarks() !== null ? { maxMarks: this.maxMarks()! } : {}),
+      attachmentFileIds: this.attachments().map((f) => f.id),
     };
     try {
       const editing = this.editing();

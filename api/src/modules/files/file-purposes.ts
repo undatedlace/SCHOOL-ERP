@@ -6,6 +6,12 @@ export interface FilePurpose {
   maxBytes: number;
   /** 'image': photographs only. 'document': a PDF or a picture of a paper. */
   kind: 'image' | 'document';
+  /**
+   * True when who may see the file depends on more than a permission (for example only the
+   * family of one student). The generic download route then refuses it, and the owning module
+   * serves it after its own checks.
+   */
+  scoped?: boolean;
 }
 
 const MB = 1024 * 1024;
@@ -40,6 +46,22 @@ export const FILE_PURPOSES: Record<string, FilePurpose> = {
     read: 'students.documents.read',
     maxBytes: 10 * MB,
     kind: 'document',
+  },
+  // A worksheet or picture the teacher attaches to homework. Served by the homework module.
+  'homework-attachment': {
+    write: 'homework.manage',
+    read: 'homework.manage',
+    maxBytes: 10 * MB,
+    kind: 'document',
+    scoped: true,
+  },
+  // A student's hand-in (photos or a PDF of their work). Served by the homework module.
+  'homework-submission': {
+    write: 'homework.read',
+    read: 'homework.read',
+    maxBytes: 10 * MB,
+    kind: 'document',
+    scoped: true,
   },
 };
 
