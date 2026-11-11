@@ -9,6 +9,7 @@ import { dateOnly, todayIso } from '../../common/dates.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { StudentsService } from '../students/students.service.js';
 import {
   AddConcessionDto,
@@ -37,6 +38,7 @@ export class InvoicesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly students: StudentsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -296,6 +298,92 @@ export class InvoicesService {
   }
 
   /** Everything about one student's fees: invoices, what is due when, payments and the balance. */
+  /**
+   * Tells a student's class teacher that fees are pending, so they can speak to the family. Sent by the
+   * accountant or an administrator. The message names the student and the amount; it goes to the teacher
+   * of the student's division this academic year, as a notification in the app.
+   */
+  async remindClassTeacher(
+    auth: AuthContext,
+    studentId: string,
+    note: string | undefined,
+    ip?: string,
+  ) {
+    const ledger = await this.ledger(auth, studentId);
+    const pending = ledger.totals.pending;
+    if (Number(pending) <= 0) {
+      throw new BadRequestException('This student has nothing pending');
+    }
+    const year = await this.prisma.academicYear.findFirst({
+      where: { schoolId: auth.schoolId, isCurrent: true },
+      select: { id: true },
+    });
+    const enrollment = year
+      ? await this.prisma.enrollment.findFirst({
+          where: { studentId, academicYearId: year.id },
+          select: {
+            divisionId: true,
+            division: {
+              select: { name: true, class: { select: { name: true } } },
+            },
+          },
+        })
+      : null;
+    if (!year || !enrollment) {
+      throw new BadRequestException('This student is not enrolled this year');
+    }
+    const label = `${enrollment.division.class.name}-${enrollment.division.name}`;
+    const teacher = await this.prisma.classTeacher.findUnique({
+      where: {
+        academicYearId_divisionId: {
+          academicYearId: year.id,
+          divisionId: enrollment.divisionId,
+        },
+      },
+      select: {
+        staff: {
+          select: {
+            firstName: true,
+            surname: true,
+            userId: true,
+            status: true,
+          },
+        },
+      },
+    });
+    if (!teacher || teacher.staff.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        `No class teacher is set for ${label}. Assign one in Academic setup.`,
+      );
+    }
+    if (!teacher.staff.userId) {
+      throw new BadRequestException(
+        `${teacher.staff.firstName} ${teacher.staff.surname} has no login, so cannot be told`,
+      );
+    }
+    await this.notifications.notify(auth.schoolId, [teacher.staff.userId], {
+      type: 'fee.reminder',
+      title: `Fees pending: ${ledger.student.fullName} (${label})`,
+      body: [`Rs ${pending} is pending.`, note?.trim()]
+        .filter(Boolean)
+        .join(' '),
+      link: `/app/students/${studentId}`,
+    });
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'fees.teacher_reminded',
+      entityType: 'student',
+      entityId: studentId,
+      metadata: { pending, classTeacher: teacher.staff.userId },
+      ip,
+    });
+    return {
+      notified: `${teacher.staff.firstName} ${teacher.staff.surname}`,
+      class: label,
+    };
+  }
+
   async ledger(auth: AuthContext, studentId: string) {
     if (!auth.permissions.includes('fees.read_all')) {
       await this.students.assertVisible(auth, studentId);

@@ -749,6 +749,19 @@ export interface SearchGroup {
   more: boolean;
 }
 
+// ---------- Notifications ----------
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  /** Where in the app it leads. */
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
 // ---------- Staff leave ----------
 
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';

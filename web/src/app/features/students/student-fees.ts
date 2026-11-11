@@ -72,6 +72,16 @@ const moneyValidator = (c: { value: string }) =>
             (onClick)="openDues()"
           />
           <p-button
+            *appHasPermission="'fees.reminder.send'"
+            label="Remind class teacher"
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="!ledger() || ledger()!.totals.pending === '0.00'"
+            [loading]="reminding()"
+            (onClick)="remind()"
+          />
+          <p-button
             *appHasPermission="'fees.payment.create'"
             label="Record payment"
             size="small"
@@ -500,6 +510,26 @@ export class StudentFees {
       );
       this.payForm.controls.reference.updateValueAndValidity();
     });
+  }
+
+  protected readonly reminding = signal(false);
+
+  /** Tells the student's class teacher in the app that fees are pending. */
+  protected async remind() {
+    if (this.reminding()) return;
+    this.reminding.set(true);
+    try {
+      const res = await firstValueFrom(this.api.remindClassTeacher(this.studentId()));
+      this.toast.add({
+        severity: 'success',
+        summary: `${res.notified} has been told`,
+        detail: `Class teacher of ${res.class}`,
+      });
+    } catch (error) {
+      this.toast.add({ severity: 'error', summary: 'Could not send', detail: apiError(error) });
+    } finally {
+      this.reminding.set(false);
+    }
   }
 
   protected invoiceTitle(inv: LedgerInvoice) {

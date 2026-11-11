@@ -28,6 +28,7 @@ model School {
   notices           Notice[]
   calendarEvents    CalendarEvent[]
   staffTypes        StaffType[]
+  notifications     Notification[]
   leaveTypes        LeaveType[]
   leaveEntitlements LeaveEntitlement[]
   leaveRequests     LeaveRequest[]

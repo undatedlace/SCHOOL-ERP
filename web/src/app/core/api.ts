@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
+  AppNotification,
   Collection,
   PaymentRow,
   CopyResult,
@@ -439,6 +440,22 @@ export class Api {
   // ---------- Search ----------
   search = (q: string) =>
     this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
+
+  // ---------- Notifications ----------
+  notifications = (q: { page: number; pageSize: number; unread?: boolean }) =>
+    this.http.get<Page<AppNotification> & { unread: number }>('/api/notifications', {
+      params: params({ ...q, unread: q.unread ? 'true' : undefined }),
+    });
+  unreadNotifications = () => this.http.get<{ unread: number }>('/api/notifications/unread-count');
+  markNotificationRead = (id: string) =>
+    this.http.post<{ unread: number }>(`/api/notifications/${id}/read`, {});
+  markAllNotificationsRead = () =>
+    this.http.post<{ unread: number }>('/api/notifications/read-all', {});
+  remindClassTeacher = (studentId: string, note?: string) =>
+    this.http.post<{ notified: string; class: string }>(
+      `/api/students/${studentId}/remind-teacher`,
+      { note },
+    );
 
   // ---------- Staff leave ----------
   leaveTypes = (all = false) =>

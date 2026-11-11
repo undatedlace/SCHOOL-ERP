@@ -34,6 +34,7 @@ import {
   SaveStructureDto,
   UpdateFeeHeadDto,
 } from './dto/fees.dto.js';
+import { RemindTeacherDto } from './dto/remind.dto.js';
 import { FeeSetupService } from './fee-setup.service.js';
 import { InvoicesService } from './invoices.service.js';
 import { PaymentsService } from './payments.service.js';
@@ -160,6 +161,19 @@ export class FeesController {
   }
 
   // ---------- a student's fees ----------
+
+  /** Tells the student's class teacher that fees are pending. Accountant and administrators. */
+  @Post('students/:id/remind-teacher')
+  @HttpCode(200)
+  @RequirePermissions('fees.read_all', 'fees.reminder.send')
+  remindTeacher(
+    @CurrentAuth() auth: AuthContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RemindTeacherDto,
+    @Req() req: Request,
+  ) {
+    return this.invoices.remindClassTeacher(auth, id, dto.note, req.ip);
+  }
 
   @Get('students/:id/fees')
   @RequirePermissions('fees.read')

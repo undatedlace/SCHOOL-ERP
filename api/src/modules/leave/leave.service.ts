@@ -18,6 +18,7 @@ import {
   todayInIndia,
 } from '../attendance/attendance-rules.js';
 import { AuditService } from '../audit/audit.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import {
   Entitlement,
   balanceOf,
@@ -73,6 +74,7 @@ export class LeaveService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private manages = (auth: AuthContext) =>
@@ -330,6 +332,7 @@ export class LeaveService {
       select: {
         id: true,
         status: true,
+        userId: true,
         staffTypeId: true,
         firstName: true,
         surname: true,
@@ -353,6 +356,7 @@ export class LeaveService {
       select: {
         id: true,
         status: true,
+        userId: true,
         staffTypeId: true,
         firstName: true,
         surname: true,
@@ -550,6 +554,31 @@ export class LeaveService {
       ip,
       { staffId: staff.id, days: toDays(size.halfDays), type: type.name },
     );
+    const when =
+      dto.startsOn === endsOn ? dto.startsOn : `${dto.startsOn} to ${endsOn}`;
+    const what = `${type.name}, ${when} (${toDays(size.halfDays)} day(s))`;
+    if (onBehalf) {
+      // Recorded by an administrator: the person is told.
+      await this.notifications.notify(auth.schoolId, [staff.userId], {
+        type: 'leave.recorded',
+        title: 'Leave recorded for you',
+        body: what,
+        link: '/app/my-leave',
+      });
+    } else {
+      // Asked for by the person: everyone who decides leave is told.
+      await this.notifications.notifyPermission(
+        auth.schoolId,
+        'leave.manage',
+        {
+          type: 'leave.requested',
+          title: `${name(staff)} asked for leave`,
+          body: `${what}. ${dto.reason}`,
+          link: '/app/leave',
+        },
+        auth.userId,
+      );
+    }
     return view(created, !onBehalf);
   }
 
@@ -617,6 +646,24 @@ export class LeaveService {
       },
       include: REQUEST_INCLUDE,
     });
+    const owner = await this.prisma.staff.findUnique({
+      where: { id: updated.staffId },
+      select: { userId: true },
+    });
+    await this.notifications.notify(auth.schoolId, [owner?.userId], {
+      type: dto.decision === 'APPROVED' ? 'leave.approved' : 'leave.rejected',
+      title:
+        dto.decision === 'APPROVED'
+          ? 'Your leave was approved'
+          : 'Your leave was refused',
+      body: [
+        `${updated.leaveType.name}, ${toIso(updated.startsOn)}${updated.startsOn.getTime() === updated.endsOn.getTime() ? '' : ` to ${toIso(updated.endsOn)}`}`,
+        dto.note?.trim(),
+      ]
+        .filter(Boolean)
+        .join('. '),
+      link: '/app/my-leave',
+    });
     await this.record(
       auth,
       dto.decision === 'APPROVED' ? 'leave.approved' : 'leave.rejected',
@@ -674,6 +721,26 @@ export class LeaveService {
       include: REQUEST_INCLUDE,
     });
     await this.record(auth, 'leave.cancelled', 'leave_request', id, ip);
+    if (!mine) {
+      await this.notifications.notify(auth.schoolId, [r.staff.userId], {
+        type: 'leave.cancelled',
+        title: 'Your leave was withdrawn by the school',
+        body: `${r.leaveType.name}, ${toIso(r.startsOn)}${note?.trim() ? `. ${note.trim()}` : ''}`,
+        link: '/app/my-leave',
+      });
+    } else if (r.status === 'APPROVED') {
+      await this.notifications.notifyPermission(
+        auth.schoolId,
+        'leave.manage',
+        {
+          type: 'leave.cancelled',
+          title: `${name(r.staff)} withdrew approved leave`,
+          body: `${r.leaveType.name}, ${toIso(r.startsOn)}`,
+          link: '/app/leave',
+        },
+        auth.userId,
+      );
+    }
     return view(updated, mine);
   }
 

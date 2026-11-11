@@ -7,13 +7,22 @@ import { AuthService } from '../core/auth.service';
 import { School } from '../core/models';
 import { NAV_ENTRIES, NavEntry, visibleEntries } from '../core/nav';
 import { GlobalSearch } from '../shared/ui/global-search';
+import { NotificationBell } from '../shared/ui/notification-bell';
 import { Icon } from '../shared/ui/icon';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 
 /** Staff area: a grouped sidebar on desktop, a slide-down menu on phones, and a top bar. */
 @Component({
   selector: 'app-staff-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle, Icon, GlobalSearch],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ThemeToggle,
+    Icon,
+    GlobalSearch,
+    NotificationBell,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-background md:flex md:gap-4 md:p-4">
@@ -126,13 +135,7 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
           class="mx-auto flex max-w-6xl items-center justify-end gap-3 px-4 pt-4 md:px-4 md:pt-0"
         >
           <div class="min-w-0 flex-1"><app-global-search /></div>
-          <a
-            routerLink="/app/notices"
-            class="hidden size-10 items-center justify-center rounded-full bg-card shadow-sm hover:bg-accent md:inline-flex"
-            aria-label="Notices"
-          >
-            <app-icon name="bell" />
-          </a>
+          <app-notification-bell />
           <span class="hidden md:block"><app-theme-toggle /></span>
           <div class="flex items-center gap-3 rounded-full bg-card py-1.5 pr-4 pl-1.5 shadow-sm">
             <span
