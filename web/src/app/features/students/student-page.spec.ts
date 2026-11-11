@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { AuthService } from '../../core/auth.service';
@@ -153,13 +154,10 @@ describe('StudentPage removal and moving', () => {
     ]);
     await fixture.whenStable();
     fixture.detectChanges();
-    const cls = document.getElementById('move-class') as HTMLSelectElement;
-    cls.value = 'c2';
-    cls.dispatchEvent(new Event('change', { bubbles: true }));
+    const selects = fixture.debugElement.queryAll(By.css('p-select'));
+    selects[0].triggerEventHandler('ngModelChange', 'c2');
     fixture.detectChanges();
-    const div = document.getElementById('move-division') as HTMLSelectElement;
-    div.value = 'd2';
-    div.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.debugElement.queryAll(By.css('p-select'))[1].triggerEventHandler('ngModelChange', 'd2');
     fixture.detectChanges();
     const go = Array.from(document.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Move student',

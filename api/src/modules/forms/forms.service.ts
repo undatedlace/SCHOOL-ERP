@@ -8,12 +8,23 @@ import { PrismaService } from '../../database/prisma.service.js';
 import type { FormDefinition } from '../../generated/prisma/client.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
-import { FORM_KINDS } from './form-kinds.js';
+import {
+  DEFAULT_NON_TEACHING_FORM,
+  DEFAULT_TEACHER_FORM,
+} from './default-staff-forms.js';
+import { FORM_KINDS, FormKind, STAFF_FORM_PREFIX } from './form-kinds.js';
 import {
   FormSchema,
   publishErrors,
   validateFormSchema,
 } from './form-schema.js';
+
+/** The onboarding form of a staff type. It starts from the teacher or the non-teaching form. */
+const staffKind = (t: { name: string; isTeaching: boolean }): FormKind => ({
+  name: `Staff onboarding: ${t.name}`,
+  requiredSystem: [],
+  initial: t.isTeaching ? DEFAULT_TEACHER_FORM : DEFAULT_NON_TEACHING_FORM,
+});
 
 const view = (f: FormDefinition) => ({
   id: f.id,
@@ -44,7 +55,22 @@ export class FormsService {
         updatedAt: true,
       },
     });
-    return Object.entries(FORM_KINDS).map(([key, kind]) => {
+    // The built-in forms, then one onboarding form for each type of staff the school has.
+    const types = await this.prisma.staffType.findMany({
+      where: { schoolId },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: { id: true, name: true, isTeaching: true, active: true },
+    });
+    const kinds: [string, FormKind][] = [
+      ...Object.entries(FORM_KINDS),
+      ...types
+        .filter((t) => t.active)
+        .map((t): [string, FormKind] => [
+          `${STAFF_FORM_PREFIX}${t.id}`,
+          staffKind(t),
+        ]),
+    ];
+    return kinds.map(([key, kind]) => {
       const published = rows.find(
         (r) => r.key === key && r.status === 'PUBLISHED',
       );
@@ -61,7 +87,7 @@ export class FormsService {
   }
 
   async get(schoolId: string, key: string) {
-    const kind = this.kind(key);
+    const kind = await this.kind(schoolId, key);
     const [published, draft] = await Promise.all([
       this.findPublished(schoolId, key),
       this.findDraft(schoolId, key),
@@ -75,6 +101,21 @@ export class FormsService {
     };
   }
 
+  /**
+   * The form to fill in right now: the live version, or the built-in starting form when the school has
+   * not published one yet (in which case the first record saved publishes it as version 1).
+   */
+  async current(schoolId: string, key: string) {
+    const kind = await this.kind(schoolId, key);
+    const published = await this.findPublished(schoolId, key);
+    return {
+      key,
+      name: published?.name ?? kind.name,
+      version: published?.version ?? 1,
+      schema: (published?.schema ?? kind.initial) as unknown as FormSchema,
+    };
+  }
+
   /** The version applications are filled in against. */
   async getPublished(schoolId: string, key: string) {
     const published = await this.findPublished(schoolId, key);
@@ -85,7 +126,7 @@ export class FormsService {
 
   /** Starts editing: a copy of the published form (or the built-in starting form). */
   async startDraft(auth: AuthContext, key: string) {
-    const kind = this.kind(key);
+    const kind = await this.kind(auth.schoolId, key);
     const existing = await this.findDraft(auth.schoolId, key);
     if (existing) return view(existing);
 
@@ -110,7 +151,7 @@ export class FormsService {
     name: string | undefined,
     rawSchema: unknown,
   ) {
-    this.kind(key);
+    await this.kind(auth.schoolId, key);
     const draft = await this.findDraft(auth.schoolId, key);
     if (!draft)
       throw new NotFoundException(
@@ -132,7 +173,7 @@ export class FormsService {
   }
 
   async discardDraft(auth: AuthContext, key: string) {
-    this.kind(key);
+    await this.kind(auth.schoolId, key);
     const draft = await this.findDraft(auth.schoolId, key);
     if (!draft) throw new NotFoundException('There is no draft to discard');
     await this.prisma.formDefinition.delete({ where: { id: draft.id } });
@@ -141,7 +182,7 @@ export class FormsService {
 
   /** Makes the draft the live version. The previous version is kept for the applications that used it. */
   async publish(auth: AuthContext, key: string) {
-    const kind = this.kind(key);
+    const kind = await this.kind(auth.schoolId, key);
     const draft = await this.findDraft(auth.schoolId, key);
     if (!draft) throw new NotFoundException('There is no draft to publish');
 
@@ -163,10 +204,42 @@ export class FormsService {
     return view(published);
   }
 
-  private kind(key: string) {
-    const kind = FORM_KINDS[key];
-    if (!kind) throw new NotFoundException('Unknown form');
-    return kind;
+  /**
+   * The live version of a form, creating version 1 from the built-in starting form if the school has
+   * not published one yet. Used where a record must be tied to a version (a new member of staff).
+   */
+  async ensurePublished(schoolId: string, key: string) {
+    const existing = await this.findPublished(schoolId, key);
+    if (existing) return existing;
+    const kind = await this.kind(schoolId, key);
+    return this.prisma.formDefinition.create({
+      data: {
+        schoolId,
+        key,
+        version: await this.nextVersion(schoolId, key),
+        name: kind.name,
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        schema: kind.initial as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  /** What the form is: a built-in one, or the onboarding form of one of the school's staff types. */
+  private async kind(schoolId: string, key: string): Promise<FormKind> {
+    const builtIn = FORM_KINDS[key];
+    if (builtIn) return builtIn;
+    if (key.startsWith(STAFF_FORM_PREFIX)) {
+      const id = key.slice(STAFF_FORM_PREFIX.length);
+      if (/^[0-9a-f-]{36}$/i.test(id)) {
+        const type = await this.prisma.staffType.findFirst({
+          where: { id, schoolId },
+          select: { name: true, isTeaching: true },
+        });
+        if (type) return staffKind(type);
+      }
+    }
+    throw new NotFoundException('Unknown form');
   }
 
   private findPublished(schoolId: string, key: string) {

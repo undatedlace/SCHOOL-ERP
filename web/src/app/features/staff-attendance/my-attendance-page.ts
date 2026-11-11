@@ -6,6 +6,7 @@ import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AttendanceDivisionReport, MyStaffAttendance } from '../../core/models';
 import { formatDate, toIsoDate } from '../../shared/dates';
+import { DateField } from '../../shared/ui/date-field';
 import { PageHeader } from '../../shared/ui/page-header';
 import { AttendanceGrid } from '../attendance/attendance-grid';
 import { monthBounds, percentText } from '../attendance/attendance-utils';
@@ -14,7 +15,7 @@ import { asGridReport } from './staff-grid';
 /** A teacher's or staff member's own attendance. They can look but not change it. */
 @Component({
   selector: 'app-my-attendance-page',
-  imports: [FormsModule, MessageModule, PageHeader, AttendanceGrid],
+  imports: [DateField, FormsModule, MessageModule, PageHeader, AttendanceGrid],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -23,28 +24,24 @@ import { asGridReport } from './staff-grid';
     />
 
     <div class="mb-4 flex flex-wrap items-end gap-3">
-      <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-        From
-        <input
-          type="date"
-          class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+      <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+        <span aria-hidden="true">From</span
+        ><app-date-field
+          label="From"
           [max]="today"
-          [ngModel]="from()"
-          (ngModelChange)="onRange('from', $event)"
-          aria-label="From"
+          [value]="from()"
+          (valueChange)="onRange('from', $event)"
         />
-      </label>
-      <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-        To
-        <input
-          type="date"
-          class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+      </div>
+      <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+        <span aria-hidden="true">To</span
+        ><app-date-field
+          label="To"
           [max]="today"
-          [ngModel]="to()"
-          (ngModelChange)="onRange('to', $event)"
-          aria-label="To"
+          [value]="to()"
+          (valueChange)="onRange('to', $event)"
         />
-      </label>
+      </div>
       <button
         type="button"
         class="h-10 rounded-md border px-3 text-sm hover:bg-accent"

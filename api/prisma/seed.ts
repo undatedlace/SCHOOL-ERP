@@ -57,6 +57,8 @@ const PERMISSIONS = [
   'staff_attendance.read_all',
   'staff_attendance.manage',
   'admins.manage',
+  'leave.apply',
+  'leave.manage',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -136,6 +138,7 @@ const ROLES: Record<string, RoleDef> = {
       'attendance.read',
       'attendance.mark',
       'staff_attendance.read',
+      'leave.apply',
       'marks.enter',
       'notices.read',
       'calendar.read',
@@ -148,6 +151,7 @@ const ROLES: Record<string, RoleDef> = {
     permissions: [
       'staff.read',
       'staff_attendance.read',
+      'leave.apply',
       'notices.read',
       'calendar.read',
     ],
@@ -219,6 +223,19 @@ async function main() {
     // Oldest first: the same rule the app uses to decide which school a login belongs to.
     (await prisma.school.findFirst({ orderBy: { createdAt: 'asc' } })) ??
     (await prisma.school.create({ data: { name: 'Demo School' } }));
+
+  // The kinds of employee the school starts with. The school adds more (Driver, Librarian...) in Settings.
+  for (const [i, t] of [
+    { name: 'Teacher', isTeaching: true },
+    { name: 'Clerk', isTeaching: false },
+    { name: 'Peon', isTeaching: false },
+  ].entries()) {
+    await prisma.staffType.upsert({
+      where: { schoolId_name: { schoolId: school.id, name: t.name } },
+      update: {},
+      create: { schoolId: school.id, ...t, sortOrder: i + 1 },
+    });
+  }
 
   // The school's admission form, as published version 1. Editable later in the form builder.
   const hasAdmissionForm = await prisma.formDefinition.findFirst({

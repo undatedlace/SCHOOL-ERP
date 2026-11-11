@@ -26,26 +26,32 @@ import { percentText, statusLabel } from '../attendance/attendance-utils';
         @if (a.summary.markedDays === 0) {
           <p class="text-sm text-muted-foreground">No attendance has been marked yet.</p>
         } @else {
-          <dl class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <div class="rounded-md bg-muted p-3">
+          <dl class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+            <div class="min-w-0 rounded-md bg-muted p-3">
               <dt class="text-xs text-muted-foreground">Attendance</dt>
-              <dd class="text-lg font-semibold">{{ percent(a.summary) }}</dd>
+              <dd class="text-base font-semibold break-words sm:text-lg">
+                {{ percent(a.summary) }}
+              </dd>
             </div>
-            <div class="rounded-md border p-3">
+            <div class="min-w-0 rounded-md border p-3">
               <dt class="text-xs text-muted-foreground">Present</dt>
-              <dd class="text-lg font-semibold">{{ a.summary.present }}</dd>
+              <dd class="text-base font-semibold break-words sm:text-lg">
+                {{ a.summary.present }}
+              </dd>
             </div>
-            <div class="rounded-md border p-3">
+            <div class="min-w-0 rounded-md border p-3">
               <dt class="text-xs text-muted-foreground">Late</dt>
-              <dd class="text-lg font-semibold">{{ a.summary.late }}</dd>
+              <dd class="text-base font-semibold break-words sm:text-lg">{{ a.summary.late }}</dd>
             </div>
-            <div class="rounded-md border p-3">
+            <div class="min-w-0 rounded-md border p-3">
               <dt class="text-xs text-muted-foreground">Absent</dt>
-              <dd class="text-lg font-semibold">{{ a.summary.absent }}</dd>
+              <dd class="text-base font-semibold break-words sm:text-lg">{{ a.summary.absent }}</dd>
             </div>
-            <div class="rounded-md border p-3">
+            <div class="min-w-0 rounded-md border p-3">
               <dt class="text-xs text-muted-foreground">On leave</dt>
-              <dd class="text-lg font-semibold">{{ a.summary.onLeave }}</dd>
+              <dd class="text-base font-semibold break-words sm:text-lg">
+                {{ a.summary.onLeave }}
+              </dd>
             </div>
           </dl>
           @if (away(a).length > 0) {

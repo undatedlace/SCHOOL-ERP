@@ -19,6 +19,7 @@
     "start:prod": "node dist/main",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
+    "seed:demo": "tsx prisma/seed-demo.ts",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",

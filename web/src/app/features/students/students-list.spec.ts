@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { MessageService } from '@openng/optimus-ui/api';
 import { StudentsList } from './students-list';
@@ -19,12 +20,12 @@ function setup() {
 }
 
 describe('StudentsList filters', () => {
-  it('offers the filters the school asked for', async () => {
+  it('offers the filters the school asked for, as Optimus controls', async () => {
     const { fixture, el } = setup();
     await fixture.whenStable();
     fixture.detectChanges();
-    const labels = Array.from(el.querySelectorAll('app-filter-bar [aria-label]')).map((c) =>
-      c.getAttribute('aria-label'),
+    const labels = Array.from(el.querySelectorAll('app-filter-bar span[aria-hidden="true"]')).map(
+      (c) => c.textContent?.trim(),
     );
     expect(labels).toEqual([
       'Search',
@@ -36,19 +37,22 @@ describe('StudentsList filters', () => {
       'Joined from',
       'Joined to',
     ]);
+    expect(fixture.debugElement.queryAll(By.css('app-filter-bar p-select')).length).toBe(5);
+    expect(fixture.debugElement.queryAll(By.css('app-filter-bar p-datepicker')).length).toBe(2);
+    expect(el.querySelector('app-filter-bar select')).toBeNull();
   });
 
   it('sends the chosen filters to the API and returns to the first page', async () => {
-    const { fixture, http, el } = setup();
+    const { fixture, http } = setup();
     await fixture.whenStable();
     fixture.detectChanges();
-    // The table asks for its first page on load.
     http
       .match((r) => r.url === '/api/students')
       .forEach((r) => r.flush({ items: [], total: 0, page: 1, pageSize: 20 }));
-    const gender = el.querySelector('app-filter-bar [aria-label="Gender"]') as HTMLSelectElement;
-    gender.value = 'FEMALE';
-    gender.dispatchEvent(new Event('change', { bubbles: true }));
+    // Gender is the fourth drop-down: class, division, status, gender, login.
+    fixture.debugElement
+      .queryAll(By.css('app-filter-bar p-select'))[3]
+      .triggerEventHandler('ngModelChange', 'FEMALE');
     fixture.detectChanges();
     const req = http.expectOne((r) => r.url === '/api/students');
     expect(req.request.params.get('gender')).toBe('FEMALE');

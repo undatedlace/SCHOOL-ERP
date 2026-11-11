@@ -1,0 +1,77 @@
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// A kind of staff leave the school gives (casual, sick, earned, unpaid...). Switched off, never deleted.
+model LeaveType {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  schoolId  String   @map("school_id") @db.Uuid
+  name      String
+  /// No yearly limit (for example unpaid leave): the balance is not checked.
+  unlimited Boolean  @default(false)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  school       School             @relation(fields: [schoolId], references: [id])
+  entitlements LeaveEntitlement[]
+  requests     LeaveRequest[]
+
+  @@unique([schoolId, name])
+  @@map("leave_types")
+}
+
+/// How many days of one kind of leave a year gives. Set by an admin before the year starts.
+/// staff_type_id empty = everyone; a row for a staff type takes precedence for that type.
+/// Stored in half days, so 12 days is 24.
+model LeaveEntitlement {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  leaveTypeId    String   @map("leave_type_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  staffTypeId    String?  @map("staff_type_id") @db.Uuid
+  halfDays       Int      @map("half_days")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  leaveType    LeaveType    @relation(fields: [leaveTypeId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  staffType    StaffType?   @relation(fields: [staffTypeId], references: [id])
+
+  @@index([schoolId, academicYearId])
+  @@map("leave_entitlements")
+}
+
+/// A member of staff's leave: asked for and approved by an admin, or recorded by an admin.
+/// Days exclude Sundays. Half days are counted as 1 (a half day is 1, a day 2).
+model LeaveRequest {
+  id             String      @id @default(uuid(7)) @db.Uuid
+  schoolId       String      @map("school_id") @db.Uuid
+  staffId        String      @map("staff_id") @db.Uuid
+  leaveTypeId    String      @map("leave_type_id") @db.Uuid
+  academicYearId String      @map("academic_year_id") @db.Uuid
+  startsOn       DateTime    @map("starts_on") @db.Date
+  endsOn         DateTime    @map("ends_on") @db.Date
+  halfDay        Boolean     @default(false) @map("half_day")
+  halfDays       Int         @map("half_days")
+  reason         String
+  status         LeaveStatus @default(PENDING)
+  requestedById  String      @map("requested_by_id") @db.Uuid
+  decidedById    String?     @map("decided_by_id") @db.Uuid
+  decidedAt      DateTime?   @map("decided_at")
+  decisionNote   String?     @map("decision_note")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  staff        Staff        @relation(fields: [staffId], references: [id])
+  leaveType    LeaveType    @relation(fields: [leaveTypeId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  @@index([schoolId, status])
+  @@index([staffId, startsOn])
+  @@map("leave_requests")
+}

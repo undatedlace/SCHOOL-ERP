@@ -143,6 +143,27 @@ export const routes: Routes = [
         loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
+        path: 'leave',
+        canActivate: [permissionGuard('leave.manage')],
+        loadComponent: () => import('./features/leave/leave-requests').then((m) => m.LeaveRequests),
+      },
+      {
+        path: 'my-leave',
+        canActivate: [permissionGuard('leave.apply')],
+        loadComponent: () => import('./features/leave/my-leave').then((m) => m.MyLeave),
+      },
+      {
+        path: 'settings/leave',
+        canActivate: [permissionGuard('leave.manage')],
+        loadComponent: () =>
+          import('./features/settings/leave-settings').then((m) => m.LeaveSettings),
+      },
+      {
+        path: 'settings/staff-types',
+        canActivate: [permissionGuard('forms.manage')],
+        loadComponent: () => import('./features/settings/staff-types').then((m) => m.StaffTypes),
+      },
+      {
         path: 'settings/forms',
         canActivate: [permissionGuard('forms.manage')],
         loadComponent: () => import('./features/forms/forms-list').then((m) => m.FormsList),

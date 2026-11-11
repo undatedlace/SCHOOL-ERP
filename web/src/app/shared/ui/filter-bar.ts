@@ -8,6 +8,12 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { DatePickerModule } from '@openng/optimus-ui/datepicker';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { fromIsoDate, toIsoDate } from '../dates';
 
 export interface FilterOption {
   label: string;
@@ -33,13 +39,10 @@ export type FilterValues = Record<string, string>;
  */
 @Component({
   selector: 'app-filter-bar',
+  imports: [FormsModule, ButtonModule, DatePickerModule, InputTextModule, SelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form
-      class="mb-4 flex flex-wrap items-end gap-3"
-      (submit)="$event.preventDefault()"
-      role="search"
-    >
+    <div class="mb-4 flex flex-wrap items-end gap-3" role="search">
       @for (f of fields(); track f.key) {
         <div
           class="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground"
@@ -50,52 +53,55 @@ export type FilterValues = Record<string, string>;
           @switch (f.type) {
             @case ('search') {
               <input
+                pInputText
                 type="search"
+                autocomplete="off"
                 [attr.aria-label]="f.label"
-                class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground"
                 [placeholder]="f.placeholder ?? ''"
                 [value]="values()[f.key] ?? ''"
+                [fluid]="true"
                 (input)="onSearch(f.key, $any($event.target).value)"
               />
             }
             @case ('select') {
-              <select
-                [attr.aria-label]="f.label"
-                class="h-10 min-w-36 rounded-md border bg-background px-3 text-sm text-foreground disabled:opacity-50"
+              <p-select
+                [options]="f.options ?? []"
+                optionLabel="label"
+                optionValue="value"
+                [placeholder]="f.placeholder ?? 'Any'"
+                [showClear]="true"
                 [disabled]="!!f.disabled"
-                [value]="values()[f.key] ?? ''"
-                (change)="set(f.key, $any($event.target).value)"
-              >
-                <option value="">{{ f.placeholder ?? 'Any' }}</option>
-                @for (o of f.options ?? []; track o.value) {
-                  <option [value]="o.value" [selected]="values()[f.key] === o.value">
-                    {{ o.label }}
-                  </option>
-                }
-              </select>
+                [ngModel]="values()[f.key] || null"
+                (ngModelChange)="set(f.key, $event ?? '')"
+                [ariaLabel]="f.label"
+                appendTo="body"
+                styleClass="min-w-44"
+              />
             }
             @case ('date') {
-              <input
-                type="date"
-                [attr.aria-label]="f.label"
-                class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
-                [value]="values()[f.key] ?? ''"
-                (change)="set(f.key, $any($event.target).value)"
+              <p-datepicker
+                [ngModel]="toDate(values()[f.key])"
+                (ngModelChange)="set(f.key, $event ? iso($event) : '')"
+                dateFormat="dd/mm/yy"
+                placeholder="dd/mm/yyyy"
+                [showClear]="true"
+                [ariaLabel]="f.label"
+                appendTo="body"
               />
             }
           }
         </div>
       }
       @if (activeCount() > 0) {
-        <button
+        <p-button
           type="button"
-          class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-          (click)="clear()"
-        >
-          Clear filters ({{ activeCount() }})
-        </button>
+          [label]="'Clear filters (' + activeCount() + ')'"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="clear()"
+        />
       }
-    </form>
+    </div>
   `,
 })
 export class FilterBar {
@@ -126,6 +132,11 @@ export class FilterBar {
         }
       });
     });
+  }
+
+  protected readonly iso = toIsoDate;
+  protected toDate(value: string | undefined): Date | null {
+    return value ? fromIsoDate(value) : null;
   }
 
   protected onSearch(key: string, value: string) {

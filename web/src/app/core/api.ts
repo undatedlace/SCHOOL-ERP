@@ -10,7 +10,13 @@ import {
   FeesInsight,
   StaffInsight,
   CalendarEvent,
+  LeaveBalance,
+  LeaveCalendarItem,
+  LeaveEntitlementRow,
+  LeaveRequest,
+  LeaveType,
   SearchGroup,
+  StaffType,
   StudentMoved,
   CalendarEventInput,
   Notice,
@@ -337,7 +343,18 @@ export class Api {
     joinedTo?: string | null;
     hasLogin?: string | null;
     role?: string | null;
+    staffTypeId?: string | null;
   }) => this.http.get<Page<StaffMember>>('/api/staff', { params: params(q) });
+  staffTypes = (all = false) =>
+    this.http.get<StaffType[]>('/api/staff-types', { params: all ? { all: 'true' } : {} });
+  staffTypeForm = (id: string) =>
+    this.http.get<{ key: string; name: string; version: number; schema: FormSchema }>(
+      `/api/staff-types/${id}/form`,
+    );
+  createStaffType = (body: { name: string; isTeaching: boolean }) =>
+    this.http.post<StaffType>('/api/staff-types', body);
+  updateStaffType = (id: string, body: { name?: string; isTeaching?: boolean; active?: boolean }) =>
+    this.http.patch<StaffType>(`/api/staff-types/${id}`, body);
   staffMember = (id: string) => this.http.get<StaffMember>(`/api/staff/${id}`);
   createStaff = (body: NewStaff) => this.http.post<StaffMember>('/api/staff', body);
   updateStaff = (
@@ -422,6 +439,54 @@ export class Api {
   // ---------- Search ----------
   search = (q: string) =>
     this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
+
+  // ---------- Staff leave ----------
+  leaveTypes = (all = false) =>
+    this.http.get<LeaveType[]>('/api/leave/types', { params: all ? { all: 'true' } : {} });
+  createLeaveType = (body: { name: string; unlimited: boolean }) =>
+    this.http.post<LeaveType>('/api/leave/types', body);
+  updateLeaveType = (id: string, body: { name?: string; unlimited?: boolean; active?: boolean }) =>
+    this.http.patch<LeaveType>(`/api/leave/types/${id}`, body);
+  leaveEntitlements = (academicYearId?: string) =>
+    this.http.get<{ academicYear: { id: string; name: string }; items: LeaveEntitlementRow[] }>(
+      '/api/leave/entitlements',
+      { params: params({ academicYearId }) },
+    );
+  saveLeaveEntitlements = (academicYearId: string, items: LeaveEntitlementRow[]) =>
+    this.http.put<{ academicYear: { id: string; name: string }; items: LeaveEntitlementRow[] }>(
+      '/api/leave/entitlements',
+      { academicYearId, items },
+    );
+  copyLeaveEntitlements = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.post<{ items: LeaveEntitlementRow[] }>('/api/leave/entitlements/copy', {
+      fromAcademicYearId,
+      toAcademicYearId,
+    });
+  leaveBalance = (q: { staffId?: string; academicYearId?: string } = {}) =>
+    this.http.get<LeaveBalance>('/api/leave/balance', { params: params(q) });
+  leaveRequests = (q: {
+    page: number;
+    pageSize: number;
+    status?: string | null;
+    staffId?: string | null;
+    leaveTypeId?: string | null;
+    from?: string | null;
+    to?: string | null;
+  }) => this.http.get<Page<LeaveRequest>>('/api/leave/requests', { params: params(q) });
+  applyForLeave = (body: {
+    leaveTypeId: string;
+    startsOn: string;
+    endsOn?: string;
+    halfDay?: boolean;
+    reason: string;
+    staffId?: string;
+  }) => this.http.post<LeaveRequest>('/api/leave/requests', body);
+  decideLeave = (id: string, decision: 'APPROVED' | 'REJECTED', note?: string) =>
+    this.http.post<LeaveRequest>(`/api/leave/requests/${id}/decision`, { decision, note });
+  cancelLeave = (id: string, note?: string) =>
+    this.http.post<LeaveRequest>(`/api/leave/requests/${id}/cancel`, { note });
+  leaveCalendar = (from: string, to: string) =>
+    this.http.get<LeaveCalendarItem[]>('/api/leave/calendar', { params: { from, to } });
 
   // ---------- Calendar ----------
   calendarEvents = (from: string, to: string) =>

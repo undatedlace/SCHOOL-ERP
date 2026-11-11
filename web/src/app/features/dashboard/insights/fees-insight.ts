@@ -23,22 +23,30 @@ import { monthLabel, widthPercent } from './insight-utils';
         <a routerLink="/app/fees/dues" class="text-sm underline">Who owes what</a>
       </div>
       @if (data(); as d) {
-        <dl class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div class="rounded-md bg-muted p-3">
+        <dl class="mb-5 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+          <div class="min-w-0 rounded-md bg-muted p-3">
             <dt class="text-xs text-muted-foreground">Billed</dt>
-            <dd class="text-lg font-semibold">{{ money(d.totals.billed) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(d.totals.billed) }}
+            </dd>
           </div>
-          <div class="rounded-md bg-muted p-3">
+          <div class="min-w-0 rounded-md bg-muted p-3">
             <dt class="text-xs text-muted-foreground">Collected</dt>
-            <dd class="text-lg font-semibold">{{ money(d.totals.collected) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(d.totals.collected) }}
+            </dd>
           </div>
-          <div class="rounded-md border p-3">
+          <div class="min-w-0 rounded-md border p-3">
             <dt class="text-xs text-muted-foreground">Pending</dt>
-            <dd class="text-lg font-semibold">{{ money(d.totals.pending) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(d.totals.pending) }}
+            </dd>
           </div>
-          <div class="rounded-md border p-3">
+          <div class="min-w-0 rounded-md border p-3">
             <dt class="text-xs text-muted-foreground">Overdue</dt>
-            <dd class="text-lg font-semibold">{{ money(d.totals.overdue) }}</dd>
+            <dd class="text-base font-semibold break-words sm:text-lg">
+              {{ money(d.totals.overdue) }}
+            </dd>
           </div>
         </dl>
 

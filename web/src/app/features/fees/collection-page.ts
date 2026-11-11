@@ -11,6 +11,7 @@ import { apiError } from '../../core/api-error';
 import { Collection, PaymentMode, PaymentRow } from '../../core/models';
 import { formatDate, toIsoDate } from '../../shared/dates';
 import { inr } from '../../shared/money';
+import { DateField } from '../../shared/ui/date-field';
 import { PageHeader } from '../../shared/ui/page-header';
 
 export const MODE_LABEL: Record<PaymentMode, string> = {
@@ -28,6 +29,7 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
 @Component({
   selector: 'app-collection-page',
   imports: [
+    DateField,
     FormsModule,
     RouterLink,
     InputTextModule,
@@ -45,25 +47,21 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
 
     <div class="mb-4 flex flex-wrap items-end gap-3">
       <div class="flex flex-col gap-1 text-xs text-muted-foreground">
-        <span>From</span>
-        <input
-          type="date"
-          class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+        <span aria-hidden="true">From</span>
+        <app-date-field
+          label="From"
           [max]="today"
-          [ngModel]="from()"
-          (ngModelChange)="onDate('from', $event)"
-          aria-label="From"
+          [value]="from()"
+          (valueChange)="onDate('from', $event)"
         />
       </div>
       <div class="flex flex-col gap-1 text-xs text-muted-foreground">
-        <span>To</span>
-        <input
-          type="date"
-          class="h-10 rounded-md border bg-background px-3 text-sm text-foreground"
+        <span aria-hidden="true">To</span>
+        <app-date-field
+          label="To"
           [max]="today"
-          [ngModel]="to()"
-          (ngModelChange)="onDate('to', $event)"
-          aria-label="To"
+          [value]="to()"
+          (valueChange)="onDate('to', $event)"
         />
       </div>
       <p-select

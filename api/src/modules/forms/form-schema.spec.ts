@@ -1,9 +1,14 @@
 import { DEFAULT_ADMISSION_FORM } from './default-admission-form.js';
 import {
+  DEFAULT_NON_TEACHING_FORM,
+  DEFAULT_TEACHER_FORM,
+} from './default-staff-forms.js';
+import {
   FormSchema,
   SYSTEM_FIELDS,
   SystemFieldKey,
   allFields,
+  fileIds,
   photoIds,
   publishErrors,
   validateAnswers,
@@ -380,6 +385,49 @@ describe('photo fields', () => {
     );
     expect(errors).toEqual({});
     expect(answers['childPhoto']).toBe(FILE_A);
+  });
+});
+
+describe('document fields', () => {
+  const doc = { id: 'idProof', type: 'document', label: 'Identity proof' };
+
+  it('are accepted on a form, and the default staff forms are valid', () => {
+    expect(validateFormSchema(form(doc)).errors).toEqual([]);
+    expect(validateFormSchema(DEFAULT_TEACHER_FORM).errors).toEqual([]);
+    expect(validateFormSchema(DEFAULT_NON_TEACHING_FORM).errors).toEqual([]);
+  });
+
+  it('cannot sit inside a repeating group', () => {
+    const { errors } = validateFormSchema(
+      form({ id: 'g', type: 'group', label: 'G', fields: [doc] }),
+    );
+    expect(errors.join(' ')).toMatch(/repeating group can only hold/);
+  });
+
+  it('take the id of an uploaded file, and say what to do when it is not one', () => {
+    const f = clone(form(doc)) as FormSchema;
+    expect(validateAnswers(f, { idProof: FILE_A }, ctx).answers).toEqual({
+      idProof: FILE_A,
+    });
+    const bad = validateAnswers(f, { idProof: 'not-a-file' }, ctx);
+    expect(bad.errors['idProof']).toMatch(/upload the document again/);
+    expect(
+      validateAnswers(f, { idProof: 42 }, ctx).errors['idProof'],
+    ).toBeDefined();
+  });
+
+  it('can be required, and are listed apart from photographs', () => {
+    const f = clone(
+      form(
+        { ...doc, required: true },
+        { id: 'p', type: 'image', label: 'Photo' },
+      ),
+    ) as FormSchema;
+    expect(validateAnswers(f, {}, ctx).errors['idProof']).toMatch(/required/);
+    const raw = { idProof: 'a', p: 'b' };
+    expect(fileIds(f, raw, 'document')).toEqual(['a']);
+    expect(fileIds(f, raw, 'image')).toEqual(['b']);
+    expect(photoIds(f, raw)).toEqual(['b']);
   });
 });
 

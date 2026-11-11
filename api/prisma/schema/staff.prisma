@@ -28,18 +28,46 @@ model Staff {
   leftOn        DateTime?   @map("left_on") @db.Date
   /// The login account. Set when the school gives this person access.
   userId        String?     @unique @map("user_id") @db.Uuid
+  /// What kind of employee (teacher, clerk, peon...), which decides the onboarding form.
+  staffTypeId   String?     @map("staff_type_id") @db.Uuid
+  /// The version of that type's form the answers were filled in with.
+  formId        String?     @map("form_id") @db.Uuid
+  /// { [fieldId]: value }, checked against that form version. Documents are stored as file ids.
+  answers       Json?
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
   school         School                  @relation(fields: [schoolId], references: [id])
   user           User?                   @relation(fields: [userId], references: [id])
+  staffType      StaffType?              @relation(fields: [staffTypeId], references: [id])
   classTeacherOf ClassTeacher[]
   subjectsTaught SubjectTeacher[]
   attendance     StaffAttendanceRecord[]
+  leaveRequests  LeaveRequest[]
 
   @@unique([schoolId, seq])
   @@unique([schoolId, employeeNo])
   @@index([schoolId, status])
   @@index([schoolId, surname, firstName])
   @@map("staff")
+}
+
+/// A kind of employee the school has, such as Teacher, Clerk or Peon. Each has its own onboarding form
+/// (form key `staff-<id>`). Types are switched off, never deleted.
+model StaffType {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  schoolId   String   @map("school_id") @db.Uuid
+  name       String
+  /// Teaching staff can be given classes and subjects; the starting form differs too.
+  isTeaching Boolean  @default(false) @map("is_teaching")
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  school            School             @relation(fields: [schoolId], references: [id])
+  staff             Staff[]
+  leaveEntitlements LeaveEntitlement[]
+
+  @@unique([schoolId, name])
+  @@map("staff_types")
 }

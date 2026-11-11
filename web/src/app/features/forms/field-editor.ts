@@ -33,6 +33,7 @@ export const TYPE_OPTIONS: { value: FieldType; label: string }[] = [
   { value: 'radio', label: 'Choice buttons' },
   { value: 'checkbox', label: 'Tick box' },
   { value: 'image', label: 'Photograph' },
+  { value: 'document', label: 'Document (PDF or photo of a paper)' },
   { value: 'ageLimits', label: 'Age limits table' },
   { value: 'group', label: 'Repeating rows' },
 ];

@@ -14,6 +14,7 @@ export const FIELD_TYPES = [
   'radio',
   'checkbox',
   'image',
+  'document',
   'ageLimits',
   'group',
 ] as const;
@@ -446,7 +447,7 @@ export const allFields = (schema: FormSchema): FormField[] =>
 export interface AnswerContext {
   /** Ids of the school's classes, for fields that take their options from them. */
   classIds: Set<string>;
-  /** Ids of uploaded photos that exist in this school, for photo fields. */
+  /** Ids of uploaded photos and documents that exist in this school, for photo and document fields. */
   fileIds: Set<string>;
 }
 
@@ -548,6 +549,13 @@ function checkField(
       out[key] = value;
       return;
     }
+    case 'document': {
+      // A scanned paper (a PDF or a photograph of it): the id of a file uploaded earlier.
+      if (typeof value !== 'string' || !ctx.fileIds.has(value))
+        return bad(`${field.label}: upload the document again`);
+      out[key] = value;
+      return;
+    }
     case 'select':
     case 'radio': {
       if (typeof value !== 'string')
@@ -614,12 +622,20 @@ export function systemValue(
   return field ? answers[field.id] : undefined;
 }
 
-/** The file ids given for photo fields, so the service can check they exist before validating. */
-export function photoIds(schema: FormSchema, raw: unknown): string[] {
+/** The file ids given for fields of one file type, so the service can check they exist before validating. */
+export function fileIds(
+  schema: FormSchema,
+  raw: unknown,
+  type: 'image' | 'document',
+): string[] {
   if (!isObj(raw)) return [];
   return allFields(schema)
-    .filter((f) => f.type === 'image')
+    .filter((f) => f.type === type)
     .flatMap((f) =>
       typeof raw[f.id] === 'string' ? [raw[f.id] as string] : [],
     );
 }
+
+/** The file ids given for photo fields. */
+export const photoIds = (schema: FormSchema, raw: unknown): string[] =>
+  fileIds(schema, raw, 'image');
