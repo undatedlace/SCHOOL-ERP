@@ -109,17 +109,15 @@ describe('tests and results (e2e)', () => {
   }
 
   const test = (who: Agent, over: Record<string, unknown> = {}) =>
-    who
-      .post('/api/assessments')
-      .send({
-        name: unique('Unit Test'),
-        kind: 'UNIT',
-        divisionId: divA,
-        subjectId: maths,
-        maxMarks: 20,
-        conductedOn: '2026-11-05',
-        ...over,
-      });
+    who.post('/api/assessments').send({
+      name: unique('Unit Test'),
+      kind: 'UNIT',
+      divisionId: divA,
+      subjectId: maths,
+      maxMarks: 20,
+      conductedOn: '2026-11-05',
+      ...over,
+    });
   const results = async (who: Agent, studentId: string) =>
     (await who.get(`/api/results/students/${studentId}`).expect(200)).body as {
       results: {
