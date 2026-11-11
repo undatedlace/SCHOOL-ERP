@@ -15,6 +15,7 @@ import { SessionGuard } from './modules/auth/session.guard.js';
 import { PermissionsGuard } from './modules/rbac/permissions.guard.js';
 import { InsightsModule } from './modules/insights/insights.module.js';
 import { StaffAttendanceModule } from './modules/staff-attendance/staff-attendance.module.js';
+import { DevicesModule } from './modules/devices/devices.module.js';
 import { AssessmentsModule } from './modules/assessments/assessments.module.js';
 import { HomeworkModule } from './modules/homework/homework.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -64,6 +65,7 @@ import { UsersModule } from './modules/users/users.module.js';
     NotificationsModule,
     HomeworkModule,
     AssessmentsModule,
+    DevicesModule,
     StaffAttendanceModule,
     InsightsModule,
     AdmissionsModule,

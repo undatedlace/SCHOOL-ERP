@@ -17,6 +17,7 @@ import { AllowPasswordChange } from '../../common/decorators/allow-password-chan
 import { CurrentAuth } from '../../common/decorators/current-auth.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
+import { isMobileClient } from '../../common/bearer.js';
 import { SESSION_COOKIE, sessionCookieOptions } from './auth.constants.js';
 import { AuthService, IssuedSession } from './auth.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -43,6 +44,14 @@ export class AuthController {
       dto.password,
       this.client(req),
     );
+    if (isMobileClient(req)) {
+      // The app keeps the token itself (in the phone's secure storage), so no cookie is set.
+      return {
+        mustChangePassword: result.mustChangePassword,
+        token: result.token,
+        expiresInMs: result.maxAgeMs,
+      };
+    }
     this.setCookie(res, result);
     return { mustChangePassword: result.mustChangePassword };
   }
@@ -72,12 +81,11 @@ export class AuthController {
 
   @Post('change-password')
   @AllowPasswordChange()
-  @HttpCode(204)
   async changePassword(
     @CurrentAuth() auth: AuthContext,
     @Body() dto: ChangePasswordDto,
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
   ) {
     const session = await this.auth.changePassword(
       auth,
@@ -85,7 +93,15 @@ export class AuthController {
       dto.newPassword,
       this.client(req),
     );
+    if (isMobileClient(req)) {
+      // The mobile app holds the token itself, so it gets the new one in the body.
+      res
+        .status(200)
+        .json({ token: session.token, expiresInMs: session.maxAgeMs });
+      return;
+    }
     this.setCookie(res, session);
+    res.status(204).end();
   }
 
   @Post('users/:id/reset-password')

@@ -29,6 +29,7 @@ model School {
   calendarEvents    CalendarEvent[]
   staffTypes        StaffType[]
   notifications     Notification[]
+  devices           Device[]
   homework          Homework[]
   assessments       Assessment[]
   leaveTypes        LeaveType[]
