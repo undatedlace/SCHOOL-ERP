@@ -26,6 +26,7 @@ model User {
   noticesWritten        Notice[]                @relation("NoticeAuthor")
   eventsWritten         CalendarEvent[]         @relation("EventAuthor")
   notifications         Notification[]          @relation("NotificationRecipient")
+  homeworkWritten       Homework[]              @relation("HomeworkAuthor")
   staffAttendanceMarked StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
   /// A shared phone gives two guardians (father and mother) one login.
   guardians             Guardian[]

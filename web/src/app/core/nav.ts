@@ -72,6 +72,12 @@ const attendance: NavItem = {
   description: 'Mark the day for a division, and see attendance totals',
   permission: 'attendance.read',
 };
+const homework: NavItem = {
+  label: 'Homework',
+  path: '/app/homework',
+  description: 'Set homework and assignments for your classes or individual students',
+  permission: 'homework.manage',
+};
 const staffAttendance: NavItem = {
   label: 'Staff',
   path: '/app/staff-attendance',
@@ -157,7 +163,7 @@ const auditLog: NavItem = {
 export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Dashboard', icon: 'home', section: 'menu', item: dashboard },
   { label: 'Calendar', icon: 'calendar', section: 'menu', item: calendar },
-  { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup] },
+  { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup, homework] },
   { label: 'Admissions', icon: 'clipboard', section: 'menu', items: [admissions, forms] },
   { label: 'Students', icon: 'students', section: 'menu', items: [students, promotion] },
   {

@@ -1,0 +1,43 @@
+/// Homework or an assignment from a teacher (or an administrator) to whole divisions or to individual students.
+/// Archived, never deleted.
+model Homework {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  schoolId       String    @map("school_id") @db.Uuid
+  academicYearId String    @map("academic_year_id") @db.Uuid
+  title          String
+  /// Plain text, shown as written.
+  instructions   String
+  subjectId      String?   @map("subject_id") @db.Uuid
+  dueOn          DateTime? @map("due_on") @db.Date
+  createdById    String    @map("created_by_id") @db.Uuid
+  archivedAt     DateTime? @map("archived_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  school       School           @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear     @relation(fields: [academicYearId], references: [id])
+  subject      Subject?         @relation(fields: [subjectId], references: [id])
+  createdBy    User             @relation("HomeworkAuthor", fields: [createdById], references: [id])
+  targets      HomeworkTarget[]
+
+  @@index([schoolId, createdAt])
+  @@index([createdById])
+  @@map("homework")
+}
+
+/// One division, or one student, the homework goes to.
+model HomeworkTarget {
+  id         String  @id @default(uuid(7)) @db.Uuid
+  homeworkId String  @map("homework_id") @db.Uuid
+  divisionId String? @map("division_id") @db.Uuid
+  studentId  String? @map("student_id") @db.Uuid
+
+  homework Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  division Division? @relation(fields: [divisionId], references: [id])
+  student  Student?  @relation(fields: [studentId], references: [id])
+
+  @@index([homeworkId])
+  @@index([divisionId])
+  @@index([studentId])
+  @@map("homework_targets")
+}
