@@ -1,5 +1,6 @@
 import {
   balanceOf,
+  carriedForward,
   entitledHalfDays,
   leaveDates,
   leaveSize,
@@ -93,6 +94,7 @@ describe('balanceOf', () => {
     );
     expect(b).toEqual({
       entitled: 24,
+      carried: 0,
       taken: 4,
       upcoming: 6,
       pending: 2,
@@ -128,5 +130,63 @@ describe('small helpers', () => {
     expect(toHalfDays(0.5)).toBe(1);
     expect(toHalfDays(0.3)).toBeNull();
     expect(toHalfDays(-1)).toBeNull();
+  });
+});
+
+describe('school holidays', () => {
+  const holidays = new Set(['2026-06-02', '2026-06-03']);
+  it('are not counted as leave days, like Sundays', () => {
+    // Mon 1 to Sat 6 June 2026 is six working days; two are holidays.
+    expect(leaveDates('2026-06-01', '2026-06-06', holidays)).toEqual([
+      '2026-06-01',
+      '2026-06-04',
+      '2026-06-05',
+      '2026-06-06',
+    ]);
+    const size = leaveSize('2026-06-01', '2026-06-06', false, holidays);
+    expect(size).toEqual({ ok: true, halfDays: 8 });
+  });
+  it('refuse a request that is only holidays and Sundays', () => {
+    const size = leaveSize('2026-06-02', '2026-06-03', false, holidays);
+    expect(size.ok).toBe(false);
+  });
+});
+
+describe('carrying leave into a new year', () => {
+  it('carries nothing when the kind does not carry', () => {
+    expect(carriedForward([{ entitled: 20, used: 0 }], 0)).toBe(0);
+  });
+  it('carries the unused days, but never more than the cap', () => {
+    expect(carriedForward([{ entitled: 20, used: 12 }], 10)).toBe(8);
+    expect(carriedForward([{ entitled: 20, used: 2 }], 10)).toBe(10);
+  });
+  it('carries on across years: a leftover can keep moving while the cap allows', () => {
+    // Year 1 gives 20 and uses 10 -> 10 carried; year 2 gives 20 with 10 carried, uses 25 -> 5 left.
+    expect(
+      carriedForward(
+        [
+          { entitled: 20, used: 10 },
+          { entitled: 20, used: 25 },
+        ],
+        30,
+      ),
+    ).toBe(5);
+  });
+  it('never goes below zero when more was used than given', () => {
+    expect(carriedForward([{ entitled: 4, used: 9 }], 10)).toBe(0);
+  });
+  it('counts carried days in the balance', () => {
+    const b = balanceOf(
+      20,
+      [{ status: 'APPROVED', endsOn: '2026-01-01', halfDays: 4 }],
+      '2026-06-01',
+      6,
+    );
+    expect(b).toMatchObject({
+      entitled: 20,
+      carried: 6,
+      taken: 4,
+      remaining: 22,
+    });
   });
 });

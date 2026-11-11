@@ -3,7 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import {
   AcademicYear,
   AppNotification,
+  AssessmentDetail,
+  AssessmentKind,
+  AssessmentOptions,
+  AssessmentSummary,
+  StudentResults,
+  HandInRoster,
   Homework,
+  HomeworkSubmission,
   HomeworkInput,
   Collection,
   PaymentRow,
@@ -443,6 +450,45 @@ export class Api {
   search = (q: string) =>
     this.http.get<{ query: string; groups: SearchGroup[] }>('/api/search', { params: { q } });
 
+  // ---------- Tests and results ----------
+  assessmentOptions = () => this.http.get<AssessmentOptions>('/api/assessments/options');
+  assessments = (q: {
+    page: number;
+    pageSize: number;
+    status?: string | null;
+    divisionId?: string | null;
+    subjectId?: string | null;
+  }) => this.http.get<Page<AssessmentSummary>>('/api/assessments', { params: params(q) });
+  assessment = (id: string) => this.http.get<AssessmentDetail>(`/api/assessments/${id}`);
+  createAssessment = (body: {
+    name: string;
+    kind: AssessmentKind;
+    divisionId: string;
+    subjectId: string;
+    maxMarks: number;
+    conductedOn: string;
+  }) => this.http.post<AssessmentSummary>('/api/assessments', body);
+  updateAssessment = (
+    id: string,
+    body: { name?: string; kind?: AssessmentKind; maxMarks?: number; conductedOn?: string },
+  ) => this.http.patch<AssessmentDetail>(`/api/assessments/${id}`, body);
+  saveMarks = (
+    id: string,
+    entries: {
+      studentId: string;
+      marks?: number | null;
+      absent?: boolean;
+      remark?: string | null;
+    }[],
+  ) => this.http.put<AssessmentDetail>(`/api/assessments/${id}/marks`, { entries });
+  publishAssessment = (id: string) =>
+    this.http.post<AssessmentDetail>(`/api/assessments/${id}/publish`, {});
+  unpublishAssessment = (id: string) =>
+    this.http.post<AssessmentDetail>(`/api/assessments/${id}/unpublish`, {});
+  archiveAssessment = (id: string) => this.http.delete<void>(`/api/assessments/${id}`);
+  studentResults = (studentId: string) =>
+    this.http.get<StudentResults>(`/api/results/students/${studentId}`);
+
   // ---------- Homework ----------
   homework = (q: {
     page: number;
@@ -459,6 +505,18 @@ export class Api {
   updateHomework = (id: string, body: Partial<HomeworkInput>) =>
     this.http.patch<Homework>(`/api/homework/${id}`, body);
   archiveHomework = (id: string) => this.http.delete<void>(`/api/homework/${id}`);
+  /** Where a file of a homework (attachment or hand-in) is downloaded from. */
+  homeworkFileUrl = (id: string, fileId: string) => `/api/homework/${id}/files/${fileId}`;
+  handIns = (id: string) => this.http.get<HandInRoster>(`/api/homework/${id}/hand-ins`);
+  submitHandIn = (id: string, studentId: string, body: { note?: string; fileIds?: string[] }) =>
+    this.http.put<HomeworkSubmission>(`/api/homework/${id}/students/${studentId}/hand-in`, body);
+  withdrawHandIn = (id: string, studentId: string) =>
+    this.http.delete<void>(`/api/homework/${id}/students/${studentId}/hand-in`);
+  reviewHandIn = (
+    id: string,
+    studentId: string,
+    body: { status: 'REVIEWED' | 'REDO'; marks?: number; feedback?: string },
+  ) => this.http.put<HomeworkSubmission>(`/api/homework/${id}/students/${studentId}/review`, body);
 
   // ---------- Notifications ----------
   notifications = (q: { page: number; pageSize: number; unread?: boolean }) =>
@@ -479,10 +537,12 @@ export class Api {
   // ---------- Staff leave ----------
   leaveTypes = (all = false) =>
     this.http.get<LeaveType[]>('/api/leave/types', { params: all ? { all: 'true' } : {} });
-  createLeaveType = (body: { name: string; unlimited: boolean }) =>
+  createLeaveType = (body: { name: string; unlimited: boolean; carryForwardDays?: number }) =>
     this.http.post<LeaveType>('/api/leave/types', body);
-  updateLeaveType = (id: string, body: { name?: string; unlimited?: boolean; active?: boolean }) =>
-    this.http.patch<LeaveType>(`/api/leave/types/${id}`, body);
+  updateLeaveType = (
+    id: string,
+    body: { name?: string; unlimited?: boolean; active?: boolean; carryForwardDays?: number },
+  ) => this.http.patch<LeaveType>(`/api/leave/types/${id}`, body);
   leaveEntitlements = (academicYearId?: string) =>
     this.http.get<{ academicYear: { id: string; name: string }; items: LeaveEntitlementRow[] }>(
       '/api/leave/entitlements',

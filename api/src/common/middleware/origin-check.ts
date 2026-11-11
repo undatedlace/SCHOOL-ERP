@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express';
+import { bearerToken } from '../bearer.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -13,6 +14,8 @@ export function originCheck(allowedOrigins: string[]): RequestHandler {
     if (
       SAFE_METHODS.has(req.method) ||
       !origin ||
+      // A bearer token is not sent by the browser by itself, so there is nothing to forge.
+      bearerToken(req) !== undefined ||
       allowedOrigins.includes(origin)
     ) {
       next();

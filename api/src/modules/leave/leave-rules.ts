@@ -13,11 +13,18 @@ export const MAX_LEAVE_SPAN_DAYS = 120;
 const isSunday = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).getUTCDay() === 0;
 
-/** Every day from start to end (inclusive) that counts as a leave day (not a Sunday). */
-export function leaveDates(start: string, end: string): string[] {
+/**
+ * Every day from start to end (inclusive) that counts as a leave day: not a Sunday, and not a school
+ * holiday (the days in `holidays`, a set of "YYYY-MM-DD").
+ */
+export function leaveDates(
+  start: string,
+  end: string,
+  holidays: ReadonlySet<string> = new Set(),
+): string[] {
   const out: string[] = [];
   for (let d = start; d <= end; d = addDays(d, 1)) {
-    if (!isSunday(d)) out.push(d);
+    if (!isSunday(d) && !holidays.has(d)) out.push(d);
   }
   return out;
 }
@@ -30,6 +37,7 @@ export function leaveSize(
   start: string,
   end: string,
   halfDay: boolean,
+  holidays: ReadonlySet<string> = new Set(),
 ): LeaveSizeResult {
   if (end < start)
     return {
@@ -45,11 +53,12 @@ export function leaveSize(
   if (halfDay && start !== end) {
     return { ok: false, problem: 'A half day is for a single day' };
   }
-  const days = leaveDates(start, end).length;
+  const days = leaveDates(start, end, holidays).length;
   if (days === 0)
     return {
       ok: false,
-      problem: 'That is a Sunday, so there is nothing to take leave for',
+      problem:
+        'Those days are Sundays or school holidays, so there is nothing to take leave for',
     };
   return { ok: true, halfDays: halfDay ? 1 : days * HALF_DAYS_PER_DAY };
 }
@@ -87,13 +96,15 @@ export interface UsedLeave {
 
 export interface Balance {
   entitled: number;
+  /** Unused allowance brought in from earlier years. */
+  carried: number;
   /** Approved leave whose last day has passed. */
   taken: number;
   /** Approved leave still to come (or in progress). */
   upcoming: number;
   /** Asked for, waiting for an admin. */
   pending: number;
-  /** What can still be asked for: entitled less everything taken, booked or waiting. */
+  /** What can still be asked for: entitled plus carried, less everything taken, booked or waiting. */
   remaining: number;
 }
 
@@ -101,6 +112,7 @@ export function balanceOf(
   entitled: number,
   used: UsedLeave[],
   today: string,
+  carried = 0,
 ): Balance {
   let taken = 0;
   let upcoming = 0;
@@ -112,11 +124,33 @@ export function balanceOf(
   }
   return {
     entitled,
+    carried,
     taken,
     upcoming,
     pending,
-    remaining: Math.max(0, entitled - taken - upcoming - pending),
+    remaining: Math.max(0, entitled + carried - taken - upcoming - pending),
   };
+}
+
+/** One finished year of one kind of leave: what it gave and what was used (taken, booked or waiting). */
+export interface PastYear {
+  entitled: number;
+  used: number;
+}
+
+/**
+ * How much unused leave moves into the next year. Years are given oldest first. Each year's leftover
+ * (its allowance plus what was carried into it, less what was used) is carried on, never more than
+ * `cap` half days at a time, so a cap of 10 days means at most 10 days arrive in any new year.
+ */
+export function carriedForward(years: PastYear[], cap: number): number {
+  if (cap <= 0) return 0;
+  let carried = 0;
+  for (const y of years) {
+    const left = Math.max(0, y.entitled + carried - y.used);
+    carried = Math.min(cap, left);
+  }
+  return carried;
 }
 
 /** Whether two inclusive date ranges share a day. */

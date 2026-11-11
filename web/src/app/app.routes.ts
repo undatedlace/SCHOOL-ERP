@@ -148,6 +148,16 @@ export const routes: Routes = [
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
       },
       {
+        path: 'results',
+        canActivate: [permissionGuard('marks.enter')],
+        loadComponent: () => import('./features/results/results-page').then((m) => m.ResultsPage),
+      },
+      {
+        path: 'results/:id',
+        canActivate: [permissionGuard('marks.enter')],
+        loadComponent: () => import('./features/results/marks-page').then((m) => m.MarksPage),
+      },
+      {
         path: 'homework',
         canActivate: [permissionGuard('homework.manage')],
         loadComponent: () =>
@@ -233,6 +243,12 @@ export const routes: Routes = [
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
+      },
+      {
+        path: 'results',
+        data: { kind: 'results' },
+        loadComponent: () =>
+          import('./features/portal/portal-child-page').then((m) => m.PortalChildPage),
       },
       {
         path: 'homework',

@@ -19,6 +19,31 @@ import { CurrentAuth } from '../../common/decorators/current-auth.decorator.js';
 import { MAX_UPLOAD_BYTES } from './file-purposes.js';
 import { FilesService, type UploadedBytes } from './files.service.js';
 
+/** Headers and body for a stored file; shared with modules that serve their own scoped files. */
+export function fileResponse(
+  res: Response,
+  file: { mimeType: string; sizeBytes: number; originalName: string },
+  stream: import('node:stream').Readable,
+) {
+  res.set({
+    // Private to this user's browser; never cached by shared proxies.
+    'Cache-Control': 'private, max-age=3600',
+    // The browser must treat the bytes as the declared image, never sniff them as something else.
+    'X-Content-Type-Options': 'nosniff',
+    // If a file is ever opened as a page, it may not run anything or load anything.
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+  });
+  const isImage = file.mimeType.startsWith('image/');
+  return new StreamableFile(stream, {
+    type: file.mimeType,
+    length: file.sizeBytes,
+    // Pictures show in the page; papers are downloaded and opened in the person's own viewer.
+    disposition: isImage
+      ? 'inline'
+      : `attachment; filename="${file.originalName.replace(/"/g, '')}"`,
+  });
+}
+
 /**
  * Who may upload or see a file depends on its purpose (see file-purposes.ts),
  * so there is no fixed permission on these routes. The service checks it.
@@ -50,22 +75,6 @@ export class FilesController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { file, stream } = await this.files.open(auth, id);
-    res.set({
-      // Private to this user's browser; never cached by shared proxies.
-      'Cache-Control': 'private, max-age=3600',
-      // The browser must treat the bytes as the declared image, never sniff them as something else.
-      'X-Content-Type-Options': 'nosniff',
-      // If a file is ever opened as a page, it may not run anything or load anything.
-      'Content-Security-Policy': "default-src 'none'; sandbox",
-    });
-    const isImage = file.mimeType.startsWith('image/');
-    return new StreamableFile(stream, {
-      type: file.mimeType,
-      length: file.sizeBytes,
-      // Pictures show in the page; papers are downloaded and opened in the person's own viewer.
-      disposition: isImage
-        ? 'inline'
-        : `attachment; filename="${file.originalName.replace(/"/g, '')}"`,
-    });
+    return fileResponse(res, file, stream);
   }
 }

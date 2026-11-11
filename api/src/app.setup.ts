@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.js';
+import { apiVersionAlias } from './common/middleware/api-version.js';
 import { originCheck } from './common/middleware/origin-check.js';
 
 /** Everything the real app and the e2e tests must share. Swagger stays in main.ts. */
@@ -18,6 +19,7 @@ export function configureApp(app: INestApplication) {
     .map((o) => o.trim())
     .filter(Boolean);
 
+  app.use(apiVersionAlias);
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.use(originCheck(origins));

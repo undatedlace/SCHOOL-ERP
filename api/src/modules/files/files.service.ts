@@ -130,10 +130,37 @@ export class FilesService {
     // Same answer for "does not exist" and "not yours to see", so ids cannot be probed.
     if (!file) throw new NotFoundException('File not found');
     const rules = FILE_PURPOSES[file.purpose];
-    if (!rules || !auth.permissions.includes(rules.read))
+    if (!rules || rules.scoped || !auth.permissions.includes(rules.read))
       throw new NotFoundException('File not found');
 
     return { file, stream: await this.storage.read(file.storageKey) };
+  }
+
+  /**
+   * A file whose owning module has already decided that this person may see it
+   * (see `scoped` in file-purposes.ts). Only the right purpose is served.
+   */
+  async openScoped(schoolId: string, id: string, purpose: string) {
+    const file = await this.prisma.storedFile.findFirst({
+      where: { id, schoolId, purpose },
+    });
+    if (!file) throw new NotFoundException('File not found');
+    return { file, stream: await this.storage.read(file.storageKey) };
+  }
+
+  /** Which of these ids are files of this purpose, in this school, uploaded by this person? */
+  async ownUploads(
+    schoolId: string,
+    userId: string,
+    purpose: string,
+    ids: string[],
+  ): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const rows = await this.prisma.storedFile.findMany({
+      where: { schoolId, purpose, uploadedById: userId, id: { in: ids } },
+      select: { id: true },
+    });
+    return new Set(rows.map((r) => r.id));
   }
 
   /** Removes a stored file: the record first, then the bytes. */
@@ -163,6 +190,8 @@ export class FilesService {
         AND NOT EXISTS (SELECT 1 FROM students s WHERE s.photo_file_id = f.id)
         AND NOT EXISTS (SELECT 1 FROM staff s WHERE s.photo_file_id = f.id)
         AND NOT EXISTS (SELECT 1 FROM student_documents d WHERE d.file_id = f.id)
+        AND NOT EXISTS (SELECT 1 FROM homework_attachments h WHERE h.file_id = f.id)
+        AND NOT EXISTS (SELECT 1 FROM homework_submission_files h WHERE h.file_id = f.id)
         AND NOT EXISTS (
           SELECT 1 FROM applications a
           WHERE a.school_id = f.school_id AND a.answers::text LIKE '%' || f.id::text || '%'

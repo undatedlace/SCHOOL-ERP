@@ -33,6 +33,14 @@ export class CreateLeaveTypeDto {
   @IsOptional()
   @IsBoolean()
   unlimited?: boolean;
+
+  /** Unused days (whole or half) that move into the next academic year, at most. 0 or empty: none. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 1 })
+  @Min(0)
+  @Max(365)
+  carryForwardDays?: number;
 }
 
 export class UpdateLeaveTypeDto {
@@ -50,6 +58,14 @@ export class UpdateLeaveTypeDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  /** Unused days (whole or half) that move into the next academic year, at most. 0 or empty: none. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 1 })
+  @Min(0)
+  @Max(365)
+  carryForwardDays?: number;
 }
 
 export class EntitlementItemDto {

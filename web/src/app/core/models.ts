@@ -749,6 +749,79 @@ export interface SearchGroup {
   more: boolean;
 }
 
+// ---------- Tests and results ----------
+
+export type AssessmentKind = 'UNIT' | 'MOCK' | 'TERM' | 'OTHER';
+
+export interface AssessmentSummary {
+  id: string;
+  name: string;
+  kind: AssessmentKind;
+  subject: { id: string; name: string };
+  division: { id: string; label: string };
+  maxMarks: number;
+  conductedOn: string;
+  published: boolean;
+  publishedAt: string | null;
+  createdBy: { id: string; fullName: string };
+  /** Students with marks or marked absent, out of all students in the division. */
+  entered: number;
+  students: number;
+}
+
+export interface AssessmentMarkRow {
+  studentId: string;
+  admissionNo: string;
+  name: string;
+  rollNo: number | null;
+  marks: number | null;
+  absent: boolean;
+  remark: string | null;
+  percent: number | null;
+}
+
+export interface AssessmentStats {
+  entered: number;
+  scored: number;
+  absent: number;
+  average: number | null;
+  highest: number | null;
+  lowest: number | null;
+}
+
+/** A test with every student of the division. (`students` is the list here; in a summary it is a count.) */
+export type AssessmentDetail = Omit<AssessmentSummary, 'students'> & {
+  stats: AssessmentStats;
+  students: AssessmentMarkRow[];
+};
+
+export interface AssessmentOptions {
+  divisions: { id: string; label: string; subjectIds: string[] }[];
+  subjects: { id: string; name: string }[];
+}
+
+export interface StudentResultRow {
+  assessment: {
+    id: string;
+    name: string;
+    kind: AssessmentKind;
+    subject: { id: string; name: string };
+    conductedOn: string;
+    maxMarks: number;
+  };
+  marks: number | null;
+  absent: boolean;
+  remark: string | null;
+  percent: number | null;
+  classAverage: number | null;
+  classHighest: number | null;
+}
+
+export interface StudentResults {
+  student: { id: string; name: string };
+  results: StudentResultRow[];
+}
+
 // ---------- Homework ----------
 
 export interface Homework {
@@ -765,6 +838,48 @@ export interface Homework {
   /** For a parent or student: which of their children it is for. */
   forChildren: string[];
   canChange: boolean;
+  /** Whether students hand work in through the app. */
+  handIn: boolean;
+  /** Marks are given out of this number (a decimal as text), if any. */
+  maxMarks: string | null;
+  attachments: FileRef[];
+  /** For a parent or student: each child it is for, with the hand-in so far. */
+  children: { studentId: string; name: string; submission: HomeworkSubmission | null }[];
+}
+
+export interface FileRef {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+export type SubmissionStatus = 'SUBMITTED' | 'REVIEWED' | 'REDO';
+
+export interface HomeworkSubmission {
+  id: string;
+  studentId: string;
+  status: SubmissionStatus;
+  note: string | null;
+  submittedAt: string;
+  late: boolean;
+  files: FileRef[];
+  marks: string | null;
+  feedback: string | null;
+  reviewedAt: string | null;
+}
+
+export interface HandInRoster {
+  handIn: boolean;
+  maxMarks: string | null;
+  counts: { students: number; handedIn: number; marked: number };
+  students: {
+    studentId: string;
+    name: string;
+    admissionNo: string;
+    division: string;
+    submission: HomeworkSubmission | null;
+  }[];
 }
 
 export interface HomeworkInput {
@@ -774,6 +889,10 @@ export interface HomeworkInput {
   dueOn?: string;
   divisionIds?: string[];
   studentIds?: string[];
+  handIn?: boolean;
+  maxMarks?: number;
+  /** Files uploaded with the purpose "homework-attachment". */
+  attachmentFileIds?: string[];
 }
 
 // ---------- Notifications ----------
@@ -798,11 +917,15 @@ export interface LeaveType {
   name: string;
   unlimited: boolean;
   active: boolean;
+  /** Days of unused allowance that move into the next academic year, at most (0 = none). */
+  carryForwardDays: number;
 }
 
 export interface LeaveBalanceRow {
   leaveType: { id: string; name: string; unlimited: boolean };
   entitled: number;
+  /** Unused days brought in from earlier years. */
+  carriedOver: number;
   taken: number;
   upcoming: number;
   pending: number;

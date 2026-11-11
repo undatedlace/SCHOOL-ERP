@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "s3:check": "tsx scripts/s3-check.ts",
     "files:cleanup": "node dist/cli/files-cleanup.js",
+    "homework:remind": "node dist/cli/homework-reminders.js",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

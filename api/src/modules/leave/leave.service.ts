@@ -17,11 +17,13 @@ import {
   toIso,
   todayInIndia,
 } from '../attendance/attendance-rules.js';
+import { holidayDates } from './holidays.js';
 import { AuditService } from '../audit/audit.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import {
   Entitlement,
   balanceOf,
+  carriedForward,
   entitledHalfDays,
   leaveSize,
   overlaps,
@@ -68,6 +70,24 @@ const view = (r: Row, own: boolean) => ({
   mine: own,
 });
 
+const typeView = (t: {
+  id: string;
+  name: string;
+  unlimited: boolean;
+  active: boolean;
+  carryForwardHalfDays: number;
+}) => ({
+  id: t.id,
+  name: t.name,
+  unlimited: t.unlimited,
+  active: t.active,
+  /** Days of unused allowance that move into the next academic year, at most. */
+  carryForwardDays: toDays(t.carryForwardHalfDays),
+});
+
+/** How many earlier years are looked at when working out what was carried forward. */
+const CARRY_YEARS_BACK = 5;
+
 /** Staff leave: the kinds, the yearly allowance, requests, decisions and balances. */
 @Injectable()
 export class LeaveService {
@@ -82,16 +102,25 @@ export class LeaveService {
 
   // ---------- the kinds of leave ----------
 
+  /** Days to carry into the next year as half days; undefined when not given. */
+  private carryHalfDays(days: number | undefined): number | undefined {
+    if (days === undefined) return undefined;
+    const h = toHalfDays(days);
+    if (h === null) {
+      throw new BadRequestException(
+        'Days to carry forward must be whole or half days',
+      );
+    }
+    return h;
+  }
+
   async types(schoolId: string, includeInactive: boolean) {
     const rows = await this.prisma.leaveType.findMany({
       where: { schoolId, ...(includeInactive ? {} : { active: true }) },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
     return rows.map((t) => ({
-      id: t.id,
-      name: t.name,
-      unlimited: t.unlimited,
-      active: t.active,
+      ...typeView(t),
     }));
   }
 
@@ -106,18 +135,14 @@ export class LeaveService {
           schoolId: auth.schoolId,
           name: dto.name,
           unlimited: dto.unlimited ?? false,
+          carryForwardHalfDays: this.carryHalfDays(dto.carryForwardDays) ?? 0,
           sortOrder: (last._max.sortOrder ?? 0) + 1,
         },
       });
       await this.record(auth, 'leave_type.created', 'leave_type', t.id, ip, {
         name: dto.name,
       });
-      return {
-        id: t.id,
-        name: t.name,
-        unlimited: t.unlimited,
-        active: t.active,
-      };
+      return typeView(t);
     } catch (error) {
       throw this.nameClash(error, dto.name);
     }
@@ -135,19 +160,19 @@ export class LeaveService {
     });
     if (!found) throw new NotFoundException('Leave type not found');
     try {
+      const { carryForwardDays, ...rest } = dto;
+      const carry = this.carryHalfDays(carryForwardDays);
       const t = await this.prisma.leaveType.update({
         where: { id },
-        data: dto,
+        data: {
+          ...rest,
+          ...(carry !== undefined ? { carryForwardHalfDays: carry } : {}),
+        },
       });
       await this.record(auth, 'leave_type.updated', 'leave_type', id, ip, {
         fields: Object.keys(dto).join(','),
       });
-      return {
-        id: t.id,
-        name: t.name,
-        unlimited: t.unlimited,
-        active: t.active,
-      };
+      return typeView(t);
     } catch (error) {
       throw this.nameClash(error, dto.name ?? '');
     }
@@ -382,6 +407,69 @@ export class LeaveService {
     });
   }
 
+  /**
+   * Unused leave carried into `year` for each kind that allows it, in half days. Looks at up to five
+   * earlier years, oldest first, so a leftover can keep moving on while the cap allows.
+   */
+  private async carriedInto(
+    schoolId: string,
+    staff: { id: string; staffTypeId: string | null },
+    year: { id: string; startDate: Date },
+    types: { id: string; carryForwardHalfDays: number; unlimited: boolean }[],
+  ): Promise<Map<string, number>> {
+    const carrying = types.filter(
+      (t) => t.carryForwardHalfDays > 0 && !t.unlimited,
+    );
+    const out = new Map<string, number>();
+    if (carrying.length === 0) return out;
+    const earlier = (
+      await this.prisma.academicYear.findMany({
+        where: { schoolId, endDate: { lt: year.startDate } },
+        orderBy: { startDate: 'desc' },
+        take: CARRY_YEARS_BACK,
+        select: { id: true },
+      })
+    ).reverse();
+    if (earlier.length === 0) return out;
+    const ids = earlier.map((y) => y.id);
+    const [ent, used] = await Promise.all([
+      this.prisma.leaveEntitlement.findMany({
+        where: { schoolId, academicYearId: { in: ids } },
+        select: {
+          academicYearId: true,
+          leaveTypeId: true,
+          staffTypeId: true,
+          halfDays: true,
+        },
+      }),
+      this.prisma.leaveRequest.groupBy({
+        by: ['academicYearId', 'leaveTypeId'],
+        where: {
+          staffId: staff.id,
+          academicYearId: { in: ids },
+          status: { in: ['PENDING', 'APPROVED'] },
+        },
+        _sum: { halfDays: true },
+      }),
+    ]);
+    for (const t of carrying) {
+      const years = ids.map((yearId) => ({
+        entitled: entitledHalfDays(
+          ent.filter((e) => e.academicYearId === yearId),
+          t.id,
+          staff.staffTypeId,
+        ),
+        used:
+          used.find(
+            (u) => u.academicYearId === yearId && u.leaveTypeId === t.id,
+          )?._sum.halfDays ?? 0,
+      }));
+      const carried = carriedForward(years, t.carryForwardHalfDays);
+      if (carried > 0) out.set(t.id, carried);
+    }
+    return out;
+  }
+
   async balance(
     auth: AuthContext,
     q: { staffId?: string; academicYearId?: string },
@@ -402,6 +490,12 @@ export class LeaveService {
       this.usage(staff.id, year.id),
     ]);
     const today = todayInIndia();
+    const carriedMap = await this.carriedInto(
+      auth.schoolId,
+      staff,
+      year,
+      types,
+    );
     const rows = types
       .map((t) => {
         const mine = used.filter((u) => u.leaveTypeId === t.id);
@@ -413,6 +507,7 @@ export class LeaveService {
             halfDays: u.halfDays,
           })),
           today,
+          carriedMap.get(t.id) ?? 0,
         );
         return { t, b, used: mine.length };
       })
@@ -421,6 +516,7 @@ export class LeaveService {
       .map(({ t, b }) => ({
         leaveType: { id: t.id, name: t.name, unlimited: t.unlimited },
         entitled: toDays(b.entitled),
+        carriedOver: toDays(b.carried),
         taken: toDays(b.taken),
         upcoming: toDays(b.upcoming),
         pending: toDays(b.pending),
@@ -459,7 +555,18 @@ export class LeaveService {
         'Leave cannot start in the past. Ask an administrator to record it.',
       );
     }
-    const size = leaveSize(dto.startsOn, endsOn, dto.halfDay === true);
+    const holidays = await holidayDates(
+      this.prisma,
+      auth.schoolId,
+      dto.startsOn,
+      endsOn,
+    );
+    const size = leaveSize(
+      dto.startsOn,
+      endsOn,
+      dto.halfDay === true,
+      holidays,
+    );
     if (!size.ok) throw new BadRequestException(size.problem);
 
     const type = await this.prisma.leaveType.findFirst({
@@ -499,12 +606,13 @@ export class LeaveService {
     }
 
     if (!type.unlimited) {
-      const [ent, used] = await Promise.all([
+      const [ent, used, carriedMap] = await Promise.all([
         this.prisma.leaveEntitlement.findMany({
           where: { schoolId: auth.schoolId, academicYearId: year.id },
           select: { leaveTypeId: true, staffTypeId: true, halfDays: true },
         }),
         this.usage(staff.id, year.id),
+        this.carriedInto(auth.schoolId, staff, year, [type]),
       ]);
       const b = balanceOf(
         entitledHalfDays(ent as Entitlement[], type.id, staff.staffTypeId),
@@ -516,10 +624,11 @@ export class LeaveService {
             halfDays: u.halfDays,
           })),
         today,
+        carriedMap.get(type.id) ?? 0,
       );
       if (size.halfDays > b.remaining) {
         throw new BadRequestException(
-          b.entitled === 0
+          b.entitled + b.carried === 0
             ? `There is no ${type.name.toLowerCase()} allowance for ${year.name}`
             : `Only ${toDays(b.remaining)} day(s) of ${type.name.toLowerCase()} are left, and this asks for ${toDays(size.halfDays)}`,
         );
