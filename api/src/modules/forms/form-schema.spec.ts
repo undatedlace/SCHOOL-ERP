@@ -1,9 +1,5 @@
 import { DEFAULT_ADMISSION_FORM } from './default-admission-form.js';
 import {
-  DEFAULT_NON_TEACHING_FORM,
-  DEFAULT_TEACHER_FORM,
-} from './default-staff-forms.js';
-import {
   FormSchema,
   SYSTEM_FIELDS,
   SystemFieldKey,
@@ -391,10 +387,8 @@ describe('photo fields', () => {
 describe('document fields', () => {
   const doc = { id: 'idProof', type: 'document', label: 'Identity proof' };
 
-  it('are accepted on a form, and the default staff forms are valid', () => {
+  it('are accepted on a form', () => {
     expect(validateFormSchema(form(doc)).errors).toEqual([]);
-    expect(validateFormSchema(DEFAULT_TEACHER_FORM).errors).toEqual([]);
-    expect(validateFormSchema(DEFAULT_NON_TEACHING_FORM).errors).toEqual([]);
   });
 
   it('cannot sit inside a repeating group', () => {

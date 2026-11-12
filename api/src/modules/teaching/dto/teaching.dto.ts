@@ -23,6 +23,14 @@ export class ChangeTeacherDto {
   staffId: string;
 }
 
+export class CopyAssignmentsDto {
+  @IsUUID()
+  fromAcademicYearId: string;
+
+  @IsUUID()
+  toAcademicYearId: string;
+}
+
 export class ListAssignmentsQueryDto {
   /** Defaults to the current academic year. */
   @IsOptional()

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
@@ -11,7 +11,14 @@ import { TableModule } from '@openng/optimus-ui/table';
 import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { Assignment, SchoolClass, StaffMember, Subject } from '../../core/models';
+import {
+  AcademicYear,
+  Assignment,
+  SchoolClass,
+  StaffMember,
+  Subject,
+  TeachingCopyResult,
+} from '../../core/models';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
 
@@ -19,6 +26,7 @@ import { FormField } from '../../shared/ui/form-field';
 @Component({
   selector: 'app-teaching-tab',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
     ButtonModule,
@@ -42,11 +50,15 @@ import { FormField } from '../../shared/ui/form-field';
         ariaLabel="Filter by division"
         (onChange)="onDivision($event.value)"
       />
-      <p-button
-        *appHasPermission="'academics.manage'"
-        label="Assign a teacher"
-        (onClick)="openAssign()"
-      />
+      <div *appHasPermission="'academics.manage'" class="flex flex-wrap gap-2">
+        <p-button
+          label="Copy from another year"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="openCopy()"
+        />
+        <p-button label="Assign a teacher" (onClick)="openAssign()" />
+      </div>
     </div>
 
     <p-table [value]="rows()" [loading]="loading()">
@@ -176,6 +188,68 @@ import { FormField } from '../../shared/ui/form-field';
         </div>
       </form>
     </p-dialog>
+
+    <p-dialog
+      header="Copy teachers from another year"
+      [(visible)]="copyOpen"
+      [modal]="true"
+      [style]="{ width: '32rem', 'max-width': '95vw' }"
+    >
+      <div class="flex flex-col gap-4">
+        <p class="text-sm text-muted-foreground">
+          Copies each division's class teacher and subject teachers into {{ currentYear()?.name }},
+          the current year. A place that already has a teacher is left as it is, and so is anyone
+          who has since left the school. Change what is different afterwards.
+        </p>
+        <p-select
+          [options]="otherYears()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Copy from..."
+          [ngModel]="copyFrom()"
+          (ngModelChange)="copyFrom.set($event)"
+          aria-label="Copy from"
+          appendTo="body"
+        />
+        @if (copyResult(); as r) {
+          <div class="text-sm" role="status">
+            <p class="font-medium">
+              Copied {{ r.copied.classTeachers }} class teacher{{
+                r.copied.classTeachers === 1 ? '' : 's'
+              }}
+              and {{ r.copied.subjectTeachers }} subject teacher{{
+                r.copied.subjectTeachers === 1 ? '' : 's'
+              }}.
+            </p>
+            @if (r.skipped.length) {
+              <p class="mt-2 font-medium">Left alone:</p>
+              <ul class="list-disc pl-5 text-muted-foreground">
+                @for (k of r.skipped; track $index) {
+                  <li>{{ k.place }}, {{ k.role }}: {{ k.reason }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+        @if (copyError()) {
+          <p-message severity="error" [text]="copyError()!" />
+        }
+        <div class="flex justify-end gap-2">
+          <p-button
+            type="button"
+            label="Close"
+            severity="secondary"
+            (onClick)="copyOpen.set(false)"
+          />
+          <p-button
+            label="Copy teachers"
+            [disabled]="!copyFrom() || !currentYear()"
+            [loading]="copying()"
+            (onClick)="runCopy()"
+          />
+        </div>
+      </div>
+    </p-dialog>
   `,
 })
 export class TeachingTab {
@@ -210,6 +284,15 @@ export class TeachingTab {
     staffId: ['', Validators.required],
   });
 
+  protected readonly years = signal<AcademicYear[]>([]);
+  protected readonly currentYear = computed(() => this.years().find((y) => y.isCurrent) ?? null);
+  protected readonly otherYears = computed(() => this.years().filter((y) => !y.isCurrent));
+  protected readonly copyOpen = signal(false);
+  protected readonly copyFrom = signal<string | null>(null);
+  protected readonly copying = signal(false);
+  protected readonly copyResult = signal<TeachingCopyResult | null>(null);
+  protected readonly copyError = signal<string | null>(null);
+
   private divisionFilter: string | null = null;
 
   constructor() {
@@ -237,6 +320,40 @@ export class TeachingTab {
     this.form.reset({ divisionId: this.divisionFilter ?? '', subjectId: '', staffId: '' });
     this.form.controls.divisionId.enable();
     this.dialogOpen.set(true);
+  }
+
+  protected async openCopy() {
+    this.copyResult.set(null);
+    this.copyError.set(null);
+    this.copyOpen.set(true);
+    try {
+      this.years.set(await firstValueFrom(this.api.years()));
+    } catch (error) {
+      this.copyError.set(apiError(error));
+      return;
+    }
+    // The most recent earlier year is the likely source.
+    const current = this.currentYear();
+    const earlier = this.otherYears()
+      .filter((y) => !current || y.startDate < current.startDate)
+      .sort((a, b) => b.startDate.localeCompare(a.startDate));
+    this.copyFrom.set(earlier[0]?.id ?? null);
+  }
+
+  protected async runCopy() {
+    const current = this.currentYear();
+    const from = this.copyFrom();
+    if (!current || !from || this.copying()) return;
+    this.copying.set(true);
+    this.copyError.set(null);
+    try {
+      this.copyResult.set(await firstValueFrom(this.api.copyAssignments(from, current.id)));
+      await this.refresh();
+    } catch (error) {
+      this.copyError.set(apiError(error));
+    } finally {
+      this.copying.set(false);
+    }
   }
 
   protected openChange(a: Assignment) {

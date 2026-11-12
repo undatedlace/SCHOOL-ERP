@@ -1057,6 +1057,13 @@ export interface CopyResult {
   skipped: { class: string; reason: string }[];
 }
 
+export interface TeachingCopyResult {
+  from: string;
+  to: string;
+  copied: { classTeachers: number; subjectTeachers: number };
+  skipped: { place: string; role: string; reason: string }[];
+}
+
 export interface PaymentRow {
   id: string;
   receiptNo: string;

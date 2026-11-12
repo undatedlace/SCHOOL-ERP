@@ -77,6 +77,12 @@ export class StaffTypesService {
         },
         select: SELECT,
       });
+      // The type's onboarding form exists from the start (version 1, from the template that fits),
+      // so it shows as live in Forms and the school can change it straight away.
+      await this.forms.ensurePublished(
+        auth.schoolId,
+        `${STAFF_FORM_PREFIX}${row.id}`,
+      );
       await this.record(auth, 'staff_type.created', row.id, ip, {
         name: dto.name,
       });

@@ -8,6 +8,7 @@ import {
   loginAndSettle,
   unique,
 } from './helpers.js';
+import { PrismaService } from '../src/database/prisma.service.js';
 import { makeImage } from './support/images.js';
 import { makePdf } from './support/pdfs.js';
 
@@ -145,30 +146,64 @@ describe('staff types and onboarding forms (e2e)', () => {
   });
 
   describe("each type's onboarding form", () => {
-    it('appears in the form list, starts from the teacher or the non-teaching form', async () => {
+    it('is published as version 1 when the type exists, from the template that fits the work', async () => {
       const list = (await superAdmin.get('/api/forms').expect(200)).body as {
         key: string;
-        name: string;
+        publishedVersion: number | null;
       }[];
-      expect(list.some((f) => f.key === `staff-${teacherTypeId}`)).toBe(true);
-      // Until the school publishes its own, the form starts from the built-in one (a draft copies it).
-      const startFrom = async (typeId: string) => {
-        const key = `staff-${typeId}`;
-        const draft = (
-          await superAdmin.post(`/api/forms/${key}/draft`).expect(200)
+      const ids = async (typeId: string) => {
+        const form = (
+          await superAdmin.get(`/api/forms/staff-${typeId}`).expect(200)
         ).body;
-        await superAdmin.delete(`/api/forms/${key}/draft`).expect(204);
-        return draft;
+        expect(form.published.status).toBe('PUBLISHED');
+        return (
+          form.published.schema.sections as { fields: { id: string }[] }[]
+        ).flatMap((sec) => sec.fields.map((f) => f.id));
       };
-      const ids = (f: {
-        schema: { sections: { fields: { id: string }[] }[] };
-      }) => f.schema.sections.flatMap((s) => s.fields.map((x) => x.id));
-      expect(ids(await startFrom(teacherTypeId))).toContain(
-        'degreeCertificate',
+      for (const typeId of [teacherTypeId, clerkTypeId]) {
+        const row = list.find((f) => f.key === `staff-${typeId}`);
+        expect(row?.publishedVersion).not.toBeNull();
+      }
+      // The seeded types and types added later start from the same kind of template.
+      const teacherIds = await ids(teacherTypeId);
+      expect(teacherIds).toEqual(
+        expect.arrayContaining(['qualificationList', 'degreeCertificates']),
       );
-      const clerkForm = await startFrom(clerkTypeId);
-      expect(ids(clerkForm)).not.toContain('degreeCertificate');
-      expect(ids(clerkForm)).toContain('idProof');
+      const clerkIds = await ids(clerkTypeId);
+      expect(clerkIds).not.toContain('degreeCertificates');
+      expect(clerkIds).toEqual(
+        expect.arrayContaining([
+          'skills',
+          'qualificationCertificate',
+          'idProof',
+        ]),
+      );
+
+      const driver = (
+        await schoolAdmin
+          .post('/api/staff-types')
+          .send({ name: unique('Driver') })
+          .expect(201)
+      ).body;
+      const driverIds = await ids(driver.id);
+      expect(driverIds).toContain('policeVerification');
+      expect(driverIds).not.toContain('skills');
+      expect(
+        (
+          (await superAdmin.get('/api/forms').expect(200)).body as {
+            key: string;
+            publishedVersion: number | null;
+          }[]
+        ).find((f) => f.key === driver.formKey)?.publishedVersion,
+      ).toBe(1);
+
+      const teacherTwo = (
+        await schoolAdmin
+          .post('/api/staff-types')
+          .send({ name: unique('Tutor'), isTeaching: true })
+          .expect(201)
+      ).body;
+      expect(await ids(teacherTwo.id)).toContain('eligibilityCertificate');
     });
 
     it('an admin edits and publishes it; nobody without forms.manage can, and unknown keys are refused', async () => {
@@ -195,7 +230,8 @@ describe('staff types and onboarding forms (e2e)', () => {
       const live = (
         await schoolAdmin.post(`/api/forms/${type.formKey}/publish`).expect(200)
       ).body;
-      expect(live.version).toBe(1);
+      // Version 1 was published with the type; the admin's change is version 2.
+      expect(live.version).toBe(2);
       for (const who of [office, teacher])
         await who.get(`/api/forms/${type.formKey}`).expect(403);
       await schoolAdmin.get(`/api/forms/staff-${randomUUID()}`).expect(404);
@@ -355,11 +391,11 @@ describe('staff types and onboarding forms (e2e)', () => {
       ).body;
       const changed = await schoolAdmin
         .patch(`/api/staff/${s.id}`)
-        .send({ answers: { subjects: 'History', previousSchool: 'Hera' } })
+        .send({ answers: { subjects: 'History', levels: 'Std 1 to 5' } })
         .expect(200);
       expect(changed.body.onboarding.answers).toEqual({
         subjects: 'History',
-        previousSchool: 'Hera',
+        levels: 'Std 1 to 5',
       });
 
       const repeated = await schoolAdmin
@@ -372,13 +408,11 @@ describe('staff types and onboarding forms (e2e)', () => {
         .patch(`/api/staff/${s.id}`)
         .send({
           staffTypeId: clerkTypeId,
-          answers: { previousEmployer: 'Bank' },
+          answers: { skills: 'Tally' },
         })
         .expect(200);
       expect(moved.body.staffType.name).toBe('Clerk');
-      expect(moved.body.onboarding.answers).toEqual({
-        previousEmployer: 'Bank',
-      });
+      expect(moved.body.onboarding.answers).toEqual({ skills: 'Tally' });
 
       await office
         .patch(`/api/staff/${s.id}`)
@@ -426,9 +460,10 @@ describe('the form to fill in for a staff type (e2e)', () => {
   let app: INestApplication;
   let admin: Agent;
   let office: Agent;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
-    ({ app } = await createTestApp());
+    ({ app, prisma } = await createTestApp());
     admin = await adminAgent(app);
     office = (await createSettledUser(app, admin, 'OFFICE_STAFF')).agent;
   });
@@ -448,5 +483,41 @@ describe('the form to fill in for a staff type (e2e)', () => {
     expect(first.schema.sections.length).toBeGreaterThan(0);
     await office.get(`/api/staff-types/${type.id}/form`).expect(403);
     await admin.get(`/api/staff-types/${randomUUID()}/form`).expect(404);
+  });
+
+  it('numbers a draft that was started before the live version after it, so versions only go up', async () => {
+    const type = (
+      await admin
+        .post('/api/staff-types')
+        .send({ name: unique('Warden') })
+        .expect(201)
+    ).body;
+    // A database from before forms were published with the type: only a draft numbered 1 exists.
+    await prisma.formDefinition.updateMany({
+      where: { key: type.formKey },
+      data: { status: 'DRAFT', publishedAt: null },
+    });
+    // The first person added publishes the starting form (as version 2), as it always has.
+    const person = await admin
+      .post('/api/staff')
+      .send({
+        firstName: 'Ravi',
+        surname: unique('Kale'),
+        gender: 'MALE',
+        designation: 'Warden',
+        staffTypeId: type.id,
+        answers: {},
+      })
+      .expect(201);
+    expect(person.body.onboarding.version).toBe(2);
+
+    const live = (
+      await admin.post(`/api/forms/${type.formKey}/publish`).expect(200)
+    ).body;
+    expect(live.version).toBe(3);
+    const detail = (await admin.get(`/api/forms/${type.formKey}`).expect(200))
+      .body;
+    expect(detail.published.version).toBe(3);
+    expect(detail.draft).toBeNull();
   });
 });
