@@ -272,9 +272,42 @@
   padding: 0 0.5rem;
   border-bottom: 1px solid var(--border);
 }
+.app-card-tabs .p-tablist-tab-list {
+  border-style: solid;
+  border-width: 0 0 1px 0;
+  border-color: var(--border);
+}
+/*
+ * The tab borders are set here outright rather than left to the theme's variables: where those
+ * variables are missing, the browser falls back to a 3px dark border on every side of every tab.
+ */
 .app-card-tabs .p-tab {
   padding: 1rem 0.75rem;
   font-weight: 600;
+  color: var(--muted-foreground);
+  background: transparent;
+  border-style: solid;
+  border-width: 0 0 2px 0;
+  border-color: transparent;
+  margin: 0 0 -1px 0;
+  outline: none;
+}
+.app-card-tabs .p-tab:hover {
+  color: var(--foreground);
+}
+.app-card-tabs .p-tab.p-tab-active,
+.app-card-tabs .p-tab[aria-selected='true'] {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.app-card-tabs .p-tab:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 6px 6px 0 0;
+}
+/* The theme's sliding bar is replaced by the active tab's own bottom border above. */
+.app-card-tabs .p-tablist-active-bar {
+  display: none;
 }
 .app-card-tabs .p-tabpanels {
   padding: 1.25rem;
