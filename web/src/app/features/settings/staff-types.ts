@@ -5,16 +5,27 @@ import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { StaffType } from '../../core/models';
 import { PageHeader } from '../../shared/ui/page-header';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Badge } from '../../shared/ui/badge';
 
 /** The kinds of employee the school has. Each has its own onboarding form. Types are switched off, never deleted. */
 @Component({
   selector: 'app-staff-types',
-  imports: [FormsModule, RouterLink, ButtonModule, DialogModule, TagModule, PageHeader],
+  imports: [
+    FormsModule,
+    RouterLink,
+    ButtonModule,
+    DialogModule,
+    PageHeader,
+    CheckboxModule,
+    InputTextModule,
+    Badge,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -29,7 +40,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     }
 
     <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-      <table class="w-full min-w-[40rem] text-sm">
+      <table class="app-table w-full min-w-[40rem] text-sm">
         <thead>
           <tr class="bg-accent text-left">
             <th scope="col" class="px-4 py-3">Type</th>
@@ -46,8 +57,8 @@ import { PageHeader } from '../../shared/ui/page-header';
               <td class="px-4 py-3">{{ t.isTeaching ? 'Yes' : 'No' }}</td>
               <td class="px-4 py-3">{{ t.staffCount }}</td>
               <td class="px-4 py-3">
-                <p-tag
-                  [value]="t.active ? 'In use' : 'Switched off'"
+                <app-badge
+                  [label]="t.active ? 'In use' : 'Switched off'"
                   [severity]="t.active ? 'success' : 'secondary'"
                 />
               </td>
@@ -55,10 +66,13 @@ import { PageHeader } from '../../shared/ui/page-header';
                 <a class="app-link" [routerLink]="['/app/settings/forms', t.formKey]"
                   >Edit onboarding form</a
                 >
-                <button type="button" class="app-link" (click)="openEdit(t)">Rename</button>
-                <button type="button" class="app-link" (click)="toggle(t)">
-                  {{ t.active ? 'Switch off' : 'Switch on' }}
-                </button>
+                <p-button label="Rename" size="small" [text]="true" (onClick)="openEdit(t)" />
+                <p-button
+                  [label]="t.active ? 'Switch off' : 'Switch on'"
+                  size="small"
+                  [text]="true"
+                  (onClick)="toggle(t)"
+                />
               </td>
             </tr>
           } @empty {
@@ -84,29 +98,29 @@ import { PageHeader } from '../../shared/ui/page-header';
           Name
           <input
             id="st-name"
-            class="h-10 rounded-md border bg-background px-3"
+            pInputText
+            [fluid]="true"
             maxlength="60"
             placeholder="For example Driver"
             [ngModel]="name()"
             (ngModelChange)="name.set($event)"
           />
         </label>
-        <label class="flex items-start gap-2 text-sm" for="st-teaching">
-          <input
-            id="st-teaching"
-            type="checkbox"
-            class="mt-1"
-            [checked]="teaching()"
-            (change)="teaching.set($any($event.target).checked)"
+        <div class="flex items-start gap-2 text-sm">
+          <p-checkbox
+            [binary]="true"
+            inputId="st-teaching"
+            [ngModel]="teaching()"
+            (ngModelChange)="teaching.set($event)"
           />
-          <span>
+          <label for="st-teaching">
             This kind of staff teaches
             <span class="block text-muted-foreground"
               >Their onboarding form starts with teaching questions, such as subjects and
               degrees.</span
             >
-          </span>
-        </label>
+          </label>
+        </div>
         @if (formError()) {
           <p class="text-sm text-destructive" role="alert">{{ formError() }}</p>
         }

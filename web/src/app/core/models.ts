@@ -463,6 +463,8 @@ export interface LedgerInvoice {
   id: string;
   kind: 'FEE_STRUCTURE' | 'OPENING_BALANCE';
   note: string | null;
+  /** When it was billed. */
+  createdAt: string;
   academicYear: { id: string; name: string };
   lines: { description: string; amount: Money }[];
   concessions: {
@@ -517,20 +519,37 @@ export interface DuesSums {
   overdue: Money;
 }
 
+/** Where a student stands on fees: all paid, part paid, nothing paid yet, overdue, or nothing billed. */
+export type DuesStatus = 'PAID' | 'PARTIAL' | 'UNPAID' | 'OVERDUE' | 'NONE';
+
+export interface DuesStudent extends DuesSums {
+  studentId: string;
+  admissionNo: string;
+  fullName: string;
+  class: string;
+  division: string;
+  previousYearsPending: Money;
+  status: DuesStatus;
+  /** The oldest instalment date still unpaid and passed. */
+  oldestOverdueOn: string | null;
+  /** The next instalment date still unpaid and not yet passed. */
+  nextDueOn: string | null;
+  lastPaidOn: string | null;
+}
+
 export interface DuesReport {
   academicYearId: string | null;
+  /** Students in each status, before the status filter (so every tab can show its count). */
+  counts: Record<DuesStatus, number>;
+  /** Those who have waited longest since a due date passed. */
+  longestOverdue: DuesStudent[];
+  /** Boys and girls side by side (always both, whatever gender filter is chosen). */
+  byGender: (DuesSums & { gender: Gender; students: number; owing: number })[];
   totals: DuesSums & { students: number; owing: number };
   byClass: (DuesSums & { id: string; label: string; students: number; owing: number })[];
   byDivision: (DuesSums & { id: string; label: string; students: number; owing: number })[];
   students: {
-    items: (DuesSums & {
-      studentId: string;
-      admissionNo: string;
-      fullName: string;
-      class: string;
-      division: string;
-      previousYearsPending: Money;
-    })[];
+    items: DuesStudent[];
     total: number;
     page: number;
     pageSize: number;
@@ -1080,6 +1099,10 @@ export interface PaymentRow {
 export interface Collection {
   from: string;
   to: string;
+  /** The gender the totals were limited to, if any. */
+  gender: Gender | null;
   total: Money;
   byMode: { mode: PaymentMode; total: Money; count: number }[];
+  /** Money from boys' and girls' fees, always for everyone. */
+  byGender: { gender: Gender; total: Money; count: number; students: number }[];
 }

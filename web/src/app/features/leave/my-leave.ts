@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { LeaveBalance, LeaveRequest, LeaveType } from '../../core/models';
@@ -11,11 +10,12 @@ import { formatDate, toIsoDate } from '../../shared/dates';
 import { PageHeader } from '../../shared/ui/page-header';
 import { LeaveApplyDialog } from './leave-apply-dialog';
 import { STATUS_LABEL, STATUS_SEVERITY, canWithdraw, daysText } from './leave-utils';
+import { Badge } from '../../shared/ui/badge';
 
 /** A member of staff's own leave: what is left, what they asked for, and a way to ask. */
 @Component({
   selector: 'app-my-leave',
-  imports: [RouterLink, ButtonModule, TagModule, PageHeader, LeaveApplyDialog],
+  imports: [RouterLink, ButtonModule, PageHeader, LeaveApplyDialog, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -71,7 +71,7 @@ import { STATUS_LABEL, STATUS_SEVERITY, canWithdraw, daysText } from './leave-ut
     }
 
     <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-      <table class="w-full min-w-[40rem] text-sm">
+      <table class="app-table w-full min-w-[40rem] text-sm">
         <thead>
           <tr class="bg-accent text-left">
             <th scope="col" class="px-4 py-3">Dates</th>
@@ -94,19 +94,19 @@ import { STATUS_LABEL, STATUS_SEVERITY, canWithdraw, daysText } from './leave-ut
               <td class="px-4 py-3">{{ r.leaveType.name }}</td>
               <td class="px-4 py-3">{{ daysText(r.days) }}</td>
               <td class="px-4 py-3">
-                <p-tag [value]="label[r.status]" [severity]="severity[r.status]" />
+                <app-badge [label]="label[r.status]" [severity]="severity[r.status]" />
               </td>
               <td class="px-4 py-3 text-muted-foreground">{{ r.decisionNote || r.reason }}</td>
               <td class="px-4 py-3 text-right">
                 @if (withdrawable(r)) {
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Withdraw leave from ' + format(r.startsOn)"
-                    (click)="withdraw(r)"
-                  >
-                    Withdraw
-                  </button>
+                  <p-button
+                    label="Withdraw"
+                    size="small"
+                    [text]="true"
+                    severity="danger"
+                    [ariaLabel]="'Withdraw leave from ' + format(r.startsOn)"
+                    (onClick)="withdraw(r)"
+                  />
                 }
               </td>
             </tr>

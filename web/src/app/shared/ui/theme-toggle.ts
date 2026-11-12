@@ -1,21 +1,23 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ThemeService } from '../../core/theme.service';
+import { ButtonModule } from '@openng/optimus-ui/button';
 
 /** Sun/moon button that switches between dark and light. */
 @Component({
   selector: 'app-theme-toggle',
+  imports: [ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button
-      type="button"
-      class="inline-flex size-9 items-center justify-center rounded-md border bg-card text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-      (click)="theme.toggle()"
+    <p-button
+      severity="secondary"
+      [text]="true"
+      [ariaLabel]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+      (onClick)="theme.toggle()"
     >
       @if (theme.theme() === 'dark') {
         <svg
           viewBox="0 0 24 24"
-          class="size-4"
+          class="size-[18px]"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -31,7 +33,7 @@ import { ThemeService } from '../../core/theme.service';
       } @else {
         <svg
           viewBox="0 0 24 24"
-          class="size-4"
+          class="size-[18px]"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -42,7 +44,7 @@ import { ThemeService } from '../../core/theme.service';
           <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         </svg>
       }
-    </button>
+    </p-button>
   `,
 })
 export class ThemeToggle {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from '@openng/optimus-ui/button';
@@ -7,13 +7,15 @@ import { apiError } from '../../core/api-error';
 import { AppNotification } from '../../core/models';
 import { PageHeader } from '../../shared/ui/page-header';
 import { timeAgo } from '../../shared/ui/time-ago';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 const PAGE = 20;
 
 /** Every message sent to the signed-in person, newest first. */
 @Component({
   selector: 'app-notifications-page',
-  imports: [ButtonModule, PageHeader],
+  imports: [ButtonModule, PageHeader, SelectButtonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -28,21 +30,16 @@ const PAGE = 20;
       />
     </app-page-header>
 
-    <div class="mb-4 flex gap-1 rounded-md border p-1 w-fit" role="tablist">
-      @for (t of tabs; track t.id) {
-        <button
-          type="button"
-          role="tab"
-          class="rounded px-3 py-1 text-sm"
-          [class.bg-primary]="onlyUnread() === t.unread"
-          [class.text-primary-foreground]="onlyUnread() === t.unread"
-          [attr.aria-selected]="onlyUnread() === t.unread"
-          (click)="setTab(t.unread)"
-        >
-          {{ t.label }}{{ t.unread && unread() ? ' (' + unread() + ')' : '' }}
-        </button>
-      }
-    </div>
+    <p-selectbutton
+      class="mb-4 block"
+      [options]="tabOptions()"
+      optionLabel="label"
+      optionValue="unread"
+      [allowEmpty]="false"
+      [ngModel]="onlyUnread()"
+      (ngModelChange)="setTab($event)"
+      aria-label="Which messages to show"
+    />
 
     @if (error()) {
       <p class="mb-3 text-sm text-destructive" role="alert">{{ error() }}</p>
@@ -94,6 +91,12 @@ export class NotificationsPage {
   protected readonly unread = signal(0);
   protected readonly onlyUnread = signal(false);
   protected readonly loaded = signal(false);
+  protected readonly tabOptions = computed(() =>
+    this.tabs.map((t) => ({
+      ...t,
+      label: t.unread && this.unread() ? `${t.label} (${this.unread()})` : t.label,
+    })),
+  );
   protected readonly error = signal<string | null>(null);
   protected readonly ago = (iso: string) => timeAgo(iso);
   private page = 1;

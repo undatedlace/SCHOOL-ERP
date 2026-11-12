@@ -167,9 +167,9 @@ describe('LeaveSettings', () => {
   it('sends how many days a kind may carry into the next year, and hides it for no-limit kinds', async () => {
     const { fixture, http } = await setup();
     const change = fixture.debugElement
-      .queryAll(By.css('button.app-link'))
-      .find((b) => b.nativeElement.textContent.trim() === 'Change')!;
-    change.nativeElement.click();
+      .queryAll(By.css('p-button'))
+      .find((b) => b.componentInstance.label === 'Change')!;
+    change.componentInstance.onClick.emit(new Event('click'));
     fixture.detectChanges();
     await settle(fixture);
 

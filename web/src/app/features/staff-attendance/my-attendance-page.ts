@@ -11,11 +11,12 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { AttendanceGrid } from '../attendance/attendance-grid';
 import { monthBounds, percentText } from '../attendance/attendance-utils';
 import { asGridReport } from './staff-grid';
+import { ButtonModule } from '@openng/optimus-ui/button';
 
 /** A teacher's or staff member's own attendance. They can look but not change it. */
 @Component({
   selector: 'app-my-attendance-page',
-  imports: [DateField, FormsModule, MessageModule, PageHeader, AttendanceGrid],
+  imports: [DateField, FormsModule, MessageModule, PageHeader, AttendanceGrid, ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -42,20 +43,8 @@ import { asGridReport } from './staff-grid';
           (valueChange)="onRange('to', $event)"
         />
       </div>
-      <button
-        type="button"
-        class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-        (click)="preset(0)"
-      >
-        This month
-      </button>
-      <button
-        type="button"
-        class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-        (click)="preset(1)"
-      >
-        Last month
-      </button>
+      <p-button label="This month" severity="secondary" [outlined]="true" (onClick)="preset(0)" />
+      <p-button label="Last month" severity="secondary" [outlined]="true" (onClick)="preset(1)" />
     </div>
 
     @if (error()) {

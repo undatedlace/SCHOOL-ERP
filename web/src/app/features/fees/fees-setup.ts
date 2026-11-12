@@ -16,7 +16,6 @@ import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TabsModule } from '@openng/optimus-ui/tabs';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AcademicYear, CopyResult, FeeHead, FeeStructure, SchoolClass } from '../../core/models';
@@ -24,6 +23,7 @@ import { formatDate, toIsoDate, fromIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { inr, isMoney } from '../../shared/money';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 @Component({
   selector: 'app-fees-setup',
@@ -38,14 +38,15 @@ import { PageHeader } from '../../shared/ui/page-header';
     SelectModule,
     TableModule,
     TabsModule,
-    TagModule,
     HasPermission,
     PageHeader,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
       title="Fee setup"
+      [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Fee setup' }]"
       subtitle="What each class pays, and when. Then bill the year's fees to every student."
     >
       <p-button
@@ -70,117 +71,119 @@ import { PageHeader } from '../../shared/ui/page-header';
       <p class="mb-4 text-sm text-muted-foreground">
         Academic year: <strong>{{ year()!.name }}</strong>
       </p>
-      <p-tabs value="structures">
-        <p-tablist>
-          <p-tab value="structures">Class fees</p-tab>
-          <p-tab value="heads">Kinds of fee</p-tab>
-        </p-tablist>
-        <p-tabpanels>
-          <p-tabpanel value="structures">
-            <p-table [value]="rows()" [loading]="loading()">
-              <ng-template #header>
-                <tr>
-                  <th>Class</th>
-                  <th>Total</th>
-                  <th>Fees</th>
-                  <th>Instalments</th>
-                  <th><span class="sr-only">Actions</span></th>
-                </tr>
-              </ng-template>
-              <ng-template #body let-r>
-                <tr>
-                  <td class="font-medium">{{ r.cls.name }}</td>
-                  <td>
-                    @if (r.structure) {
-                      {{ money(r.structure.total) }}
-                    } @else {
-                      <p-tag value="Not set" severity="warn" />
-                    }
-                  </td>
-                  <td class="text-sm text-muted-foreground">
-                    @for (i of r.structure?.items ?? []; track i.feeHeadId) {
-                      <span class="mr-2">{{ i.feeHead }} {{ money(i.amount) }}</span>
-                    }
-                  </td>
-                  <td class="text-sm text-muted-foreground">
-                    @for (i of r.structure?.instalments ?? []; track i.seq) {
-                      <span class="mr-2"
-                        >{{ i.label }} {{ i.percent }}% by {{ date(i.dueDate) }}</span
-                      >
-                    }
-                  </td>
-                  <td class="text-right" *appHasPermission="'fees.structure.manage'">
-                    <p-button
-                      [label]="r.structure ? 'Edit' : 'Set up'"
-                      size="small"
-                      [text]="true"
-                      (onClick)="openStructure(r.cls, r.structure)"
-                    />
-                  </td>
-                </tr>
-              </ng-template>
-              <ng-template #emptymessage>
-                <tr>
-                  <td colspan="5" class="p-4 text-center text-muted-foreground">
-                    Add classes in Academic setup first.
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          </p-tabpanel>
+      <section class="overflow-hidden rounded-xl bg-card shadow-sm">
+        <p-tabs value="structures" class="app-card-tabs">
+          <p-tablist>
+            <p-tab value="structures">Class fees</p-tab>
+            <p-tab value="heads">Kinds of fee</p-tab>
+          </p-tablist>
+          <p-tabpanels>
+            <p-tabpanel value="structures">
+              <p-table [value]="rows()" [loading]="loading()">
+                <ng-template #header>
+                  <tr>
+                    <th>Class</th>
+                    <th>Total</th>
+                    <th>Fees</th>
+                    <th>Instalments</th>
+                    <th><span class="sr-only">Actions</span></th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-r>
+                  <tr>
+                    <td class="font-medium">{{ r.cls.name }}</td>
+                    <td>
+                      @if (r.structure) {
+                        {{ money(r.structure.total) }}
+                      } @else {
+                        <app-badge label="Not set" severity="warn" />
+                      }
+                    </td>
+                    <td class="text-sm text-muted-foreground">
+                      @for (i of r.structure?.items ?? []; track i.feeHeadId) {
+                        <span class="mr-2">{{ i.feeHead }} {{ money(i.amount) }}</span>
+                      }
+                    </td>
+                    <td class="text-sm text-muted-foreground">
+                      @for (i of r.structure?.instalments ?? []; track i.seq) {
+                        <span class="mr-2"
+                          >{{ i.label }} {{ i.percent }}% by {{ date(i.dueDate) }}</span
+                        >
+                      }
+                    </td>
+                    <td class="text-right" *appHasPermission="'fees.structure.manage'">
+                      <p-button
+                        [label]="r.structure ? 'Edit' : 'Set up'"
+                        size="small"
+                        [text]="true"
+                        (onClick)="openStructure(r.cls, r.structure)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                  <tr>
+                    <td colspan="5" class="p-4 text-center text-muted-foreground">
+                      Add classes in Academic setup first.
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </p-tabpanel>
 
-          <p-tabpanel value="heads">
-            <div
-              class="mb-3 flex flex-wrap items-end gap-2"
-              *appHasPermission="'fees.structure.manage'"
-            >
-              <input
-                pInputText
-                [formControl]="newHead"
-                placeholder="New kind of fee, for example Tuition"
-                class="w-72"
-                aria-label="Name of the new kind of fee"
-              />
-              <p-button label="Add" (onClick)="addHead()" [disabled]="newHead.invalid" />
-            </div>
-            <p-table [value]="heads()">
-              <ng-template #header
-                ><tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th><span class="sr-only">Actions</span></th>
-                </tr></ng-template
+            <p-tabpanel value="heads">
+              <div
+                class="mb-3 flex flex-wrap items-end gap-2"
+                *appHasPermission="'fees.structure.manage'"
               >
-              <ng-template #body let-h>
-                <tr>
-                  <td class="font-medium">{{ h.name }}</td>
-                  <td>
-                    <p-tag
-                      [value]="h.isActive ? 'In use' : 'Switched off'"
-                      [severity]="h.isActive ? 'secondary' : 'warn'"
-                    />
-                  </td>
-                  <td class="text-right" *appHasPermission="'fees.structure.manage'">
-                    <p-button
-                      [label]="h.isActive ? 'Switch off' : 'Switch on'"
-                      size="small"
-                      [text]="true"
-                      (onClick)="toggleHead(h)"
-                    />
-                  </td>
-                </tr>
-              </ng-template>
-              <ng-template #emptymessage
-                ><tr>
-                  <td colspan="3" class="p-4 text-center text-muted-foreground">
-                    No kinds of fee yet. Add Tuition, Exam fee, and so on.
-                  </td>
-                </tr></ng-template
-              >
-            </p-table>
-          </p-tabpanel>
-        </p-tabpanels>
-      </p-tabs>
+                <input
+                  pInputText
+                  [formControl]="newHead"
+                  placeholder="New kind of fee, for example Tuition"
+                  class="w-72"
+                  aria-label="Name of the new kind of fee"
+                />
+                <p-button label="Add" (onClick)="addHead()" [disabled]="newHead.invalid" />
+              </div>
+              <p-table [value]="heads()">
+                <ng-template #header
+                  ><tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th><span class="sr-only">Actions</span></th>
+                  </tr></ng-template
+                >
+                <ng-template #body let-h>
+                  <tr>
+                    <td class="font-medium">{{ h.name }}</td>
+                    <td>
+                      <app-badge
+                        [label]="h.isActive ? 'In use' : 'Switched off'"
+                        [severity]="h.isActive ? 'secondary' : 'warn'"
+                      />
+                    </td>
+                    <td class="text-right" *appHasPermission="'fees.structure.manage'">
+                      <p-button
+                        [label]="h.isActive ? 'Switch off' : 'Switch on'"
+                        size="small"
+                        [text]="true"
+                        (onClick)="toggleHead(h)"
+                      />
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage
+                  ><tr>
+                    <td colspan="3" class="p-4 text-center text-muted-foreground">
+                      No kinds of fee yet. Add Tuition, Exam fee, and so on.
+                    </td>
+                  </tr></ng-template
+                >
+              </p-table>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </section>
     }
 
     <p-dialog

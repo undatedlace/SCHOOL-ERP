@@ -15,9 +15,16 @@ import {
   NoticeAudiences,
 } from '../../core/models';
 import { toIsoDate } from '../../shared/dates';
+import { DateField } from '../../shared/ui/date-field';
+import { TimeField } from '../../shared/ui/time-field';
 import { FormField } from '../../shared/ui/form-field';
 import { AUDIENCE_LABEL, toggle } from '../notices/notice-utils';
 import { CATEGORY_LABEL } from './calendar-utils';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { RadioButtonModule } from '@openng/optimus-ui/radiobutton';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
+import { FormsModule } from '@angular/forms';
 
 const CATEGORIES: CalendarCategory[] = ['EVENT', 'HOLIDAY', 'EXAM', 'MEETING'];
 const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
@@ -25,7 +32,20 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
 /** Add an event to the calendar, or change one. Optionally sends a notice about it too. */
 @Component({
   selector: 'app-event-dialog',
-  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule, FormField],
+  imports: [
+    DateField,
+    TimeField,
+    ReactiveFormsModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    FormField,
+    SelectModule,
+    TextareaModule,
+    RadioButtonModule,
+    CheckboxModule,
+    FormsModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -51,15 +71,15 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
         </app-form-field>
 
         <app-form-field label="Kind" for="eventCategory">
-          <select
-            id="eventCategory"
+          <p-select
+            inputId="eventCategory"
             formControlName="category"
-            class="h-10 rounded-md border bg-background px-3 text-sm"
-          >
-            @for (c of categories; track c) {
-              <option [value]="c">{{ categoryLabel[c] }}</option>
-            }
-          </select>
+            [options]="categoryOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [fluid]="true"
+          />
         </app-form-field>
 
         <div class="grid gap-4 sm:grid-cols-2">
@@ -69,11 +89,14 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
             [control]="form.controls.startsOn"
             [required]="true"
           >
-            <input
-              id="eventStart"
-              type="date"
-              formControlName="startsOn"
-              class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            <app-date-field
+              inputId="eventStart"
+              label="First day"
+              [clearable]="false"
+              [value]="form.controls.startsOn.value"
+              (valueChange)="
+                form.controls.startsOn.setValue($event); form.controls.startsOn.markAsTouched()
+              "
             />
           </app-form-field>
           <app-form-field
@@ -81,27 +104,30 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
             for="eventEnd"
             hint="Leave empty for a one-day event."
           >
-            <input
-              id="eventEnd"
-              type="date"
-              formControlName="endsOn"
-              class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            <app-date-field
+              inputId="eventEnd"
+              label="Last day"
+              [clearable]="true"
+              [value]="form.controls.endsOn.value"
+              (valueChange)="
+                form.controls.endsOn.setValue($event); form.controls.endsOn.markAsTouched()
+              "
             />
           </app-form-field>
           <app-form-field label="Starts at (optional)" for="eventFrom">
-            <input
-              id="eventFrom"
-              type="time"
-              formControlName="startTime"
-              class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            <app-time-field
+              inputId="eventFrom"
+              label="Starts at"
+              [value]="form.controls.startTime.value"
+              (valueChange)="form.controls.startTime.setValue($event)"
             />
           </app-form-field>
           <app-form-field label="Ends at (optional)" for="eventTo">
-            <input
-              id="eventTo"
-              type="time"
-              formControlName="endTime"
-              class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            <app-time-field
+              inputId="eventTo"
+              label="Ends at"
+              [value]="form.controls.endTime.value"
+              (valueChange)="form.controls.endTime.setValue($event)"
             />
           </app-form-field>
         </div>
@@ -112,11 +138,12 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
           hint="Plain text. Line breaks are kept."
         >
           <textarea
+            pTextarea
             id="eventDescription"
             formControlName="description"
             rows="3"
             maxlength="2000"
-            class="w-full rounded-md border bg-background p-3 text-sm"
+            [fluid]="true"
           ></textarea>
         </app-form-field>
 
@@ -124,58 +151,63 @@ const AUDIENCES: NoticeAudience[] = ['ALL', 'STAFF', 'CLASSES', 'DIVISIONS'];
           <legend class="mb-1 text-sm font-medium">Who sees it</legend>
           <div class="flex flex-wrap gap-x-4 gap-y-1">
             @for (a of audiences; track a) {
-              <label class="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
+              <span class="flex items-center gap-2 text-sm">
+                <p-radiobutton
                   name="eventAudience"
+                  [inputId]="'eventAudience-' + a"
                   [value]="a"
-                  [checked]="audience() === a"
-                  (change)="setAudience(a)"
+                  [ngModel]="audience()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="setAudience($event)"
                 />
-                {{ audienceLabel[a] }}
-              </label>
+                <label [for]="'eventAudience-' + a">{{ audienceLabel[a] }}</label>
+              </span>
             }
           </div>
           @if (audience() === 'CLASSES') {
             <div class="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Classes">
               @for (c of options()?.classes ?? []; track c.id) {
-                <label class="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    [checked]="classIds().includes(c.id)"
-                    (change)="classIds.set(toggle(classIds(), c.id))"
+                <span class="flex items-center gap-2 text-sm">
+                  <p-checkbox
+                    [binary]="true"
+                    [inputId]="'event-classes-' + c.id"
+                    [ngModel]="classIds().includes(c.id)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="classIds.set(toggle(classIds(), c.id))"
                   />
-                  {{ c.name }}
-                </label>
+                  <label [for]="'event-classes-' + c.id">{{ c.name }}</label>
+                </span>
               }
             </div>
           }
           @if (audience() === 'DIVISIONS') {
             <div class="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Divisions">
               @for (d of options()?.divisions ?? []; track d.id) {
-                <label class="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    [checked]="divisionIds().includes(d.id)"
-                    (change)="divisionIds.set(toggle(divisionIds(), d.id))"
+                <span class="flex items-center gap-2 text-sm">
+                  <p-checkbox
+                    [binary]="true"
+                    [inputId]="'event-divisions-' + d.id"
+                    [ngModel]="divisionIds().includes(d.id)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="divisionIds.set(toggle(divisionIds(), d.id))"
                   />
-                  {{ d.label }}
-                </label>
+                  <label [for]="'event-divisions-' + d.id">{{ d.label }}</label>
+                </span>
               }
             </div>
           }
         </fieldset>
 
         @if (!editing()) {
-          <label class="flex items-start gap-2 text-sm">
-            <input type="checkbox" class="mt-1" formControlName="announce" />
-            <span>
+          <div class="flex items-start gap-2 text-sm">
+            <p-checkbox [binary]="true" inputId="eventAnnounce" formControlName="announce" />
+            <label for="eventAnnounce">
               Also send a notice about it
               <span class="block text-muted-foreground">
                 Parents, students and staff in the audience will see it under Notices.
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
         }
 
         @if (problem()) {
@@ -209,6 +241,10 @@ export class EventDialog {
   protected readonly categories = CATEGORIES;
   protected readonly audiences = AUDIENCES;
   protected readonly categoryLabel = CATEGORY_LABEL;
+  protected readonly categoryOptions = CATEGORIES.map((value) => ({
+    value,
+    label: CATEGORY_LABEL[value],
+  }));
   protected readonly audienceLabel = AUDIENCE_LABEL;
   protected readonly toggle = toggle;
   protected readonly editing = signal<CalendarEvent | null>(null);

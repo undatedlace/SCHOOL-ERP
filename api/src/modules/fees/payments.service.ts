@@ -259,14 +259,26 @@ export class PaymentsService {
             },
           }
         : {}),
-      ...(q.search
+      ...(q.search || q.gender
         ? {
             student: {
-              OR: [
-                { firstName: { contains: q.search, mode: 'insensitive' } },
-                { surname: { contains: q.search, mode: 'insensitive' } },
-                { admissionNo: { contains: q.search, mode: 'insensitive' } },
-              ],
+              ...(q.gender ? { gender: q.gender } : {}),
+              ...(q.search
+                ? {
+                    OR: [
+                      {
+                        firstName: { contains: q.search, mode: 'insensitive' },
+                      },
+                      { surname: { contains: q.search, mode: 'insensitive' } },
+                      {
+                        admissionNo: {
+                          contains: q.search,
+                          mode: 'insensitive',
+                        },
+                      },
+                    ],
+                  }
+                : {}),
             },
           }
         : {}),
@@ -338,16 +350,46 @@ export class PaymentsService {
   }
 
   /** Money collected between two dates, by payment mode. Reversed payments are left out. */
+  /**
+   * Money received between two dates (reversed payments left out): the total and the split by
+   * payment mode, for everyone or for one gender, plus the split by the student's gender
+   * (always for everyone, so boys and girls can be shown side by side).
+   */
   async collection(schoolId: string, q: CollectionQueryDto) {
-    const rows = await this.prisma.$queryRaw<
-      { mode: string; total: Prisma.Decimal; count: bigint }[]
-    >`
-      SELECT p.mode::text AS mode, SUM(p.amount) AS total, COUNT(*) AS count
-      FROM payments p
-      WHERE p.school_id = ${schoolId}::uuid
-        AND p.paid_on BETWEEN ${dateOnly(q.from.slice(0, 10))} AND ${dateOnly(q.to.slice(0, 10))}
-        AND NOT EXISTS (SELECT 1 FROM payment_reversals r WHERE r.payment_id = p.id)
-      GROUP BY p.mode ORDER BY p.mode`;
+    const from = dateOnly(q.from.slice(0, 10));
+    const to = dateOnly(q.to.slice(0, 10));
+    const gender = q.gender
+      ? Prisma.sql`AND s.gender = ${q.gender}::"Gender"`
+      : Prisma.empty;
+    const [rows, genders] = await Promise.all([
+      this.prisma.$queryRaw<
+        { mode: string; total: Prisma.Decimal; count: bigint }[]
+      >`
+        SELECT p.mode::text AS mode, SUM(p.amount) AS total, COUNT(*) AS count
+        FROM payments p
+        JOIN students s ON s.id = p.student_id
+        WHERE p.school_id = ${schoolId}::uuid
+          AND p.paid_on BETWEEN ${from} AND ${to}
+          AND NOT EXISTS (SELECT 1 FROM payment_reversals r WHERE r.payment_id = p.id)
+          ${gender}
+        GROUP BY p.mode ORDER BY p.mode`,
+      this.prisma.$queryRaw<
+        {
+          gender: string;
+          total: Prisma.Decimal;
+          count: bigint;
+          students: bigint;
+        }[]
+      >`
+        SELECT s.gender::text AS gender, SUM(p.amount) AS total, COUNT(*) AS count,
+               COUNT(DISTINCT p.student_id) AS students
+        FROM payments p
+        JOIN students s ON s.id = p.student_id
+        WHERE p.school_id = ${schoolId}::uuid
+          AND p.paid_on BETWEEN ${from} AND ${to}
+          AND NOT EXISTS (SELECT 1 FROM payment_reversals r WHERE r.payment_id = p.id)
+        GROUP BY s.gender ORDER BY s.gender`,
+    ]);
     const byMode = rows.map((r) => ({
       mode: r.mode,
       total: money2(r.total),
@@ -357,8 +399,15 @@ export class PaymentsService {
     return {
       from: q.from.slice(0, 10),
       to: q.to.slice(0, 10),
+      gender: q.gender ?? null,
       total: fromPaise(total),
       byMode,
+      byGender: genders.map((g) => ({
+        gender: g.gender,
+        total: money2(g.total),
+        count: Number(g.count),
+        students: Number(g.students),
+      })),
     };
   }
 

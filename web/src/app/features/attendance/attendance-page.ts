@@ -30,6 +30,8 @@ import {
   percentText,
   unmarkedCount,
 } from './attendance-utils';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 
 type Tab = 'take' | 'report';
 
@@ -44,6 +46,8 @@ type Tab = 'take' | 'report';
     TableModule,
     PageHeader,
     AttendanceGrid,
+    SelectButtonModule,
+    InputTextModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,21 +62,23 @@ type Tab = 'take' | 'report';
           <h2 class="mb-2 text-sm font-semibold">Marked today</h2>
           <div class="flex flex-wrap gap-2">
             @for (d of o.divisions; track d.id) {
-              <button
-                type="button"
-                class="rounded-md border px-3 py-1.5 text-left text-sm hover:bg-accent"
-                [class.bg-accent]="d.id === divisionId()"
-                (click)="pick(d.id)"
+              <p-button
+                severity="secondary"
+                [outlined]="d.id !== divisionId()"
+                [ariaLabel]="d.class.name + '-' + d.name"
+                (onClick)="pick(d.id)"
               >
-                <span class="font-medium">{{ d.class.name }}-{{ d.name }}</span>
-                <span class="block text-xs text-muted-foreground">
-                  @if (d.done) {
-                    {{ d.counts.present + d.counts.late }} in, {{ d.counts.absent }} absent
-                  } @else {
-                    Not marked yet
-                  }
+                <span class="text-left">
+                  <span class="block font-semibold">{{ d.class.name }}-{{ d.name }}</span>
+                  <span class="block text-xs font-normal opacity-80">
+                    @if (d.done) {
+                      {{ d.counts.present + d.counts.late }} in, {{ d.counts.absent }} absent
+                    } @else {
+                      Not marked yet
+                    }
+                  </span>
                 </span>
-              </button>
+              </p-button>
             }
           </div>
         </section>
@@ -126,46 +132,30 @@ type Tab = 'take' | 'report';
             />
           </div>
           <div class="flex gap-1" role="group" aria-label="Quick range">
-            <button
-              type="button"
-              class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-              (click)="preset(0)"
-            >
-              This month
-            </button>
-            <button
-              type="button"
-              class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-              (click)="preset(1)"
-            >
-              Last month
-            </button>
+            <p-button
+              label="This month"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="preset(0)"
+            />
+            <p-button
+              label="Last month"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="preset(1)"
+            />
           </div>
         }
-        <div class="ml-auto flex gap-1 rounded-md border p-1" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            class="rounded px-3 py-1 text-sm"
-            [class.bg-primary]="tab() === 'take'"
-            [class.text-primary-foreground]="tab() === 'take'"
-            [attr.aria-selected]="tab() === 'take'"
-            (click)="setTab('take')"
-          >
-            Take attendance
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="rounded px-3 py-1 text-sm"
-            [class.bg-primary]="tab() === 'report'"
-            [class.text-primary-foreground]="tab() === 'report'"
-            [attr.aria-selected]="tab() === 'report'"
-            (click)="setTab('report')"
-          >
-            Report
-          </button>
-        </div>
+        <p-selectbutton
+          class="ml-auto"
+          [options]="tabs"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="tab()"
+          (ngModelChange)="setTab($event)"
+          aria-label="Take attendance or see the report"
+        />
       </div>
 
       @if (error()) {
@@ -215,49 +205,33 @@ type Tab = 'take' | 'report';
                   <div class="text-xs text-muted-foreground">Admission no. {{ s.admissionNo }}</div>
                 </div>
                 <div class="flex gap-1" role="group" [attr.aria-label]="'Attendance for ' + s.name">
-                  @for (o of statuses; track o.value) {
-                    <button
-                      type="button"
-                      class="h-9 rounded-md border px-3 text-sm disabled:cursor-default"
-                      [class.bg-primary]="
-                        draft(s.studentId).status === o.value && o.value === 'PRESENT'
-                      "
-                      [class.text-primary-foreground]="
-                        draft(s.studentId).status === o.value && o.value === 'PRESENT'
-                      "
-                      [class.bg-destructive]="
-                        draft(s.studentId).status === o.value && o.value === 'ABSENT'
-                      "
-                      [class.text-background]="
-                        draft(s.studentId).status === o.value && o.value === 'ABSENT'
-                      "
-                      [class.bg-accent]="
-                        draft(s.studentId).status === o.value &&
-                        (o.value === 'LATE' || o.value === 'ON_LEAVE')
-                      "
-                      [class.font-semibold]="draft(s.studentId).status === o.value"
-                      [class.border-foreground]="draft(s.studentId).status === o.value"
-                      [attr.aria-pressed]="draft(s.studentId).status === o.value"
-                      [disabled]="!r.canMark"
-                      (click)="set(s.studentId, o.value)"
-                    >
-                      {{ o.label }}
-                    </button>
-                  }
+                  <p-selectbutton
+                    [options]="statuses"
+                    optionLabel="label"
+                    optionValue="value"
+                    [allowEmpty]="false"
+                    [disabled]="!r.canMark"
+                    [ngModel]="draft(s.studentId).status"
+                    (ngModelChange)="set(s.studentId, $event)"
+                    [attr.aria-label]="'Attendance for ' + s.name"
+                    size="small"
+                  />
                 </div>
                 @if (s.status && r.canMark && auth.has('attendance.mark_all')) {
-                  <button
-                    type="button"
-                    class="h-9 rounded-md border px-3 text-sm text-destructive hover:bg-accent"
-                    [attr.aria-label]="'Remove the saved mark for ' + s.name"
-                    (click)="remove(s.studentId, s.name)"
-                  >
-                    Remove mark
-                  </button>
+                  <p-button
+                    label="Remove mark"
+                    size="small"
+                    severity="danger"
+                    [text]="true"
+                    [ariaLabel]="'Remove the saved mark for ' + s.name"
+                    (onClick)="remove(s.studentId, s.name)"
+                  />
                 }
                 @if (draft(s.studentId).status && draft(s.studentId).status !== 'PRESENT') {
                   <input
-                    class="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-56"
+                    pInputText
+                    pSize="small"
+                    class="w-full sm:w-56"
                     placeholder="Note (optional)"
                     maxlength="200"
                     [attr.aria-label]="'Note for ' + s.name"
@@ -312,6 +286,10 @@ export class AttendancePage {
   protected readonly auth = inject(AuthService);
   private readonly toast = inject(MessageService);
 
+  protected readonly tabs = [
+    { label: 'Take attendance', value: 'take' as Tab },
+    { label: 'Report', value: 'report' as Tab },
+  ];
   protected readonly statuses = STATUSES;
   protected readonly today = toIsoDate(new Date());
   protected readonly dateText = formatDate;

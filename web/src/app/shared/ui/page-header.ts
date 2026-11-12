@@ -1,21 +1,64 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
+export interface Crumb {
+  label: string;
+  /** Omitted for the current page. */
+  link?: string;
+}
+
+/**
+ * Every page starts the same way: where you are (breadcrumb), the title, one plain sentence
+ * of context, and the page's main actions on the right.
+ */
 @Component({
   selector: 'app-page-header',
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-foreground">{{ title() }}</h1>
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div class="min-w-0">
+        @if (trail().length) {
+          <nav aria-label="Breadcrumb" class="mb-1.5 text-[13px] font-medium text-muted-foreground">
+            <ol class="flex flex-wrap items-center gap-1.5">
+              @for (c of trail(); track c.label; let last = $last) {
+                <li class="flex items-center gap-1.5">
+                  @if (c.link && !last) {
+                    <a [routerLink]="c.link" class="hover:text-foreground hover:underline">{{
+                      c.label
+                    }}</a>
+                    <span aria-hidden="true" class="text-faint">/</span>
+                  } @else {
+                    <span class="text-foreground" aria-current="page">{{ c.label }}</span>
+                  }
+                </li>
+              }
+            </ol>
+          </nav>
+        }
+        <h1 class="text-[1.75rem] leading-tight font-bold tracking-tight text-foreground">
+          {{ title() }}
+        </h1>
         @if (subtitle()) {
-          <p class="mt-1 text-sm text-muted-foreground">{{ subtitle() }}</p>
+          <p class="mt-1.5 max-w-3xl text-[15px] text-muted-foreground">{{ subtitle() }}</p>
         }
       </div>
-      <div class="flex gap-2"><ng-content /></div>
+      <div class="flex flex-wrap gap-2"><ng-content /></div>
     </div>
   `,
 })
 export class PageHeader {
   readonly title = input.required<string>();
   readonly subtitle = input<string>();
+  /** Where the page sits. Left out on a staff page, it is "Dashboard / <title>". */
+  readonly crumbs = input<Crumb[] | null>(null);
+
+  private readonly router = inject(Router);
+  protected readonly trail = computed(() => {
+    const given = this.crumbs();
+    if (given) return given;
+    return this.router.url.startsWith('/app/') && !this.router.url.startsWith('/app/dashboard')
+      ? [{ label: 'Dashboard', link: '/app/dashboard' }, { label: this.title() }]
+      : [];
+  });
 }

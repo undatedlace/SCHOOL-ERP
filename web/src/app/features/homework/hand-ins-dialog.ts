@@ -14,12 +14,12 @@ import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { HandInRoster, Homework } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { FileLinks } from './file-links';
+import { Badge } from '../../shared/ui/badge';
 
 interface Draft {
   marks: number | null;
@@ -35,8 +35,8 @@ interface Draft {
     DialogModule,
     InputNumberModule,
     InputTextModule,
-    TagModule,
     FileLinks,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -67,8 +67,8 @@ interface Draft {
                   >{{ s.division }} &middot; No. {{ s.admissionNo }}</span
                 >
                 @if (s.submission; as sub) {
-                  <p-tag
-                    [value]="
+                  <app-badge
+                    [label]="
                       sub.status === 'REVIEWED'
                         ? 'Marked'
                         : sub.status === 'REDO'
@@ -84,11 +84,11 @@ interface Draft {
                     "
                   />
                   @if (sub.late) {
-                    <p-tag value="Late" severity="warn" />
+                    <app-badge label="Late" severity="warn" />
                   }
                   <span class="text-xs text-muted-foreground">{{ when(sub.submittedAt) }}</span>
                 } @else {
-                  <p-tag value="Not handed in" severity="warn" />
+                  <app-badge label="Not handed in" severity="warn" />
                 }
               </div>
               @if (s.submission; as sub) {

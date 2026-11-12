@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { MessageService } from '@openng/optimus-ui/api';
 import { AuthService } from '../../core/auth.service';
 import { AcademicYear } from '../../core/models';
@@ -34,7 +35,12 @@ globalThis.ResizeObserver ??= FakeResizeObserver;
 describe('FeesSetup: copying fees to a new year', () => {
   it('offers the latest earlier year, copies into the current one and shows what was left alone', async () => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), MessageService],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        MessageService,
+      ],
     });
     const auth = TestBed.inject(AuthService);
     auth.clear();

@@ -14,13 +14,13 @@ import { DatePickerModule } from '@openng/optimus-ui/datepicker';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AcademicYear } from '../../core/models';
 import { formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
+import { Badge } from '../../shared/ui/badge';
 
 const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
   const start: Date | null = group.get('startDate')?.value;
@@ -40,9 +40,9 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
     DialogModule,
     InputTextModule,
     TableModule,
-    TagModule,
     FormField,
     HasPermission,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -75,7 +75,7 @@ const endAfterStart = (group: AbstractControl): ValidationErrors | null => {
           </td>
           <td>
             @if (year.isCurrent) {
-              <p-tag value="Current" severity="success" />
+              <app-badge label="Current" severity="success" />
             }
           </td>
           <td class="whitespace-nowrap text-right" *appHasPermission="'academics.manage'">

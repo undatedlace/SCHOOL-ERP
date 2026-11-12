@@ -14,7 +14,6 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { grantableRoles } from '../../core/admin-roles';
 import { Api } from '../../core/api';
 import { AuthService } from '../../core/auth.service';
@@ -23,6 +22,7 @@ import { Role, UserRow } from '../../core/models';
 import { FormField } from '../../shared/ui/form-field';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
+import { Badge } from '../../shared/ui/badge';
 
 const needsContact = (group: AbstractControl): ValidationErrors | null =>
   group.get('email')?.value || group.get('mobile')?.value
@@ -39,10 +39,10 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
     MultiSelectModule,
     SelectModule,
     TableModule,
-    TagModule,
     FormField,
     PageHeader,
     TempPasswordDialog,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -108,17 +108,17 @@ const needsContact = (group: AbstractControl): ValidationErrors | null =>
           <td>
             <div class="flex flex-wrap gap-1">
               @for (role of user.roles; track role.code) {
-                <p-tag [value]="role.name" severity="secondary" />
+                <app-badge [label]="role.name" severity="secondary" />
               }
             </div>
           </td>
           <td>
-            <p-tag
-              [value]="user.status === 'ACTIVE' ? 'Active' : 'Disabled'"
+            <app-badge
+              [label]="user.status === 'ACTIVE' ? 'Active' : 'Disabled'"
               [severity]="user.status === 'ACTIVE' ? 'success' : 'danger'"
             />
             @if (user.mustChangePassword) {
-              <p-tag class="ml-1" value="Temporary password" severity="warn" />
+              <app-badge class="ml-1" label="Temporary password" severity="warn" />
             }
           </td>
           <td class="whitespace-nowrap text-right">

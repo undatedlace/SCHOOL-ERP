@@ -8,7 +8,6 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import {
@@ -21,6 +20,7 @@ import {
 } from '../../core/models';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
+import { Badge } from '../../shared/ui/badge';
 
 /** Who teaches what, this academic year: class teachers and subject teachers by division. */
 @Component({
@@ -34,9 +34,9 @@ import { FormField } from '../../shared/ui/form-field';
     MessageModule,
     SelectModule,
     TableModule,
-    TagModule,
     FormField,
     HasPermission,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -75,7 +75,7 @@ import { FormField } from '../../shared/ui/form-field';
           <td class="font-medium">{{ a.division.class.name }}-{{ a.division.name }}</td>
           <td>
             @if (a.kind === 'CLASS_TEACHER') {
-              <p-tag value="Class teacher" severity="info" />
+              <app-badge label="Class teacher" severity="info" />
             } @else {
               {{ a.subject.name }}
             }
@@ -83,7 +83,7 @@ import { FormField } from '../../shared/ui/form-field';
           <td>
             <a class="app-link" [routerLink]="['/app/staff', a.staff.id]">{{ a.staff.fullName }}</a>
             @if (a.staff.status === 'LEFT') {
-              <p-tag class="ml-2" value="Left" severity="warn" />
+              <app-badge class="ml-2" label="Left" severity="warn" />
             }
           </td>
           <td class="whitespace-nowrap text-right" *appHasPermission="'academics.manage'">

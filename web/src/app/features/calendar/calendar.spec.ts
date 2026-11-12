@@ -139,7 +139,7 @@ describe('CalendarPage views', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const choose = async (label: string, events: CalendarEvent[] = []) => {
-      const button = Array.from(el.querySelectorAll('[aria-label="View"] button')).find(
+      const button = Array.from(el.querySelectorAll('[aria-label="View"] [role="button"]')).find(
         (b) => b.textContent?.trim() === label,
       ) as HTMLButtonElement;
       button.click();
@@ -155,7 +155,7 @@ describe('CalendarPage views', () => {
 
   it('starts on the month and offers day, week, month and year', async () => {
     const { el } = await open();
-    const labels = Array.from(el.querySelectorAll('[aria-label="View"] button')).map((b) =>
+    const labels = Array.from(el.querySelectorAll('[aria-label="View"] [role="button"]')).map((b) =>
       b.textContent?.trim(),
     );
     expect(labels).toEqual(['Day', 'Week', 'Month', 'Year']);

@@ -100,13 +100,15 @@ describe('ChildSwitcher', () => {
     http.expectOne((r) => r.url === '/api/students').flush(list([child('a', 'Noor')]));
     await loading;
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('button').length).toBe(0);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('[role="button"]').length).toBe(
+      0,
+    );
 
     portal.children.set([child('a', 'Noor'), child('b', 'Zara')]);
     fixture.detectChanges();
-    const names = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).map(
-      (b) => b.textContent?.trim(),
-    );
+    const names = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[role="button"]'),
+    ).map((b) => b.textContent?.trim());
     expect(names).toEqual(['Noor', 'Zara']);
   });
 });

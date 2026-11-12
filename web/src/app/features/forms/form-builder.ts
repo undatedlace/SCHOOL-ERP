@@ -13,7 +13,6 @@ import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { MessageModule } from '@openng/optimus-ui/message';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { FormDetail, FormField, FormSchema, SchoolClass } from '../../core/models';
@@ -32,12 +31,22 @@ import {
   renameSection,
   updateField,
 } from './schema-edit';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Badge } from '../../shared/ui/badge';
 
 const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label ?? t;
 
 @Component({
   selector: 'app-form-builder',
-  imports: [RouterLink, ButtonModule, MessageModule, TagModule, FormRenderer, FieldEditor],
+  imports: [
+    RouterLink,
+    ButtonModule,
+    MessageModule,
+    FormRenderer,
+    FieldEditor,
+    InputTextModule,
+    Badge,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/app/settings/forms" class="text-sm text-muted-foreground hover:text-foreground"
@@ -91,7 +100,7 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
       </div>
 
       @if (editing() && dirty()) {
-        <p-tag class="mb-4" value="Unsaved changes" severity="warn" />
+        <app-badge class="mb-4" label="Unsaved changes" severity="warn" />
       }
       @if (problems().length) {
         <div class="mb-6 rounded-md border border-destructive/50 p-4" role="alert">
@@ -128,7 +137,8 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
               <section class="mb-6 rounded-xl border-0 bg-card shadow-sm">
                 <div class="flex flex-wrap items-center gap-2 border-b p-3">
                   <input
-                    class="min-w-48 flex-1 rounded-md border bg-background px-3 py-2 text-sm font-semibold"
+                    pInputText
+                    class="min-w-48 flex-1 font-semibold"
                     [value]="section.title"
                     [attr.aria-label]="'Title of section ' + (si + 1)"
                     (change)="rename(section.id, $any($event.target).value, section.description)"
@@ -161,7 +171,9 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
                   />
                 </div>
                 <input
-                  class="w-full border-b bg-transparent px-3 py-2 text-sm text-muted-foreground"
+                  pInputText
+                  variant="filled"
+                  class="m-3 w-[calc(100%-1.5rem)] text-sm"
                   placeholder="Short description (optional)"
                   [value]="section.description ?? ''"
                   [attr.aria-label]="'Description of ' + section.title"
@@ -189,10 +201,10 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
                         </p>
                       </div>
                       @if (f.required) {
-                        <p-tag value="Required" severity="secondary" />
+                        <app-badge label="Required" severity="secondary" />
                       }
                       @if (f.system) {
-                        <p-tag value="Core" severity="info" />
+                        <app-badge label="Core" severity="info" />
                       }
                       <p-button
                         label="Up"

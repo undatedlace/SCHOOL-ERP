@@ -62,6 +62,8 @@ import {
   FormVersion,
   DocumentType,
   DuesReport,
+  DuesStatus,
+  Gender,
   FeeHead,
   FeeStructure,
   GenerateResult,
@@ -323,12 +325,16 @@ export class Api {
     classId?: string | null;
     search?: string;
     onlyOwing?: boolean;
+    status?: DuesStatus | null;
+    gender?: Gender | null;
   }) => {
     let params = new HttpParams().set('page', q.page).set('pageSize', q.pageSize);
     if (q.academicYearId) params = params.set('academicYearId', q.academicYearId);
     if (q.classId) params = params.set('classId', q.classId);
     if (q.search) params = params.set('search', q.search);
     if (q.onlyOwing) params = params.set('onlyOwing', 'true');
+    if (q.status) params = params.set('status', q.status);
+    if (q.gender) params = params.set('gender', q.gender);
     return this.http.get<DuesReport>('/api/fees/dues', { params });
   };
   guardianAccount = (guardianId: string) =>
@@ -616,9 +622,12 @@ export class Api {
     to?: string;
     mode?: string | null;
     search?: string;
+    gender?: Gender | null;
   }) => this.http.get<Page<PaymentRow>>('/api/payments', { params: params(q) });
-  collection = (from: string, to: string) =>
-    this.http.get<Collection>('/api/payments/collection', { params: params({ from, to }) });
+  collection = (from: string, to: string, gender?: Gender | null) =>
+    this.http.get<Collection>('/api/payments/collection', {
+      params: params({ from, to, gender }),
+    });
   copyFeeStructures = (fromAcademicYearId: string, toAcademicYearId: string) =>
     this.http.post<CopyResult>('/api/fee-structures/copy', {
       fromAcademicYearId,

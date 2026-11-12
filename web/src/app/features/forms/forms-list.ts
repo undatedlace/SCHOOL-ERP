@@ -4,15 +4,15 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { FormSummary } from '../../core/models';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 @Component({
   selector: 'app-forms-list',
-  imports: [DatePipe, RouterLink, TableModule, TagModule, PageHeader],
+  imports: [DatePipe, RouterLink, TableModule, PageHeader, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -38,12 +38,12 @@ import { PageHeader } from '../../shared/ui/page-header';
                 >({{ form.publishedAt | date: 'd MMM y' }})</span
               >
             } @else {
-              <p-tag value="Not published" severity="warn" />
+              <app-badge label="Not published" severity="warn" />
             }
           </td>
           <td>
             @if (form.hasDraft) {
-              <p-tag value="Draft in progress" severity="info" />
+              <app-badge label="Draft in progress" severity="info" />
             }
           </td>
           <td class="text-right">

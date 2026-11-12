@@ -1,69 +1,144 @@
 @import 'tailwindcss';
 
-/* Dark mode is on when <html> has the "app-dark" class (the default; see index.html). */
+/* Dark mode is on when <html> has the "app-dark" class (chosen with the theme toggle; light is the default). */
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
-/* Design tokens: neutral (zinc) palette, shadcn-style. Light values first, dark below. */
+/*
+ * Design tokens: calm institutional software. Deep teal for actions and the active place,
+ * warm amber for highlights, slate neutrals. Light values first, dark below.
+ * Status colours always come with a written label; colour is never the only cue.
+ */
 :root {
-  --background: #f6f6fb;
-  --foreground: #1c2430;
+  --background: #f2f5f6;
+  --foreground: #15222b;
+  --foreground-2: #3a4853;
   --card: #ffffff;
-  --muted: #f1f1f8;
-  --muted-foreground: #6b7280;
-  --accent: #e3f4fc;
-  --border: #e7e7f0;
-  --primary: #1f2a44;
+  --muted: #f6f8f9;
+  --muted-foreground: #5c6a75;
+  --faint: #a3adb5;
+  --accent: #edf0f2; /* hover and selected backgrounds */
+  --border: #e2e7eb;
+  --border-strong: #cfd7dd;
+  --primary: #0e5e61;
+  --primary-hover: #0a4b4e;
   --primary-foreground: #ffffff;
-  --ring: #8fa0d8;
-  --destructive: #dc2626;
-  --success: #15803d;
-  /* SchoolHub accents: lavender, sun (yellow) and sky tiles */
-  --link: #3b3a8f;
-  --lavender: #d2cffd;
-  --sun: #fae27c;
-  --sky: #c6ebfb;
-  --radius: 0.75rem;
+  --primary-soft: #e2f0ef;
+  --ring: #1f8589;
+  --link: #0e5e61;
+
+  --amber: #e3a52b;
+  --amber-soft: #fcf0d6;
+  --amber-ink: #3b2600;
+
+  --good: #17703f;
+  --good-soft: #e1f3e8;
+  --good-fill: #22804b;
+  --warn: #8a5300;
+  --warn-soft: #fcefd3;
+  --bad: #b1261d;
+  --bad-soft: #fbe5e2;
+  --bad-fill: #c73e32;
+  --info: #1d5c9b;
+  --info-soft: #e3edf9;
+  --destructive: #b1261d;
+  --success: #17703f;
+
+  /* The sidebar is always dark, in both themes. */
+  --sidebar-top: #0d4245;
+  --sidebar-bottom: #0a2f32;
+
+  /* Older names, kept so every screen picks up the new palette: tinted tiles and avatars. */
+  --lavender: var(--primary-soft);
+  --sun: var(--amber-soft);
+  --sky: var(--info-soft);
+
+  --radius: 0.875rem;
 }
 
 .app-dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #0f0f12;
-  --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #1f1f23;
-  --border: #27272a;
-  --primary: #fafafa;
-  --primary-foreground: #18181b;
-  --ring: #52525b;
-  --destructive: #f87171;
-  --success: #4ade80;
-  --link: #b9b6ff;
-  --lavender: #3b3868;
-  --sun: #5c4f14;
-  --sky: #174559;
+  --background: #0c1316;
+  --foreground: #e5ecef;
+  --foreground-2: #c0cbd1;
+  --card: #131c20;
+  --muted: #182328;
+  --muted-foreground: #93a2ab;
+  --faint: #52626b;
+  --accent: #1d292e;
+  --border: #223138;
+  --border-strong: #2f414a;
+  --primary: #5cc2ba;
+  --primary-hover: #7fd0c9;
+  --primary-foreground: #06201f;
+  --primary-soft: rgb(92 194 186 / 0.14);
+  --ring: #6fd3ca;
+  --link: #5cc2ba;
+
+  --amber: #efb342;
+  --amber-soft: rgb(239 179 66 / 0.15);
+  --amber-ink: #f6d48f;
+
+  --good: #6ad19a;
+  --good-soft: rgb(106 209 154 / 0.13);
+  --good-fill: #23804c;
+  --warn: #f1c060;
+  --warn-soft: rgb(241 192 96 / 0.13);
+  --bad: #f39388;
+  --bad-soft: rgb(243 147 136 / 0.13);
+  --bad-fill: #c4453a;
+  --info: #8ab9ee;
+  --info-soft: rgb(138 185 238 / 0.13);
+  --destructive: #f39388;
+  --success: #6ad19a;
+
+  --sidebar-top: #0b2a2c;
+  --sidebar-bottom: #081d1f;
   color-scheme: dark;
 }
 
-/* Lets us write bg-background, text-muted-foreground, border-border and so on. */
+/* Lets us write bg-background, text-muted-foreground, bg-good-soft and so on. */
 @theme inline {
+  --font-sans:
+    'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-2: var(--foreground-2);
   --color-card: var(--card);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-ring: var(--ring);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-ink: var(--amber-ink);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-good-fill: var(--good-fill);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-bad-fill: var(--bad-fill);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-lavender: var(--lavender);
   --color-sun: var(--sun);
   --color-sky: var(--sky);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 0.25rem);
+  --color-sidebar-top: var(--sidebar-top);
+  --color-sidebar-bottom: var(--sidebar-bottom);
+  --radius-lg: calc(var(--radius) - 0.25rem);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 0.25rem);
+  /* Cards: a hairline edge plus a very soft lift, so white cards read on the grey page in both themes. */
+  --shadow-sm: 0 0 0 1px var(--border), 0 1px 3px rgb(21 34 43 / 0.05);
 }
 
 @layer base {
@@ -73,7 +148,12 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    @apply antialiased;
+    @apply font-sans antialiased;
+  }
+  /* Figures line up in columns: amounts, percentages, dates, ID numbers. */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -81,10 +161,196 @@
 .app-link {
   color: var(--link);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--link) 35%, transparent);
   text-underline-offset: 4px;
 }
 .app-link:hover,
 .app-link:focus-visible {
   text-decoration-color: currentColor;
+}
+
+/* A small uppercase label above a value or a group of controls. */
+.app-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Tables: quiet uppercase headings on a tinted band, roomy rows, hairline dividers. */
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  border-color: var(--border);
+}
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--border);
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+.p-datatable .p-datatable-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.p-datatable .p-paginator {
+  border-top: 1px solid var(--border);
+  background: transparent;
+}
+
+/* A thin, quiet scrollbar for areas on the dark sidebar (the default one shows as a white strip). */
+.app-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+.app-sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.app-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.app-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.18);
+  border-radius: 9999px;
+}
+.app-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.32);
+}
+
+/* Filter cards (app-filter-cards): an Optimus select button laid out as a row of cards. */
+.app-card-select.p-selectbutton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.app-card-select .p-togglebutton {
+  justify-content: flex-start;
+  min-height: 6rem;
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) !important;
+  box-shadow: 0 1px 3px rgb(21 34 43 / 0.05);
+}
+.app-card-select .p-togglebutton .p-togglebutton-content {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.app-card-select .p-togglebutton:hover:not(.p-togglebutton-checked) {
+  border-color: var(--border-strong);
+}
+.app-card-select .p-togglebutton.p-togglebutton-checked {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  background: color-mix(in srgb, var(--primary-soft) 55%, var(--card));
+}
+
+/*
+ * Tabs that fill a card (add class "app-card-tabs" to p-tabs inside a padding-free card):
+ * the tab row sits on the card's top edge, and every panel uses the same inset, so the tab labels,
+ * the toolbar and the tables all line up. Wide tables scroll sideways on a phone instead of squeezing.
+ */
+.app-card-tabs.p-tabs,
+.app-card-tabs .p-tablist,
+.app-card-tabs .p-tablist-tab-list,
+.app-card-tabs .p-tabpanels {
+  background: transparent;
+}
+.app-card-tabs .p-tablist-tab-list {
+  padding: 0 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.app-card-tabs .p-tablist-tab-list {
+  border-style: solid;
+  border-width: 0 0 1px 0;
+  border-color: var(--border);
+}
+/*
+ * The tab borders are set here outright rather than left to the theme's variables: where those
+ * variables are missing, the browser falls back to a 3px dark border on every side of every tab.
+ */
+.app-card-tabs .p-tab {
+  padding: 1rem 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: transparent;
+  border-style: solid;
+  border-width: 0 0 2px 0;
+  border-color: transparent;
+  margin: 0 0 -1px 0;
+  outline: none;
+}
+.app-card-tabs .p-tab:hover {
+  color: var(--foreground);
+}
+.app-card-tabs .p-tab.p-tab-active,
+.app-card-tabs .p-tab[aria-selected='true'] {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.app-card-tabs .p-tab:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 6px 6px 0 0;
+}
+/* The theme's sliding bar is replaced by the active tab's own bottom border above. */
+.app-card-tabs .p-tablist-active-bar {
+  display: none;
+}
+.app-card-tabs .p-tabpanels {
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .app-card-tabs .p-tablist-tab-list {
+    padding: 0 0.75rem;
+  }
+  .app-card-tabs .p-tabpanels {
+    padding: 1.5rem;
+  }
+}
+.app-card-tabs .p-datatable-table-container {
+  overflow-x: auto;
+}
+.app-card-tabs .p-datatable-table {
+  min-width: 48rem;
+}
+.app-card-tabs .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+/* Plain HTML tables (class "app-table") styled like the Optimus tables: quiet headings, hairline rows. */
+.app-table thead tr {
+  background: var(--muted);
+}
+.app-table thead th {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.app-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+.app-table tbody tr:hover > td {
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+/* Row actions (the last cell) never break onto two lines. */
+.app-table tbody td:last-child,
+.app-card-tabs .p-datatable-tbody > tr > td:last-child {
+  white-space: nowrap;
 }

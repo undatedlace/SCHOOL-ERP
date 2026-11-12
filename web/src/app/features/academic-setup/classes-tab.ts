@@ -8,12 +8,12 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { SchoolClass } from '../../core/models';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
+import { Badge } from '../../shared/ui/badge';
 
 type Dialog =
   { kind: 'class'; editing: SchoolClass | null } | { kind: 'division'; parent: SchoolClass };
@@ -28,9 +28,9 @@ type Dialog =
     DialogModule,
     InputTextModule,
     TableModule,
-    TagModule,
     FormField,
     HasPermission,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -59,8 +59,8 @@ type Dialog =
             }
           </td>
           <td>
-            <p-tag
-              [value]="cls.admissionsOpen ? 'Open' : 'Closed'"
+            <app-badge
+              [label]="cls.admissionsOpen ? 'Open' : 'Closed'"
               [severity]="cls.admissionsOpen ? 'success' : 'secondary'"
             />
           </td>
@@ -71,15 +71,17 @@ type Dialog =
                   class="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
                 >
                   {{ d.name }}
-                  <button
+                  <p-button
                     *appHasPermission="'academics.manage'"
-                    type="button"
-                    class="text-muted-foreground hover:text-destructive"
-                    [attr.aria-label]="'Remove division ' + d.name + ' from ' + cls.name"
-                    (click)="confirmDeleteDivision(cls, d)"
+                    severity="danger"
+                    [text]="true"
+                    [rounded]="true"
+                    size="small"
+                    styleClass="!size-6 !p-0"
+                    [ariaLabel]="'Remove division ' + d.name + ' from ' + cls.name"
+                    (onClick)="confirmDeleteDivision(cls, d)"
+                    >&times;</p-button
                   >
-                    &times;
-                  </button>
                 </span>
               } @empty {
                 <span class="text-sm text-muted-foreground">None</span>

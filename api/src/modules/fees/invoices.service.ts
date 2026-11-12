@@ -443,6 +443,8 @@ export class InvoicesService {
         id: inv.id,
         kind: inv.kind,
         note: inv.note,
+        /** When it was billed: the first line of the student's fee statement. */
+        createdAt: inv.createdAt,
         academicYear: { id: inv.academicYear.id, name: inv.academicYear.name },
         lines: inv.lines.map((l) => ({
           description: l.description,

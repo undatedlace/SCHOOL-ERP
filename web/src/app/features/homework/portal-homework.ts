@@ -4,38 +4,29 @@ import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { Homework } from '../../core/models';
 import { HomeworkCard } from './homework-card';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 /** Homework set for a family's children (parents and students). */
 @Component({
   selector: 'app-portal-homework',
-  imports: [HomeworkCard],
+  imports: [HomeworkCard, SelectButtonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="mb-3 text-xl font-semibold">Homework</h1>
-    <div class="mb-4 flex gap-1 rounded-md border p-1 w-fit" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="!all()"
-        [class.text-primary-foreground]="!all()"
-        [attr.aria-selected]="!all()"
-        (click)="setAll(false)"
-      >
-        Still to do
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="all()"
-        [class.text-primary-foreground]="all()"
-        [attr.aria-selected]="all()"
-        (click)="setAll(true)"
-      >
-        Everything
-      </button>
-    </div>
+    <p-selectbutton
+      class="mb-4 block"
+      [options]="[
+        { label: 'Still to do', value: false },
+        { label: 'Everything', value: true },
+      ]"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [ngModel]="all()"
+      (ngModelChange)="setAll($event)"
+      aria-label="Which to show"
+    />
     @if (error()) {
       <p class="text-sm text-destructive" role="alert">{{ error() }}</p>
     }

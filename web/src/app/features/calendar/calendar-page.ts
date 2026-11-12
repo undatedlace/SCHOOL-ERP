@@ -38,6 +38,8 @@ import { EventDialog } from './event-dialog';
 import { MonthGrid } from './month-grid';
 import { TimeGrid } from './time-grid';
 import { YearGrid } from './year-grid';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 /** A leave from the staff calendar, shaped like an event so every view can draw it. It cannot be changed here. */
 const leaveAsEvent = (l: LeaveCalendarItem): CalendarEvent => ({
@@ -81,6 +83,8 @@ function savedView(): CalendarView {
     MonthGrid,
     TimeGrid,
     YearGrid,
+    SelectButtonModule,
+    FormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -99,48 +103,30 @@ function savedView(): CalendarView {
     <div class="grid gap-4 lg:grid-cols-[1fr_20rem]">
       <section class="min-w-0 rounded-xl border-0 bg-card p-4 shadow-sm" aria-label="Calendar">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex gap-1 rounded-full bg-muted p-1" role="group" aria-label="View">
-            @for (v of views; track v) {
-              <button
-                type="button"
-                class="rounded-full px-3.5 py-1.5 text-sm transition"
-                [class.bg-card]="view() === v"
-                [class.shadow-sm]="view() === v"
-                [class.font-semibold]="view() === v"
-                [attr.aria-pressed]="view() === v"
-                (click)="setView(v)"
-              >
-                {{ viewLabel[v] }}
-              </button>
-            }
-          </div>
+          <p-selectbutton
+            [options]="viewOptions"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="view()"
+            (ngModelChange)="setView($event)"
+            aria-label="View"
+          />
           <h2 class="order-last w-full text-center text-lg font-semibold sm:order-none sm:w-auto">
             {{ title() }}
           </h2>
           <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="inline-flex size-9 items-center justify-center rounded-full border hover:bg-accent"
-              aria-label="Previous"
-              (click)="move(-1)"
-            >
-              <span class="rotate-180"><app-icon name="chevron" /></span>
-            </button>
-            <button
-              type="button"
-              class="rounded-full border px-3 py-1.5 text-sm hover:bg-accent"
-              (click)="goToday()"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              class="inline-flex size-9 items-center justify-center rounded-full border hover:bg-accent"
-              aria-label="Next"
-              (click)="move(1)"
-            >
-              <app-icon name="chevron" />
-            </button>
+            <p-button
+              severity="secondary"
+              [outlined]="true"
+              ariaLabel="Previous"
+              (onClick)="move(-1)"
+              ><span class="rotate-180"><app-icon name="chevron" /></span
+            ></p-button>
+            <p-button label="Today" severity="secondary" [outlined]="true" (onClick)="goToday()" />
+            <p-button severity="secondary" [outlined]="true" ariaLabel="Next" (onClick)="move(1)"
+              ><app-icon name="chevron"
+            /></p-button>
           </div>
         </div>
 
@@ -211,20 +197,20 @@ function savedView(): CalendarView {
             }
             @if (e.canChange) {
               <div class="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 text-xs hover:bg-accent"
-                  (click)="dialog().open(e)"
-                >
-                  <app-icon name="edit" />Change
-                </button>
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 text-xs hover:bg-accent"
-                  (click)="remove(e)"
-                >
-                  <app-icon name="trash" />Remove
-                </button>
+                <p-button
+                  label="Change"
+                  size="small"
+                  severity="secondary"
+                  [outlined]="true"
+                  (onClick)="dialog().open(e)"
+                />
+                <p-button
+                  label="Remove"
+                  size="small"
+                  severity="danger"
+                  [text]="true"
+                  (onClick)="remove(e)"
+                />
               </div>
             }
           </article>
@@ -253,6 +239,7 @@ export class CalendarPage {
   protected readonly today = toIsoDate(new Date());
   protected readonly views = VIEWS;
   protected readonly viewLabel = VIEW_LABEL;
+  protected readonly viewOptions = VIEWS.map((value) => ({ value, label: VIEW_LABEL[value] }));
   protected readonly categoryClass = CATEGORY_CLASS;
   protected readonly categoryLabel = CATEGORY_LABEL;
   protected readonly categoryKeys = computed(() =>

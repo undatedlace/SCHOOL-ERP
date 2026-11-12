@@ -1,22 +1,22 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Homework } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { FileLinks } from './file-links';
 import { HandInForm } from './hand-in-form';
+import { Badge } from '../../shared/ui/badge';
 
 /** One piece of homework. Plain text only: instructions are shown exactly as written, never as HTML. */
 @Component({
   selector: 'app-homework-card',
-  imports: [TagModule, FileLinks, HandInForm],
+  imports: [FileLinks, HandInForm, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="rounded-xl bg-card p-4 shadow-sm">
       <div class="flex flex-wrap items-start justify-between gap-2">
         <h3 class="font-semibold">{{ homework().title }}</h3>
         @if (homework().dueOn; as due) {
-          <p-tag
-            [value]="(homework().overdue ? 'Was due ' : 'Due ') + format(due)"
+          <app-badge
+            [label]="(homework().overdue ? 'Was due ' : 'Due ') + format(due)"
             [severity]="homework().overdue ? 'danger' : 'info'"
           />
         }

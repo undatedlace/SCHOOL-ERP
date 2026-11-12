@@ -15,19 +15,20 @@ import { Api } from '../../core/api';
 import { AppNotification } from '../../core/models';
 import { Icon } from './icon';
 import { timeAgo } from './time-ago';
+import { ButtonModule } from '@openng/optimus-ui/button';
 
 const POLL_MS = 60_000;
 
 /** The bell in the top bar: how many messages are unread, and the latest few. */
 @Component({
   selector: 'app-notification-bell',
-  imports: [Icon, RouterLink],
+  imports: [Icon, RouterLink, ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="relative">
       <button
         type="button"
-        class="relative inline-flex size-10 items-center justify-center rounded-full bg-card shadow-sm hover:bg-accent"
+        class="relative inline-flex size-9 items-center justify-center rounded-[10px] text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         [attr.aria-label]="unread() ? 'Notifications, ' + unread() + ' unread' : 'Notifications'"
         aria-haspopup="true"
         [attr.aria-expanded]="open()"
@@ -51,9 +52,7 @@ const POLL_MS = 60_000;
           <div class="flex items-center justify-between px-2 py-1.5">
             <h2 class="text-sm font-semibold">Notifications</h2>
             @if (unread() > 0) {
-              <button type="button" class="app-link text-xs" (click)="readAll()">
-                Mark all as read
-              </button>
+              <p-button label="Mark all as read" size="small" [text]="true" (onClick)="readAll()" />
             }
           </div>
           <ul class="max-h-96 overflow-y-auto">

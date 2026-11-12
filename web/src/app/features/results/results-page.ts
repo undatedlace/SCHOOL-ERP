@@ -8,7 +8,6 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectModule } from '@openng/optimus-ui/select';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AssessmentKind, AssessmentOptions, AssessmentSummary } from '../../core/models';
@@ -16,6 +15,7 @@ import { formatDate } from '../../shared/dates';
 import { DateField } from '../../shared/ui/date-field';
 import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 export const KIND_OPTIONS: { label: string; value: AssessmentKind }[] = [
   { label: 'Unit test', value: 'UNIT' },
@@ -35,10 +35,10 @@ export const KIND_OPTIONS: { label: string; value: AssessmentKind }[] = [
     InputNumberModule,
     InputTextModule,
     SelectModule,
-    TagModule,
     DateField,
     FilterBar,
     PageHeader,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -56,7 +56,7 @@ export const KIND_OPTIONS: { label: string; value: AssessmentKind }[] = [
     }
 
     <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-      <table class="w-full min-w-[44rem] text-sm">
+      <table class="app-table w-full min-w-[44rem] text-sm">
         <thead>
           <tr class="bg-accent text-left">
             <th scope="col" class="px-4 py-3">Test</th>
@@ -81,8 +81,8 @@ export const KIND_OPTIONS: { label: string; value: AssessmentKind }[] = [
               <td class="px-4 py-3 whitespace-nowrap">{{ format(a.conductedOn) }}</td>
               <td class="px-4 py-3">{{ a.entered }} of {{ a.students }}</td>
               <td class="px-4 py-3">
-                <p-tag
-                  [value]="a.published ? 'Published' : 'Draft'"
+                <app-badge
+                  [label]="a.published ? 'Published' : 'Draft'"
                   [severity]="a.published ? 'success' : 'warn'"
                 />
               </td>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
+import { Icon } from '../../shared/ui/icon';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
@@ -21,7 +22,7 @@ import {
 
 @Component({
   selector: 'app-promotion-page',
-  imports: [FormsModule, ButtonModule, MessageModule, SelectModule, PageHeader],
+  imports: [Icon, FormsModule, ButtonModule, MessageModule, SelectModule, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -64,9 +65,14 @@ import {
         text="Set up next year in Academic setup first, then choose the two years here."
       />
     } @else if (plan(); as p) {
-      <button type="button" class="mb-3 text-sm underline" (click)="back()">
-        Back to all classes
-      </button>
+      <p-button
+        class="mb-3 block"
+        severity="secondary"
+        [text]="true"
+        size="small"
+        (onClick)="back()"
+        ><app-icon name="arrow-left" /><span>Back to all classes</span></p-button
+      >
       <h2 class="mb-1 text-lg font-semibold">
         {{ p.division.class.name }}-{{ p.division.name }}: {{ p.from.name }} into {{ p.to.name }}
       </h2>

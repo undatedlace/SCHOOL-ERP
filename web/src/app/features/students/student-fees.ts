@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
@@ -8,9 +16,9 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
+import { AuthService } from '../../core/auth.service';
 import {
   AcademicYear,
   LedgerInvoice,
@@ -22,6 +30,11 @@ import { formatDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { inr, isMoney } from '../../shared/money';
 import { FormField } from '../../shared/ui/form-field';
+import { Badge } from '../../shared/ui/badge';
+import { StatTile } from '../../shared/ui/stat-tile';
+import { fromPaise, percentText, share, statement, toPaise } from '../fees/fee-view';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 const MODES: { value: PaymentMode; label: string }[] = [
   { value: 'CASH', label: 'Cash' },
@@ -43,6 +56,8 @@ const moneyValidator = (c: { value: string }) =>
 @Component({
   selector: 'app-student-fees',
   imports: [
+    Badge,
+    StatTile,
     ReactiveFormsModule,
     ButtonModule,
     DatePickerModule,
@@ -50,18 +65,16 @@ const moneyValidator = (c: { value: string }) =>
     InputTextModule,
     MessageModule,
     SelectModule,
-    TagModule,
     FormField,
     HasPermission,
+    SelectButtonModule,
+    FormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section
-      class="rounded-xl border-0 bg-card shadow-sm p-5 lg:col-span-3"
-      *appHasPermission="'fees.read'"
-    >
+    <section class="rounded-xl bg-card p-5 shadow-sm" *appHasPermission="'fees.read'">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold">Fees</h2>
+        <h2 class="text-base font-bold">Fees</h2>
         <div class="flex flex-wrap gap-2">
           <p-button
             *appHasPermission="'fees.structure.manage'"
@@ -94,163 +107,210 @@ const moneyValidator = (c: { value: string }) =>
       @if (error()) {
         <p-message severity="error" [text]="error()!" />
       } @else if (ledger(); as l) {
-        <dl class="mb-5 grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
-          <div class="min-w-0 rounded-md bg-muted p-3">
-            <dt class="text-xs text-muted-foreground">Billed</dt>
-            <dd class="text-base font-semibold break-words sm:text-lg">
-              {{ money(l.totals.gross) }}
-            </dd>
-          </div>
-          <div class="min-w-0 rounded-md bg-muted p-3">
-            <dt class="text-xs text-muted-foreground">Concessions</dt>
-            <dd class="text-base font-semibold break-words sm:text-lg">
-              {{ money(l.totals.concessions) }}
-            </dd>
-          </div>
-          <div class="min-w-0 rounded-md bg-muted p-3">
-            <dt class="text-xs text-muted-foreground">Paid</dt>
-            <dd class="text-base font-semibold break-words sm:text-lg">
-              {{ money(l.totals.paid) }}
-            </dd>
-          </div>
-          <div class="min-w-0 rounded-md border p-3">
-            <dt class="text-xs text-muted-foreground">Still to pay</dt>
-            <dd class="text-base font-semibold break-words sm:text-lg">
-              {{ money(l.totals.pending) }}
-            </dd>
-          </div>
-        </dl>
+        <div class="mb-5 grid grid-cols-2 gap-3 2xl:grid-cols-4">
+          <app-stat-tile [compact]="true" label="Billed" [value]="money(l.totals.gross)" />
+          <app-stat-tile
+            [compact]="true"
+            label="Concessions"
+            [value]="money(l.totals.concessions)"
+          />
+          <app-stat-tile
+            [compact]="true"
+            label="Paid"
+            [value]="money(l.totals.paid)"
+            [progress]="paidShare()"
+            [hint]="percent(paidShare()) + ' of what is due'"
+          />
+          <app-stat-tile
+            [compact]="true"
+            label="Still to pay"
+            [value]="money(l.totals.pending)"
+            [hint]="l.totals.pending === '0.00' ? 'Nothing owed' : nextDueText()"
+          />
+        </div>
 
-        @for (inv of l.invoices; track inv.id) {
-          <div class="mb-5 rounded-md border">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b p-3">
-              <div>
-                <span class="font-medium">{{ invoiceTitle(inv) }}</span>
-                @if (inv.note) {
-                  <span class="ml-2 text-sm text-muted-foreground">{{ inv.note }}</span>
-                }
-              </div>
-              <div class="flex items-center gap-2 text-sm">
-                <span class="text-muted-foreground">Still to pay</span>
-                <span class="font-semibold">{{ money(inv.pending) }}</span>
-                <p-button
-                  *appHasPermission="'fees.concession.manage'"
-                  label="Concession"
-                  size="small"
-                  [text]="true"
-                  (onClick)="openConcession(inv)"
-                />
-              </div>
-            </div>
-            <table class="block w-full overflow-x-auto text-sm">
-              <thead class="text-left text-xs text-muted-foreground">
-                <tr>
-                  <th class="p-2 pl-3">Instalment</th>
-                  <th class="p-2">Due on</th>
-                  <th class="p-2 text-right">Amount</th>
-                  <th class="p-2 text-right">Paid</th>
-                  <th class="p-2 pr-3 text-right">Pending</th>
+        @if (l.invoices.length) {
+          <p-selectbutton
+            class="mb-4 block"
+            [options]="views"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="view()"
+            (ngModelChange)="view.set($event)"
+            [ngModelOptions]="{ standalone: true }"
+            aria-label="Show fees by instalment or as a statement"
+          />
+        }
+
+        @if (view() === 'statement' && l.invoices.length) {
+          <div class="overflow-x-auto rounded-lg border">
+            <table class="w-full min-w-[36rem] text-sm">
+              <thead class="bg-muted text-left">
+                <tr class="app-eyebrow">
+                  <th class="p-2.5 pl-3 font-semibold">Date</th>
+                  <th class="p-2.5 font-semibold">Description</th>
+                  <th class="p-2.5 text-right font-semibold">Charge</th>
+                  <th class="p-2.5 text-right font-semibold">Paid or reduced</th>
+                  <th class="p-2.5 pr-3 text-right font-semibold">Balance</th>
                 </tr>
               </thead>
               <tbody>
-                @for (i of inv.instalments; track i.seq) {
+                @for (row of statementRows(); track $index) {
                   <tr class="border-t">
-                    <td class="p-2 pl-3">{{ i.label }}</td>
-                    <td class="p-2">
-                      {{ date(i.dueDate) }}
-                      @if (i.overdue) {
-                        <p-tag class="ml-1" value="Overdue" severity="danger" />
+                    <td class="p-2.5 pl-3 whitespace-nowrap">{{ date(row.date) }}</td>
+                    <td class="p-2.5">
+                      {{ row.description }}
+                      @if (row.detail) {
+                        <span class="block text-xs text-muted-foreground">{{ row.detail }}</span>
                       }
                     </td>
-                    <td class="p-2 text-right">{{ money(i.due) }}</td>
-                    <td class="p-2 text-right">{{ money(i.paid) }}</td>
-                    <td class="p-2 pr-3 text-right font-medium">{{ money(i.pending) }}</td>
+                    <td class="p-2.5 text-right whitespace-nowrap">
+                      {{ row.charge ? money(row.charge) : '' }}
+                    </td>
+                    <td class="p-2.5 text-right whitespace-nowrap text-good">
+                      {{ row.credit ? money(row.credit) : '' }}
+                    </td>
+                    <td class="p-2.5 pr-3 text-right font-semibold whitespace-nowrap">
+                      {{ money(row.balance) }}
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
-            <div class="border-t p-3 text-xs text-muted-foreground">
-              @for (line of inv.lines; track $index) {
-                <span class="mr-3">{{ line.description }} {{ money(line.amount) }}</span>
-              }
-            </div>
-            @for (c of inv.concessions; track c.id) {
-              <div class="flex flex-wrap items-center justify-between gap-2 border-t p-3 text-sm">
-                <span [class.line-through]="c.revoked">
-                  Concession {{ money(c.amount) }}: {{ c.reason }}
-                </span>
-                @if (c.revoked) {
-                  <span class="text-xs text-muted-foreground"
-                    >Taken back: {{ c.revokedReason }}</span
-                  >
-                } @else {
+          </div>
+        } @else {
+          @for (inv of l.invoices; track inv.id) {
+            <div class="mb-5 rounded-md border">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b p-3">
+                <div>
+                  <span class="font-medium">{{ invoiceTitle(inv) }}</span>
+                  @if (inv.note) {
+                    <span class="ml-2 text-sm text-muted-foreground">{{ inv.note }}</span>
+                  }
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="text-muted-foreground">Still to pay</span>
+                  <span class="font-semibold">{{ money(inv.pending) }}</span>
                   <p-button
                     *appHasPermission="'fees.concession.manage'"
-                    label="Take back"
+                    label="Concession"
+                    size="small"
+                    [text]="true"
+                    (onClick)="openConcession(inv)"
+                  />
+                </div>
+              </div>
+              <table class="block w-full overflow-x-auto text-sm">
+                <thead class="text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th class="p-2 pl-3">Instalment</th>
+                    <th class="p-2">Due on</th>
+                    <th class="p-2 text-right">Amount</th>
+                    <th class="p-2 text-right">Paid</th>
+                    <th class="p-2 pr-3 text-right">Pending</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (i of inv.instalments; track i.seq) {
+                    <tr class="border-t">
+                      <td class="p-2 pl-3">{{ i.label }}</td>
+                      <td class="p-2">
+                        {{ date(i.dueDate) }}
+                        @if (i.overdue) {
+                          <app-badge class="ml-1" label="Overdue" tone="bad" />
+                        }
+                      </td>
+                      <td class="p-2 text-right">{{ money(i.due) }}</td>
+                      <td class="p-2 text-right">{{ money(i.paid) }}</td>
+                      <td class="p-2 pr-3 text-right font-medium">{{ money(i.pending) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <div class="border-t p-3 text-xs text-muted-foreground">
+                @for (line of inv.lines; track $index) {
+                  <span class="mr-3">{{ line.description }} {{ money(line.amount) }}</span>
+                }
+              </div>
+              @for (c of inv.concessions; track c.id) {
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t p-3 text-sm">
+                  <span [class.line-through]="c.revoked">
+                    Concession {{ money(c.amount) }}: {{ c.reason }}
+                  </span>
+                  @if (c.revoked) {
+                    <span class="text-xs text-muted-foreground"
+                      >Taken back: {{ c.revokedReason }}</span
+                    >
+                  } @else {
+                    <p-button
+                      *appHasPermission="'fees.concession.manage'"
+                      label="Take back"
+                      size="small"
+                      severity="danger"
+                      [text]="true"
+                      (onClick)="askRevoke(c.id)"
+                    />
+                  }
+                </div>
+              }
+            </div>
+          } @empty {
+            <p class="mb-5 text-sm text-muted-foreground">
+              No fees have been billed to this student yet.
+              <ng-container *appHasPermission="'fees.structure.manage'">
+                <p-button
+                  label="Bill this year's fees"
+                  size="small"
+                  severity="secondary"
+                  [loading]="busy()"
+                  (onClick)="generate()"
+                />
+              </ng-container>
+            </p>
+          }
+
+          <h3 class="mb-2 text-sm font-semibold">Payments</h3>
+          @for (p of l.payments; track p.id) {
+            <div
+              class="flex flex-wrap items-center justify-between gap-2 border-b py-2 text-sm last:border-0"
+            >
+              <div [class.opacity-60]="!!p.reversed">
+                <span class="font-medium" [class.line-through]="!!p.reversed">{{
+                  money(p.amount)
+                }}</span>
+                <span class="ml-2">{{ p.receiptNo }}</span>
+                <div class="text-xs text-muted-foreground">
+                  {{ date(p.paidOn) }} &middot; {{ mode(p.mode)
+                  }}{{ p.reference ? ' ' + p.reference : '' }}
+                  @if (p.reversed) {
+                    &middot; Reversed: {{ p.reversed.reason }}
+                  }
+                </div>
+              </div>
+              <div class="flex gap-1">
+                <a
+                  class="inline-flex h-8 items-center rounded-md px-3 text-sm hover:bg-muted"
+                  [href]="'/api/payments/' + p.id + '/receipt'"
+                  target="_blank"
+                  rel="noopener"
+                  >Receipt</a
+                >
+                @if (!p.reversed) {
+                  <p-button
+                    *appHasPermission="'fees.payment.reverse'"
+                    label="Reverse"
                     size="small"
                     severity="danger"
                     [text]="true"
-                    (onClick)="askRevoke(c.id)"
+                    (onClick)="askReverse(p)"
                   />
                 }
               </div>
-            }
-          </div>
-        } @empty {
-          <p class="mb-5 text-sm text-muted-foreground">
-            No fees have been billed to this student yet.
-            <ng-container *appHasPermission="'fees.structure.manage'">
-              <p-button
-                label="Bill this year's fees"
-                size="small"
-                severity="secondary"
-                [loading]="busy()"
-                (onClick)="generate()"
-              />
-            </ng-container>
-          </p>
-        }
-
-        <h3 class="mb-2 text-sm font-semibold">Payments</h3>
-        @for (p of l.payments; track p.id) {
-          <div
-            class="flex flex-wrap items-center justify-between gap-2 border-b py-2 text-sm last:border-0"
-          >
-            <div [class.opacity-60]="!!p.reversed">
-              <span class="font-medium" [class.line-through]="!!p.reversed">{{
-                money(p.amount)
-              }}</span>
-              <span class="ml-2">{{ p.receiptNo }}</span>
-              <div class="text-xs text-muted-foreground">
-                {{ date(p.paidOn) }} &middot; {{ mode(p.mode)
-                }}{{ p.reference ? ' ' + p.reference : '' }}
-                @if (p.reversed) {
-                  &middot; Reversed: {{ p.reversed.reason }}
-                }
-              </div>
             </div>
-            <div class="flex gap-1">
-              <a
-                class="inline-flex h-8 items-center rounded-md px-3 text-sm hover:bg-muted"
-                [href]="'/api/payments/' + p.id + '/receipt'"
-                target="_blank"
-                rel="noopener"
-                >Receipt</a
-              >
-              @if (!p.reversed) {
-                <p-button
-                  *appHasPermission="'fees.payment.reverse'"
-                  label="Reverse"
-                  size="small"
-                  severity="danger"
-                  [text]="true"
-                  (onClick)="askReverse(p)"
-                />
-              }
-            </div>
-          </div>
-        } @empty {
-          <p class="text-sm text-muted-foreground">No payments yet.</p>
+          } @empty {
+            <p class="text-sm text-muted-foreground">No payments yet.</p>
+          }
         }
       } @else {
         <p class="text-sm text-muted-foreground">Loading...</p>
@@ -450,6 +510,16 @@ const moneyValidator = (c: { value: string }) =>
 })
 export class StudentFees {
   readonly studentId = input.required<string>();
+  /** Open the payment form as soon as the fees have loaded (arriving from Fee dues). */
+  readonly openPayment = input(false);
+  private paymentOffered = false;
+  private readonly canPay = inject(AuthService).has('fees.payment.create');
+
+  protected readonly views = [
+    { label: 'By instalment', value: 'instalments' as const },
+    { label: 'Statement', value: 'statement' as const },
+  ];
+  protected readonly view = signal<'instalments' | 'statement'>('instalments');
 
   private readonly api = inject(Api);
   private readonly toast = inject(MessageService);
@@ -462,6 +532,25 @@ export class StudentFees {
   protected readonly today = new Date();
 
   protected readonly ledger = signal<StudentLedger | null>(null);
+  protected readonly statementRows = computed(() => {
+    const l = this.ledger();
+    return l ? statement(l) : [];
+  });
+  /** Paid as a share of what is due after concessions. */
+  protected readonly paidShare = computed(() => {
+    const t = this.ledger()?.totals;
+    if (!t) return 0;
+    return share(t.paid, fromPaise(toPaise(t.gross) - toPaise(t.concessions)));
+  });
+  protected readonly nextDueText = computed(() => {
+    const next = this.ledger()
+      ?.invoices.flatMap((i) => i.instalments)
+      .filter((i) => i.pending !== '0.00')
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+    if (!next) return '';
+    return (next.overdue ? 'Overdue since ' : 'Next due ') + formatDate(next.dueDate);
+  });
+  protected readonly percent = percentText;
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly formError = signal<string | null>(null);
@@ -541,7 +630,17 @@ export class StudentFees {
   private async load(id: string) {
     this.error.set(null);
     try {
-      this.ledger.set(await firstValueFrom(this.api.studentFees(id)));
+      const ledger = await firstValueFrom(this.api.studentFees(id));
+      this.ledger.set(ledger);
+      if (
+        this.openPayment() &&
+        !this.paymentOffered &&
+        this.canPay &&
+        ledger.totals.pending !== '0.00'
+      ) {
+        this.paymentOffered = true;
+        this.openPay();
+      }
     } catch (error) {
       this.error.set(apiError(error));
     }

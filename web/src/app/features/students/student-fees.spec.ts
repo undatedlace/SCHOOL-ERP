@@ -15,6 +15,7 @@ const ledger = (pending = '26200.50'): StudentLedger => ({
       id: 'i1',
       kind: 'FEE_STRUCTURE',
       note: null,
+      createdAt: '2026-04-05T10:00:00.000Z',
       academicYear: { id: 'y', name: '2026-27' },
       lines: [{ description: 'Tuition', amount: '30000.00' }],
       concessions: [],
@@ -58,7 +59,7 @@ interface Internals {
   formError: () => string | null;
 }
 
-function setup(permissions: string[]) {
+function setup(permissions: string[], openPayment = false) {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
@@ -73,6 +74,7 @@ function setup(permissions: string[]) {
   auth.me.set({ id: 'u', fullName: 'U', roles: [], permissions, mustChangePassword: false });
   const fixture = TestBed.createComponent(StudentFees);
   fixture.componentRef.setInput('studentId', 's1');
+  fixture.componentRef.setInput('openPayment', openPayment);
   fixture.detectChanges();
   const http = TestBed.inject(HttpTestingController);
   return {
@@ -159,5 +161,50 @@ describe('StudentFees', () => {
       );
     await sent;
     expect(c.formError()).toContain('more than what is owed');
+  });
+
+  it('shows the fees as a statement with a running balance', async () => {
+    const { fixture, http, el } = setup(['fees.read']);
+    http.expectOne('/api/students/s1/fees').flush(ledger());
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const statementTab = Array.from(
+      el.querySelectorAll(
+        '[aria-label="Show fees by instalment or as a statement"] [role="button"]',
+      ),
+    ).find((b) => b.textContent?.trim() === 'Statement') as HTMLElement;
+    statementTab.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const rows = Array.from(el.querySelectorAll('tbody tr')).map((r) =>
+      r.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toContain('Fees 2026-27');
+    expect(rows[0]).toContain('₹31,200.50');
+    expect(rows[1]).toContain('Payment, receipt 2026-27/00001');
+    expect(rows[1]).toContain('₹26,200.50'); // the balance after it, which is what is still owed
+  });
+
+  it('opens the payment form at once when asked to (coming from Fee dues)', async () => {
+    const { fixture, http, el } = setup(['fees.read', 'fees.payment.create'], true);
+    http.expectOne('/api/students/s1/fees').flush(ledger());
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(document.querySelector('.p-dialog')?.textContent ?? el.textContent).toContain(
+      'Record payment',
+    );
+    expect((fixture.componentInstance as unknown as { payOpen: () => boolean }).payOpen()).toBe(
+      true,
+    );
+  });
+
+  it('does not open the payment form for someone who may only look', async () => {
+    const { fixture, http } = setup(['fees.read'], true);
+    http.expectOne('/api/students/s1/fees').flush(ledger());
+    await fixture.whenStable();
+    expect((fixture.componentInstance as unknown as { payOpen: () => boolean }).payOpen()).toBe(
+      false,
+    );
   });
 });
