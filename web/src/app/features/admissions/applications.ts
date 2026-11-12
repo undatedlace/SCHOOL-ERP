@@ -19,6 +19,9 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-tag';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { FormsModule } from '@angular/forms';
+import { Avatar } from '../../shared/ui/avatar';
+import { ClassPill } from '../../shared/ui/badge';
+import { Icon } from '../../shared/ui/icon';
 
 @Component({
   selector: 'app-applications',
@@ -32,77 +35,112 @@ import { FormsModule } from '@angular/forms';
     HasPermission,
     SelectButtonModule,
     FormsModule,
+    Avatar,
+    ClassPill,
+    Icon,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-header title="Admissions" subtitle="Applications for the current academic year.">
-      <a *appHasPermission="'admissions.manage'" routerLink="/app/admissions/new">
-        <p-button label="New application" />
-      </a>
+    <app-page-header
+      title="Admissions"
+      [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Admissions' }]"
+      subtitle="Applications for the current academic year: received, reviewed, then granted or refused."
+    >
+      <p-button
+        *appHasPermission="'admissions.manage'"
+        label="New application"
+        routerLink="/app/admissions/new"
+      />
     </app-page-header>
 
-    @if (statusTabs().length) {
-      <p-selectbutton
-        class="mb-5 block"
-        [options]="statusTabs()"
-        optionLabel="label"
-        optionValue="value"
-        [allowEmpty]="false"
-        [ngModel]="statusChoice()"
-        (ngModelChange)="onStatus($event === 'ALL' ? null : $event)"
-        aria-label="Show applications by status"
-      >
-        <ng-template #item let-item>
-          <span>{{ item.label }}</span>
-          <span
-            class="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-muted-foreground tabular-nums"
-            >{{ item.count }}</span
+    <section class="overflow-hidden rounded-xl bg-card shadow-sm">
+      <div class="flex flex-col gap-4 border-b p-5 pb-1">
+        @if (statusTabs().length) {
+          <p-selectbutton
+            [options]="statusTabs()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="statusChoice()"
+            (ngModelChange)="onStatus($event === 'ALL' ? null : $event)"
+            aria-label="Show applications by status"
           >
+            <ng-template #item let-item>
+              <span>{{ item.label }}</span>
+              <span
+                class="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-muted-foreground tabular-nums"
+                >{{ item.count }}</span
+              >
+            </ng-template>
+          </p-selectbutton>
+        }
+        <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
+      </div>
+
+      <p-table
+        [value]="rows()"
+        [lazy]="true"
+        (onLazyLoad)="load($event)"
+        [paginator]="true"
+        [rows]="20"
+        [rowsPerPageOptions]="[20, 50, 100]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first}–{last} of {totalRecords}"
+        [first]="first()"
+        [totalRecords]="total()"
+        [loading]="loading()"
+        [tableStyle]="{ 'min-width': '48rem' }"
+      >
+        <ng-template #header>
+          <tr>
+            <th class="!pl-5">Child</th>
+            <th>Class applied for</th>
+            <th>Received</th>
+            <th>Status</th>
+            <th class="!pr-5"><span class="sr-only">Open</span></th>
+          </tr>
         </ng-template>
-      </p-selectbutton>
-    }
-
-    <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
-
-    <p-table
-      [value]="rows()"
-      [lazy]="true"
-      (onLazyLoad)="load($event)"
-      [paginator]="true"
-      [rows]="20"
-      [first]="first()"
-      [totalRecords]="total()"
-      [loading]="loading()"
-      [tableStyle]="{ 'min-width': '48rem' }"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Form no.</th>
-          <th>Student</th>
-          <th>Class</th>
-          <th>Received</th>
-          <th>Status</th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-row>
-        <tr class="hover:bg-accent">
-          <td class="font-mono text-sm">{{ row.formNo }}</td>
-          <td>
-            <a class="font-medium app-link" [routerLink]="['/app/admissions', row.id]">{{
-              row.studentName
-            }}</a>
-          </td>
-          <td>{{ row.class?.name }}</td>
-          <td class="whitespace-nowrap text-sm">{{ format(row.receivedOn) }}</td>
-          <td><app-status-tag [status]="row.status" /></td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="5" class="p-4 text-center text-muted-foreground">No applications found.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+        <ng-template #body let-row>
+          <tr>
+            <td class="!pl-5">
+              <div class="flex items-center gap-3">
+                <app-avatar [name]="row.studentName" />
+                <div class="min-w-0 leading-tight">
+                  <a class="font-semibold app-link" [routerLink]="['/app/admissions', row.id]">{{
+                    row.studentName
+                  }}</a>
+                  <p class="mt-1 text-xs text-muted-foreground">Form no. {{ row.formNo }}</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              @if (row.class) {
+                <app-class-pill [label]="row.class.name" />
+              } @else {
+                <span class="text-muted-foreground">&mdash;</span>
+              }
+            </td>
+            <td class="text-sm whitespace-nowrap">{{ format(row.receivedOn) }}</td>
+            <td><app-status-tag [status]="row.status" /></td>
+            <td class="!pr-5 text-right">
+              <a
+                [routerLink]="['/app/admissions', row.id]"
+                class="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-primary"
+                [attr.aria-label]="'Open the application of ' + row.studentName"
+                ><app-icon name="eye"
+              /></a>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5" class="p-8 text-center text-muted-foreground">
+              No applications match these filters.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
   `,
 })
 export class Applications {

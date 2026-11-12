@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { Assignment } from '../../core/models';
-import { Dashboard } from './dashboard';
+import { Dashboard, greeting } from './dashboard';
 
 const row = (over: Partial<Assignment> & { id: string }): Assignment => ({
   kind: 'SUBJECT',
@@ -94,5 +94,57 @@ describe('Dashboard: insights follow permissions', () => {
   it('someone with none of them asks for none', () => {
     const { http } = setup(['staff.read']);
     expect(asked(http)).toEqual([]);
+  });
+});
+
+describe('Dashboard: tiles at a glance', () => {
+  it('shows the office the students, waiting applications and recent forms; no fees or staff', async () => {
+    const { fixture, http } = setup(['students.read_all', 'admissions.read']);
+    http
+      .expectOne((r) => r.url === '/api/students')
+      .flush({ items: [], total: 185, page: 1, pageSize: 1 });
+    http.expectOne('/api/admissions/applications/summary').flush({
+      academicYearId: 'y',
+      total: 12,
+      counts: { RECEIVED: 3, UNDER_REVIEW: 2, GRANTED: 6, REFUSED: 1, WITHDRAWN: 0 },
+    });
+    http
+      .expectOne((r) => r.url === '/api/admissions/applications')
+      .flush({
+        items: [
+          {
+            id: 'a1',
+            formNo: '41',
+            seq: 41,
+            status: 'RECEIVED',
+            studentName: 'Ayaan Shaikh',
+            dateOfBirth: null,
+            receivedOn: '2026-11-10',
+            class: { id: 'c', name: 'Nursery' },
+            academicYear: { id: 'y', name: '2026-27' },
+          },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 5,
+      });
+    http.expectNone((r) => r.url === '/api/fees/dues' || r.url === '/api/staff');
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Students');
+    expect(text).toContain('185');
+    expect(text).toContain('Applications waiting');
+    expect(text).toContain('12 received this year, 6 granted');
+    expect(text).toContain('Recent applications');
+    expect(text).toContain('Ayaan Shaikh');
+    expect(text).not.toContain('Fees collected');
+  });
+
+  it('greets by the time of day in India', () => {
+    expect(greeting(new Date('2026-11-12T03:00:00Z'))).toBe('Good morning'); // 8:30 am
+    expect(greeting(new Date('2026-11-12T08:00:00Z'))).toBe('Good afternoon'); // 1:30 pm
+    expect(greeting(new Date('2026-11-12T14:00:00Z'))).toBe('Good evening'); // 7:30 pm
   });
 });
