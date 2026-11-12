@@ -1,0 +1,110 @@
+# The PPE (test) copy of the School ERP on Render, free plans. See docs/ppe-render.md.
+# Secrets are marked "sync: false": Render asks for them when the Blueprint is created, and they
+# never live in git. The database is Neon's free Postgres (a free Render service has no disk).
+services:
+  # The API. Kept awake by an uptime check on /api/health every minute.
+  - type: web
+    name: school-erp-api-ppe
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    # Free services have no pre-deploy step, so new migrations are applied as the API starts.
+    dockerCommand: sh -c "npx prisma migrate deploy --config prisma7.config.ts && node dist/main"
+    healthCheckPath: /api/health
+    buildFilter:
+      paths: ['api/**']
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '3000'
+      - key: TRUST_PROXY
+        value: 'true'
+      # The web address people open (the static site below), for the Origin check.
+      - key: APP_ORIGINS
+        value: https://school-erp-ppe.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: FILES_DRIVER
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        value: ap-south-1
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # Keeps PPE uploads apart from anything else in the bucket.
+      - key: S3_KEY_PREFIX
+        value: ppe
+      # Shows the "Test environment" strip and the feedback link in the app.
+      - key: APP_ENV_LABEL
+        value: Test environment
+      - key: FEEDBACK_URL
+        sync: false
+
+  # The web app. A static site is free and uses no instance hours. It forwards /api to the API,
+  # so the browser talks to one address and the session cookie stays first-party.
+  - type: web
+    name: school-erp-ppe
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npx ng build --configuration production
+    staticPublishPath: dist/web/browser
+    buildFilter:
+      paths: ['web/**']
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://school-erp-api-ppe.onrender.com/api/*
+      # Every other address is an app page; the Angular router decides what to show.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # The same security headers as web/nginx-security-headers.conf.
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=()
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      # A test copy should not appear in search results.
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      # Whatever the API returns is private to the signed-in person.
+      - path: /api/*
+        name: Cache-Control
+        value: no-store
+      # These must always be fetched fresh, or an update never reaches people's phones.
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /ngsw.json
+        name: Cache-Control
+        value: no-cache
+      - path: /ngsw-worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /safety-worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache
