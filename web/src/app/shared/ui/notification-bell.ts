@@ -27,7 +27,7 @@ const POLL_MS = 60_000;
     <div class="relative">
       <button
         type="button"
-        class="relative inline-flex size-10 items-center justify-center rounded-full bg-card shadow-sm hover:bg-accent"
+        class="relative inline-flex size-9 items-center justify-center rounded-[10px] text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         [attr.aria-label]="unread() ? 'Notifications, ' + unread() + ' unread' : 'Notifications'"
         aria-haspopup="true"
         [attr.aria-expanded]="open()"

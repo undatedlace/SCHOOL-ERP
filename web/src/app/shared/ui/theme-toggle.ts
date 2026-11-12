@@ -8,14 +8,14 @@ import { ThemeService } from '../../core/theme.service';
   template: `
     <button
       type="button"
-      class="inline-flex size-9 items-center justify-center rounded-md border bg-card text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      class="inline-flex size-9 items-center justify-center rounded-[10px] text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
       (click)="theme.toggle()"
     >
       @if (theme.theme() === 'dark') {
         <svg
           viewBox="0 0 24 24"
-          class="size-4"
+          class="size-[18px]"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -31,7 +31,7 @@ import { ThemeService } from '../../core/theme.service';
       } @else {
         <svg
           viewBox="0 0 24 24"
-          class="size-4"
+          class="size-[18px]"
           fill="none"
           stroke="currentColor"
           stroke-width="2"

@@ -54,7 +54,8 @@ describe('StudentsList filters', () => {
       .queryAll(By.css('app-filter-bar p-select'))[3]
       .triggerEventHandler('ngModelChange', 'FEMALE');
     fixture.detectChanges();
-    const req = http.expectOne((r) => r.url === '/api/students');
+    // The class tiles ask for their own counts; the list's request is the one carrying the filter.
+    const req = http.expectOne((r) => r.url === '/api/students' && r.params.has('gender'));
     expect(req.request.params.get('gender')).toBe('FEMALE');
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.has('status')).toBe(false);

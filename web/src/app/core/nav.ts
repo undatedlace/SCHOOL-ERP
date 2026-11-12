@@ -12,7 +12,8 @@ export interface NavItem {
 export interface NavEntry {
   label: string;
   icon: string;
-  section: 'menu' | 'other';
+  /** Where it sits in the sidebar: the overview at the top, the office's daily work, then administration. */
+  section: 'overview' | 'office' | 'admin';
   /** Set for a single link. */
   item?: NavItem;
   /** Set for a group; the group is hidden when the user may open none of its pages. */
@@ -167,29 +168,39 @@ const auditLog: NavItem = {
 
 /** The staff menu, grouped. Each page is also protected by a route guard and, above all, by the API. */
 export const NAV_ENTRIES: NavEntry[] = [
-  { label: 'Dashboard', icon: 'home', section: 'menu', item: dashboard },
-  { label: 'Calendar', icon: 'calendar', section: 'menu', item: calendar },
-  { label: 'Academics', icon: 'book', section: 'menu', items: [academicSetup, homework, results] },
-  { label: 'Admissions', icon: 'clipboard', section: 'menu', items: [admissions, forms] },
-  { label: 'Students', icon: 'students', section: 'menu', items: [students, promotion] },
+  { label: 'Dashboard', icon: 'home', section: 'overview', item: dashboard },
+  { label: 'Calendar', icon: 'calendar', section: 'overview', item: calendar },
+  { label: 'Admissions', icon: 'clipboard', section: 'office', items: [admissions, forms] },
+  { label: 'Students', icon: 'students', section: 'office', items: [students, promotion] },
   {
     label: 'Staff',
     icon: 'teachers',
-    section: 'menu',
+    section: 'office',
     items: [staff, leaveRequests, myLeave],
+  },
+  {
+    label: 'Academics',
+    icon: 'book',
+    section: 'office',
+    items: [academicSetup, homework, results],
+  },
+  {
+    label: 'Finance',
+    icon: 'finance',
+    section: 'office',
+    items: [feeDues, feeCollection, feeSetup],
   },
   {
     label: 'Attendance',
     icon: 'attendance',
-    section: 'menu',
+    section: 'office',
     items: [attendance, staffAttendance, myAttendance],
   },
-  { label: 'Finance', icon: 'finance', section: 'menu', items: [feeDues, feeCollection, feeSetup] },
-  { label: 'Notices', icon: 'notice', section: 'menu', item: notices },
+  { label: 'Notices', icon: 'notice', section: 'office', item: notices },
   {
     label: 'Settings',
     icon: 'settings',
-    section: 'other',
+    section: 'admin',
     items: [schoolSettings, users, staffTypes, leaveSettings, auditLog],
   },
 ];

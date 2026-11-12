@@ -19,7 +19,6 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { SchoolClass } from '../../core/models';
 import { apiError } from '../../core/api-error';
@@ -36,6 +35,11 @@ import { StudentDocuments } from './student-documents';
 import { StudentAttendanceSection } from './student-attendance';
 import { StudentFees } from './student-fees';
 import { FormField } from '../../shared/ui/form-field';
+import { Avatar } from '../../shared/ui/avatar';
+import { Badge, BadgeTone, ClassPill } from '../../shared/ui/badge';
+import { Icon } from '../../shared/ui/icon';
+import { PageHeader } from '../../shared/ui/page-header';
+import { AuthService } from '../../core/auth.service';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../shared/ui/labels';
 
@@ -52,95 +56,153 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
     MessageModule,
     SelectModule,
     TableModule,
-    TagModule,
     FormField,
     HasPermission,
     TempPasswordDialog,
     StudentDocuments,
     StudentFees,
     StudentAttendanceSection,
+    Avatar,
+    Badge,
+    ClassPill,
+    Icon,
+    PageHeader,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a routerLink="/app/students" class="text-sm text-muted-foreground hover:text-foreground"
-      >&larr; All students</a
-    >
-
     @if (error()) {
-      <p-message class="mt-4 block" severity="error" [text]="error()!" />
+      <app-page-header
+        title="Student"
+        [crumbs]="[
+          { label: 'Dashboard', link: '/app/dashboard' },
+          { label: 'Students', link: '/app/students' },
+          { label: 'Not found' },
+        ]"
+      />
+      <p-message severity="error" [text]="error()!" />
     } @else if (student(); as s) {
-      <div class="mt-3 mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div class="flex items-start gap-4">
-          @if (s.photoFileId) {
-            <img
-              [src]="'/api/files/' + s.photoFileId"
-              [alt]="'Photograph of ' + s.fullName"
-              class="h-24 w-20 shrink-0 rounded-lg border object-cover"
-            />
-          }
-          <div>
-            <h1 class="text-2xl font-semibold">{{ s.fullName }}</h1>
-            <p class="mt-1 text-sm text-muted-foreground">
-              Student ID {{ s.admissionNo }}
-              @if (s.schoolEmail) {
-                &middot; {{ s.schoolEmail }}
-              }
-              @if (s.enrollments[0]; as e) {
-                &middot; {{ e.class.name }}-{{ e.division.name }} ({{ e.academicYear.name }})
-              }
-            </p>
-            <p class="text-sm text-muted-foreground">
-              Born {{ format(s.dateOfBirth) }} ({{ age(s.dateOfBirth) }} old)
-            </p>
+      <nav aria-label="Breadcrumb" class="mb-3 text-[13px] font-medium text-muted-foreground">
+        <ol class="flex flex-wrap items-center gap-1.5">
+          <li>
+            <a routerLink="/app/dashboard" class="hover:text-foreground hover:underline"
+              >Dashboard</a
+            >
+          </li>
+          <li aria-hidden="true" class="text-faint">/</li>
+          <li>
+            <a routerLink="/app/students" class="hover:text-foreground hover:underline">Students</a>
+          </li>
+          <li aria-hidden="true" class="text-faint">/</li>
+          <li class="text-foreground" aria-current="page">{{ s.fullName }}</li>
+        </ol>
+      </nav>
+
+      <section class="mb-6 rounded-2xl bg-card p-6 shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-6">
+          <div class="flex min-w-0 items-start gap-5">
+            @if (s.photoFileId) {
+              <img
+                [src]="'/api/files/' + s.photoFileId"
+                [alt]="'Photograph of ' + s.fullName"
+                class="h-24 w-20 shrink-0 rounded-xl border object-cover"
+              />
+            } @else {
+              <app-avatar [name]="s.fullName" size="lg" />
+            }
+            <div class="min-w-0">
+              <h1 class="text-[1.75rem] leading-tight font-bold tracking-tight">
+                {{ s.fullName }}
+              </h1>
+              <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                @if (s.enrollments[0]; as e) {
+                  <app-class-pill [label]="e.class.name + '-' + e.division.name" />
+                }
+                <app-badge [label]="statusText(s.status)" [tone]="statusTone(s.status)" />
+                <span class="text-muted-foreground">Student ID {{ s.admissionNo }}</span>
+                @if (s.schoolEmail) {
+                  <span class="text-muted-foreground">&middot; {{ s.schoolEmail }}</span>
+                }
+              </div>
+              <p class="mt-2 text-sm text-muted-foreground">
+                Born {{ format(s.dateOfBirth) }} ({{ age(s.dateOfBirth) }} old) &middot; Joined
+                {{ format(s.joinedOn) }}
+                @if (s.enrollments[0]; as e) {
+                  &middot; {{ e.academicYear.name }}
+                }
+              </p>
+            </div>
           </div>
+
+          <dl class="grid grid-cols-3 divide-x overflow-hidden rounded-xl border text-sm">
+            <div class="px-4 py-3">
+              <dt class="text-xs text-muted-foreground">Class this year</dt>
+              <dd class="mt-1 text-lg font-bold">
+                @if (s.enrollments[0]; as e) {
+                  {{ e.class.name }}-{{ e.division.name }}
+                } @else {
+                  &mdash;
+                }
+              </dd>
+            </div>
+            <div class="px-4 py-3">
+              <dt class="text-xs text-muted-foreground">Parents</dt>
+              <dd class="mt-1 text-lg font-bold">{{ s.guardians.length }}</dd>
+            </div>
+            <div class="px-4 py-3">
+              <dt class="text-xs text-muted-foreground">Years here</dt>
+              <dd class="mt-1 text-lg font-bold">{{ s.enrollments.length }}</dd>
+            </div>
+          </dl>
         </div>
-        <div class="flex items-center gap-2">
-          <p-tag
-            [value]="s.status === 'ACTIVE' ? 'Active' : s.status === 'REMOVED' ? 'Removed' : 'Left'"
-            [severity]="
-              s.status === 'ACTIVE' ? 'success' : s.status === 'REMOVED' ? 'danger' : 'secondary'
-            "
-          />
-          @if (s.status !== 'REMOVED') {
-            <ng-container *appHasPermission="'students.manage'">
-              <p-button label="Edit" size="small" severity="secondary" (onClick)="openEdit(s)" />
-              @if (s.status === 'ACTIVE') {
+
+        @if (s.status !== 'REMOVED' || canRemove) {
+          <div class="mt-5 flex flex-wrap items-center gap-2 border-t pt-5">
+            @if (s.status !== 'REMOVED') {
+              <ng-container *appHasPermission="'students.manage'">
+                <p-button label="Edit" size="small" (onClick)="openEdit(s)" />
+                @if (s.status === 'ACTIVE') {
+                  <p-button
+                    label="Move to another division"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    (onClick)="openMove(s)"
+                  />
+                  <p-button
+                    label="Mark as left"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    (onClick)="confirmLeft(s)"
+                  />
+                } @else {
+                  <p-button
+                    label="Rejoin"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    (onClick)="rejoin(s)"
+                  />
+                }
+              </ng-container>
+            }
+            <span class="flex-1"></span>
+            <ng-container *appHasPermission="'students.remove'">
+              @if (s.status === 'REMOVED') {
+                <p-button label="Restore student" size="small" (onClick)="restore(s)" />
+              } @else {
                 <p-button
-                  label="Move to another division"
-                  size="small"
-                  severity="secondary"
-                  [outlined]="true"
-                  (onClick)="openMove(s)"
-                />
-              }
-              @if (s.status === 'ACTIVE') {
-                <p-button
-                  label="Mark as left"
+                  label="Remove student"
                   size="small"
                   severity="danger"
-                  [outlined]="true"
-                  (onClick)="confirmLeft(s)"
+                  [text]="true"
+                  (onClick)="openRemove()"
                 />
-              } @else {
-                <p-button label="Rejoin" size="small" severity="secondary" (onClick)="rejoin(s)" />
               }
             </ng-container>
-          }
-          <ng-container *appHasPermission="'students.remove'">
-            @if (s.status === 'REMOVED') {
-              <p-button label="Restore student" size="small" (onClick)="restore(s)" />
-            } @else {
-              <p-button
-                label="Remove student"
-                size="small"
-                severity="danger"
-                [outlined]="true"
-                (onClick)="openRemove()"
-              />
-            }
-          </ng-container>
-        </div>
-      </div>
+          </div>
+        }
+      </section>
 
       @if (s.removal; as r) {
         <p-message
@@ -162,91 +224,143 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
         <p-message class="mb-4 block" severity="info" [text]="note" />
       }
 
-      <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <section class="min-w-0 rounded-xl border-0 bg-card shadow-sm p-5">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="font-semibold">Parents and guardians</h2>
-            <p-button
-              *appHasPermission="'students.manage'"
-              label="Add"
-              size="small"
-              severity="secondary"
-              (onClick)="openGuardian(null)"
-            />
-          </div>
-          <p-table [value]="s.guardians">
-            <ng-template #header>
-              <tr>
-                <th>Name</th>
-                <th>Relationship</th>
-                <th>Contact</th>
-                <th><span class="sr-only">Actions</span></th>
-              </tr>
-            </ng-template>
-            <ng-template #body let-g>
-              <tr>
-                <td>
-                  <span class="font-medium">{{ g.fullName }}</span>
-                  @if (g.isPrimary) {
-                    <p-tag class="ml-2" value="Primary" severity="info" />
-                  }
-                  @if (g.occupation) {
-                    <div class="text-xs text-muted-foreground">{{ g.occupation }}</div>
-                  }
-                </td>
-                <td>{{ relationship(g.relationship) }}</td>
-                <td class="text-sm">
-                  <div>{{ g.mobile }}</div>
-                  <div class="text-muted-foreground">{{ g.email }}</div>
-                  @if (g.hasLogin) {
-                    <p-tag class="mt-1" value="Can sign in" severity="secondary" />
-                  }
-                </td>
-                <td class="whitespace-nowrap text-right" *appHasPermission="'students.manage'">
-                  <ng-container *appHasPermission="'portal.accounts.manage'">
-                    @if (g.hasLogin) {
-                      <p-button
-                        label="Reset password"
-                        size="small"
-                        [text]="true"
-                        (onClick)="resetGuardian(s, g)"
-                      />
-                    } @else if (g.mobile) {
-                      <p-button
-                        label="Give login"
-                        size="small"
-                        [text]="true"
-                        (onClick)="giveLogin(s, g)"
-                      />
+      <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div class="flex min-w-0 flex-col gap-6">
+          <section class="rounded-xl bg-card p-5 shadow-sm">
+            <h2 class="mb-2 text-base font-bold">Details</h2>
+            <dl class="text-sm">
+              <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                <dt class="text-muted-foreground">Date of birth</dt>
+                <dd>{{ format(s.dateOfBirth) }} ({{ age(s.dateOfBirth) }})</dd>
+              </div>
+              <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                <dt class="text-muted-foreground">Gender</dt>
+                <dd>{{ gender(s.gender) }}</dd>
+              </div>
+              @if (s.enrollments[0]; as e) {
+                <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                  <dt class="text-muted-foreground">Class</dt>
+                  <dd>{{ e.class.name }}, division {{ e.division.name }}</dd>
+                </div>
+              }
+              <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                <dt class="text-muted-foreground">Joined</dt>
+                <dd>{{ format(s.joinedOn) }}</dd>
+              </div>
+              @if (s.leftOn) {
+                <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                  <dt class="text-muted-foreground">Left</dt>
+                  <dd>{{ format(s.leftOn) }}</dd>
+                </div>
+              }
+              @if (s.schoolEmail) {
+                <div class="grid grid-cols-[9rem_1fr] gap-3 border-b py-2.5">
+                  <dt class="text-muted-foreground">School e-mail</dt>
+                  <dd class="break-all">{{ s.schoolEmail }}</dd>
+                </div>
+              }
+              @if (s.application) {
+                <div class="grid grid-cols-[9rem_1fr] gap-3 py-2.5">
+                  <dt class="text-muted-foreground">Admission</dt>
+                  <dd>
+                    <a class="app-link" [routerLink]="['/app/admissions', s.application.id]"
+                      >Form no. {{ s.application.formNo }}</a
+                    >
+                  </dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="rounded-xl bg-card p-5 shadow-sm">
+            <div class="mb-1 flex items-center justify-between">
+              <h2 class="text-base font-bold">Parents and guardians</h2>
+              <p-button
+                *appHasPermission="'students.manage'"
+                label="Add"
+                size="small"
+                severity="secondary"
+                [text]="true"
+                (onClick)="openGuardian(null)"
+              />
+            </div>
+            @if (!s.guardians.length) {
+              <p class="py-2 text-sm text-muted-foreground">No parent or guardian recorded yet.</p>
+            }
+            <ul>
+              @for (g of s.guardians; track g.id) {
+                <li class="flex gap-3 border-t py-4 first:border-t-0">
+                  <app-avatar [name]="g.fullName" size="sm" />
+                  <div class="min-w-0 flex-1 text-sm">
+                    <p class="flex flex-wrap items-center gap-2 font-semibold">
+                      {{ g.fullName }}
+                      @if (g.isPrimary) {
+                        <app-badge label="Primary contact" tone="amber" [dot]="false" />
+                      }
+                      @if (g.hasLogin) {
+                        <app-badge label="Can sign in" tone="neutral" [dot]="false" />
+                      }
+                    </p>
+                    <p class="mt-0.5 text-xs text-muted-foreground">
+                      {{ relationship(g.relationship) }}
+                      @if (g.occupation) {
+                        &middot; {{ g.occupation }}
+                      }
+                    </p>
+                    @if (g.mobile) {
+                      <p class="mt-2 flex items-center gap-2 text-foreground-2">
+                        <app-icon name="phone" class="text-muted-foreground" />
+                        <a class="hover:underline" [href]="'tel:' + g.mobile">{{ g.mobile }}</a>
+                      </p>
                     }
-                  </ng-container>
-                  <p-button label="Edit" size="small" [text]="true" (onClick)="openGuardian(g)" />
-                  <p-button
-                    label="Remove"
-                    size="small"
-                    severity="danger"
-                    [text]="true"
-                    (onClick)="confirmUnlink(s, g)"
-                  />
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </section>
-
-        <div class="flex flex-col gap-6">
-          <app-student-attendance [studentId]="s.id" />
-          <app-student-fees [studentId]="s.id" />
-        </div>
-
-        <aside class="flex flex-col gap-6">
-          <app-student-documents [studentId]="s.id" />
+                    @if (g.email) {
+                      <p class="mt-1 flex items-center gap-2 break-all text-foreground-2">
+                        <app-icon name="mail" class="text-muted-foreground" />{{ g.email }}
+                      </p>
+                    }
+                    <div class="mt-2 -ml-2 flex flex-wrap" *appHasPermission="'students.manage'">
+                      <ng-container *appHasPermission="'portal.accounts.manage'">
+                        @if (g.hasLogin) {
+                          <p-button
+                            label="Reset password"
+                            size="small"
+                            [text]="true"
+                            (onClick)="resetGuardian(s, g)"
+                          />
+                        } @else if (g.mobile) {
+                          <p-button
+                            label="Give login"
+                            size="small"
+                            [text]="true"
+                            (onClick)="giveLogin(s, g)"
+                          />
+                        }
+                      </ng-container>
+                      <p-button
+                        label="Edit"
+                        size="small"
+                        [text]="true"
+                        (onClick)="openGuardian(g)"
+                      />
+                      <p-button
+                        label="Remove"
+                        size="small"
+                        severity="danger"
+                        [text]="true"
+                        (onClick)="confirmUnlink(s, g)"
+                      />
+                    </div>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
 
           <section
-            class="rounded-xl border-0 bg-card shadow-sm p-5"
+            class="rounded-xl bg-card p-5 shadow-sm"
             *appHasPermission="'portal.accounts.manage'"
           >
-            <h2 class="mb-1 font-semibold">Student login</h2>
+            <h2 class="mb-1 text-base font-bold">Student login</h2>
             <p class="mb-3 text-sm text-muted-foreground">
               The student signs in with the admission number ({{ s.admissionNo }}) and can only see
               their own records.
@@ -271,51 +385,33 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
             }
           </section>
 
-          <section class="rounded-xl border-0 bg-card shadow-sm p-5">
-            <h2 class="mb-3 font-semibold">Details</h2>
-            <dl class="grid gap-3 text-sm">
-              <div>
-                <dt class="text-xs text-muted-foreground">Gender</dt>
-                <dd>{{ gender(s.gender) }}</dd>
-              </div>
-              <div>
-                <dt class="text-xs text-muted-foreground">Joined</dt>
-                <dd>{{ format(s.joinedOn) }}</dd>
-              </div>
-              @if (s.leftOn) {
-                <div>
-                  <dt class="text-xs text-muted-foreground">Left</dt>
-                  <dd>{{ format(s.leftOn) }}</dd>
-                </div>
-              }
-              @if (s.application) {
-                <div>
-                  <dt class="text-xs text-muted-foreground">Admission application</dt>
-                  <dd>
-                    <a class="app-link" [routerLink]="['/app/admissions', s.application.id]"
-                      >Form no. {{ s.application.formNo }}</a
-                    >
-                  </dd>
-                </div>
-              }
-            </dl>
-          </section>
-
-          <section class="rounded-xl border-0 bg-card shadow-sm p-5">
-            <h2 class="mb-3 font-semibold">Class history</h2>
-            <ul class="grid gap-2 text-sm">
-              @for (e of s.enrollments; track e.id) {
-                <li>
-                  <span class="font-medium">{{ e.academicYear.name }}</span
+          <section class="rounded-xl bg-card p-5 shadow-sm">
+            <h2 class="mb-3 text-base font-bold">Class history</h2>
+            <ol class="relative ml-1.5 border-l pl-5 text-sm">
+              @for (e of s.enrollments; track e.id; let first = $first) {
+                <li class="relative pb-4 last:pb-0">
+                  <span
+                    class="absolute top-1.5 -left-[1.6rem] size-2.5 rounded-full ring-4 ring-card"
+                    [class.bg-primary]="first"
+                    [class.bg-border-strong]="!first"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="font-semibold">{{ e.academicYear.name }}</span
                   >: {{ e.class.name }}-{{ e.division.name }}
                   <span class="block text-xs text-muted-foreground"
                     >from {{ format(e.startedOn) }}</span
                   >
                 </li>
               }
-            </ul>
+            </ol>
           </section>
-        </aside>
+        </div>
+
+        <div class="flex min-w-0 flex-col gap-6">
+          <app-student-attendance [studentId]="s.id" />
+          <app-student-fees [studentId]="s.id" />
+          <app-student-documents [studentId]="s.id" />
+        </div>
       </div>
 
       <p-dialog
@@ -568,6 +664,11 @@ export class StudentPage {
   private readonly confirmation = inject(ConfirmationService);
   private readonly fb = inject(FormBuilder);
 
+  protected readonly canRemove = inject(AuthService).has('students.remove');
+  protected readonly statusText = (s: string) =>
+    s === 'ACTIVE' ? 'Active' : s === 'REMOVED' ? 'Removed' : 'Left';
+  protected readonly statusTone = (s: string): BadgeTone =>
+    s === 'ACTIVE' ? 'good' : s === 'REMOVED' ? 'bad' : 'neutral';
   protected readonly format = formatDate;
   protected readonly age = (dob: string) => ageText(dob);
   protected readonly gender = genderLabel;
