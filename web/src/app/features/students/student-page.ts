@@ -411,7 +411,7 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
 
         <div class="flex min-w-0 flex-col gap-6">
           <app-student-attendance [studentId]="s.id" />
-          <app-student-fees [studentId]="s.id" />
+          <app-student-fees [studentId]="s.id" [openPayment]="pay() === '1'" />
           <app-student-documents [studentId]="s.id" />
         </div>
       </div>
@@ -661,6 +661,8 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
 export class StudentPage {
   /** From the route: /app/students/:id */
   readonly id = input.required<string>();
+  /** ?pay=1 opens the payment form (from Fee dues). */
+  readonly pay = input<string>();
 
   private readonly api = inject(Api);
   private readonly toast = inject(MessageService);

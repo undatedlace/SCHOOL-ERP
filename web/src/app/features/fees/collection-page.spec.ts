@@ -60,7 +60,7 @@ describe('CollectionPage', () => {
     const el = fixture.nativeElement as HTMLElement;
     const text = el.textContent ?? '';
     expect(text).toContain('₹2,500.00');
-    expect(text).toContain('Cash (1)');
+    expect(text).toMatch(/Cash.*1 payment/);
     expect(text).toContain('2026-27/00002');
     expect(text).toContain('UPI-77');
     expect(text).toContain('Reversed');

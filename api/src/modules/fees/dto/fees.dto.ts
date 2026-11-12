@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -285,6 +286,15 @@ export class CollectionQueryDto {
 
 // ---------- dues ----------
 
+export const DUES_STATUSES = [
+  'PAID',
+  'PARTIAL',
+  'UNPAID',
+  'OVERDUE',
+  'NONE',
+] as const;
+export type DuesStatus = (typeof DUES_STATUSES)[number];
+
 export class DuesQueryDto extends PageQueryDto {
   @IsOptional()
   @IsUUID()
@@ -311,4 +321,9 @@ export class DuesQueryDto extends PageQueryDto {
   )
   @IsBoolean()
   onlyOwing?: boolean;
+
+  /** One fee status (see DuesService): paid, part paid, nothing paid yet, or overdue. */
+  @IsOptional()
+  @IsIn(DUES_STATUSES)
+  status?: DuesStatus;
 }

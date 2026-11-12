@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { todayIso } from '../../common/dates.js';
 import { skipTake } from '../../common/dto/page-query.dto.js';
 import { PrismaService } from '../../database/prisma.service.js';
-import { DuesQueryDto } from './dto/fees.dto.js';
+import { DuesQueryDto, DuesStatus } from './dto/fees.dto.js';
 import { invoiceTotals } from './invoice-totals.js';
 import { fromPaise, netInstalments, toPaise, waterfall } from './ledger.js';
 
@@ -12,6 +12,20 @@ interface Sums {
   pending: number;
   overdue: number;
 }
+/** Students listed in "longest overdue". */
+const LONGEST_OVERDUE = 6;
+
+/**
+ * One word for where a student stands: nothing billed, all paid, overdue (some of what is due has
+ * passed its date), part paid, or nothing paid yet. Overdue wins over the other two owing states.
+ */
+export function duesStatus(s: Sums): DuesStatus {
+  if (s.billed <= 0 && s.pending <= 0) return 'NONE';
+  if (s.pending <= 0) return 'PAID';
+  if (s.overdue > 0) return 'OVERDUE';
+  return s.collected > 0 ? 'PARTIAL' : 'UNPAID';
+}
+
 const zero = (): Sums => ({ billed: 0, collected: 0, pending: 0, overdue: 0 });
 const add = (a: Sums, b: Sums) => {
   a.billed += b.billed;
@@ -105,9 +119,22 @@ export class DuesService {
     }
 
     const today = todayIso();
-    const perStudent = new Map<string, Sums & { previous: number }>();
+    type PerStudent = Sums & {
+      previous: number;
+      /** The oldest instalment date still unpaid and passed. */
+      oldestOverdueOn: string | null;
+      /** The next instalment date still unpaid and not yet passed. */
+      nextDueOn: string | null;
+    };
+    const blank = (): PerStudent => ({
+      ...zero(),
+      previous: 0,
+      oldestOverdueOn: null,
+      nextDueOn: null,
+    });
+    const perStudent = new Map<string, PerStudent>();
     for (const t of totals) {
-      const s = perStudent.get(t.studentId) ?? { ...zero(), previous: 0 };
+      const s = perStudent.get(t.studentId) ?? blank();
       const parts = byInvoice.get(t.invoiceId) ?? [];
       const status = waterfall(
         netInstalments(
@@ -120,6 +147,14 @@ export class DuesService {
         (a, st, n) => a + (parts[n].dueDate < today ? st.pending : 0),
         0,
       );
+      status.forEach((st, n) => {
+        if (st.pending <= 0) return;
+        const d = parts[n].dueDate;
+        if (d < today) {
+          if (!s.oldestOverdueOn || d < s.oldestOverdueOn)
+            s.oldestOverdueOn = d;
+        } else if (!s.nextDueOn || d < s.nextDueOn) s.nextDueOn = d;
+      });
       s.billed += t.gross - t.concessions;
       s.collected += t.paid;
       s.pending += t.pending;
@@ -128,9 +163,9 @@ export class DuesService {
       perStudent.set(t.studentId, s);
     }
 
-    const students = enrolments
+    const everyone = enrolments
       .map((e) => {
-        const s = perStudent.get(e.student.id) ?? { ...zero(), previous: 0 };
+        const s = perStudent.get(e.student.id) ?? blank();
         return {
           studentId: e.student.id,
           admissionNo: e.student.admissionNo,
@@ -147,9 +182,31 @@ export class DuesService {
           divisionId: e.division.id,
           sortOrder: e.division.class.sortOrder,
           sums: s,
+          status: duesStatus(s),
         };
       })
       .filter((r) => !q.onlyOwing || r.sums.pending > 0);
+
+    // Counts per status are taken before the status filter, so every tab shows its number.
+    const counts: Record<DuesStatus, number> = {
+      PAID: 0,
+      PARTIAL: 0,
+      UNPAID: 0,
+      OVERDUE: 0,
+      NONE: 0,
+    };
+    for (const r of everyone) counts[r.status]++;
+    const longestOverdue = everyone
+      .filter((r) => r.sums.oldestOverdueOn)
+      .sort(
+        (a, b) =>
+          a.sums.oldestOverdueOn!.localeCompare(b.sums.oldestOverdueOn!) ||
+          b.sums.overdue - a.sums.overdue,
+      )
+      .slice(0, LONGEST_OVERDUE);
+    const students = q.status
+      ? everyone.filter((r) => r.status === q.status)
+      : everyone;
 
     const grand = zero();
     const divisions = new Map<
@@ -214,8 +271,39 @@ export class DuesService {
       skipTake(q).skip + q.pageSize,
     );
 
+    const shown = [...pageItems, ...longestOverdue].map((r) => r.studentId);
+    const lastPaid = new Map(
+      shown.length
+        ? (
+            await this.prisma.payment.groupBy({
+              by: ['studentId'],
+              where: { schoolId, studentId: { in: shown }, reversal: null },
+              _max: { paidOn: true },
+            })
+          ).map((g) => [
+            g.studentId,
+            g._max.paidOn?.toISOString().slice(0, 10) ?? null,
+          ])
+        : [],
+    );
+    const row = (r: (typeof everyone)[number]) => ({
+      studentId: r.studentId,
+      admissionNo: r.admissionNo,
+      fullName: r.fullName,
+      class: r.class,
+      division: r.division,
+      ...out(r.sums),
+      previousYearsPending: fromPaise(r.sums.previous),
+      status: r.status,
+      oldestOverdueOn: r.sums.oldestOverdueOn,
+      nextDueOn: r.sums.nextDueOn,
+      lastPaidOn: lastPaid.get(r.studentId) ?? null,
+    });
+
     return {
       academicYearId: yearId,
+      counts,
+      longestOverdue: longestOverdue.map(row),
       totals: {
         students: students.length,
         owing: students.filter((s) => s.sums.pending > 0).length,
@@ -224,15 +312,7 @@ export class DuesService {
       byClass: groups(classes),
       byDivision: groups(divisions),
       students: {
-        items: pageItems.map((r) => ({
-          studentId: r.studentId,
-          admissionNo: r.admissionNo,
-          fullName: r.fullName,
-          class: r.class,
-          division: r.division,
-          ...out(r.sums),
-          previousYearsPending: fromPaise(r.sums.previous),
-        })),
+        items: pageItems.map(row),
         total: students.length,
         page: q.page,
         pageSize: q.pageSize,
@@ -243,6 +323,8 @@ export class DuesService {
   private empty(q: DuesQueryDto) {
     return {
       academicYearId: null,
+      counts: { PAID: 0, PARTIAL: 0, UNPAID: 0, OVERDUE: 0, NONE: 0 },
+      longestOverdue: [],
       totals: { students: 0, owing: 0, ...out(zero()) },
       byClass: [],
       byDivision: [],
