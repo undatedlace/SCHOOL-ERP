@@ -10,7 +10,6 @@ import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { LeaveRequest, LeaveStatus, LeaveType } from '../../core/models';
@@ -22,6 +21,7 @@ import { STATUS_LABEL, STATUS_SEVERITY, daysText } from './leave-utils';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { Badge } from '../../shared/ui/badge';
 
 const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
   { id: 'PENDING', label: 'Waiting' },
@@ -37,13 +37,13 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
   imports: [
     ButtonModule,
     DialogModule,
-    TagModule,
     PageHeader,
     FilterBar,
     LeaveApplyDialog,
     SelectButtonModule,
     FormsModule,
     TextareaModule,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -72,7 +72,7 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
     }
 
     <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-      <table class="w-full min-w-[48rem] text-sm">
+      <table class="app-table w-full min-w-[48rem] text-sm">
         <thead>
           <tr class="bg-accent text-left">
             <th scope="col" class="px-4 py-3">Staff</th>
@@ -101,7 +101,7 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
               <td class="px-4 py-3">{{ daysText(r.days) }}</td>
               <td class="px-4 py-3 text-muted-foreground">{{ r.decisionNote || r.reason }}</td>
               <td class="px-4 py-3">
-                <p-tag [value]="label[r.status]" [severity]="severity[r.status]" />
+                <app-badge [label]="label[r.status]" [severity]="severity[r.status]" />
               </td>
               <td class="space-x-3 px-4 py-3 text-right whitespace-nowrap">
                 @if (r.status === 'PENDING') {

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
 export interface Crumb {
   label: string;
@@ -18,10 +18,10 @@ export interface Crumb {
   template: `
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div class="min-w-0">
-        @if (crumbs().length) {
+        @if (trail().length) {
           <nav aria-label="Breadcrumb" class="mb-1.5 text-[13px] font-medium text-muted-foreground">
             <ol class="flex flex-wrap items-center gap-1.5">
-              @for (c of crumbs(); track c.label; let last = $last) {
+              @for (c of trail(); track c.label; let last = $last) {
                 <li class="flex items-center gap-1.5">
                   @if (c.link && !last) {
                     <a [routerLink]="c.link" class="hover:text-foreground hover:underline">{{
@@ -50,5 +50,15 @@ export interface Crumb {
 export class PageHeader {
   readonly title = input.required<string>();
   readonly subtitle = input<string>();
-  readonly crumbs = input<Crumb[]>([]);
+  /** Where the page sits. Left out on a staff page, it is "Dashboard / <title>". */
+  readonly crumbs = input<Crumb[] | null>(null);
+
+  private readonly router = inject(Router);
+  protected readonly trail = computed(() => {
+    const given = this.crumbs();
+    if (given) return given;
+    return this.router.url.startsWith('/app/') && !this.router.url.startsWith('/app/dashboard')
+      ? [{ label: 'Dashboard', link: '/app/dashboard' }, { label: this.title() }]
+      : [];
+  });
 }

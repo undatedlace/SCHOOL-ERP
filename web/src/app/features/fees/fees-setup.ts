@@ -16,7 +16,6 @@ import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { TabsModule } from '@openng/optimus-ui/tabs';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AcademicYear, CopyResult, FeeHead, FeeStructure, SchoolClass } from '../../core/models';
@@ -24,6 +23,7 @@ import { formatDate, toIsoDate, fromIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { inr, isMoney } from '../../shared/money';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 @Component({
   selector: 'app-fees-setup',
@@ -38,9 +38,9 @@ import { PageHeader } from '../../shared/ui/page-header';
     SelectModule,
     TableModule,
     TabsModule,
-    TagModule,
     HasPermission,
     PageHeader,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -71,8 +71,8 @@ import { PageHeader } from '../../shared/ui/page-header';
       <p class="mb-4 text-sm text-muted-foreground">
         Academic year: <strong>{{ year()!.name }}</strong>
       </p>
-      <section class="rounded-xl bg-card p-2 shadow-sm sm:p-4">
-        <p-tabs value="structures">
+      <section class="overflow-hidden rounded-xl bg-card shadow-sm">
+        <p-tabs value="structures" class="app-card-tabs">
           <p-tablist>
             <p-tab value="structures">Class fees</p-tab>
             <p-tab value="heads">Kinds of fee</p-tab>
@@ -96,7 +96,7 @@ import { PageHeader } from '../../shared/ui/page-header';
                       @if (r.structure) {
                         {{ money(r.structure.total) }}
                       } @else {
-                        <p-tag value="Not set" severity="warn" />
+                        <app-badge label="Not set" severity="warn" />
                       }
                     </td>
                     <td class="text-sm text-muted-foreground">
@@ -157,8 +157,8 @@ import { PageHeader } from '../../shared/ui/page-header';
                   <tr>
                     <td class="font-medium">{{ h.name }}</td>
                     <td>
-                      <p-tag
-                        [value]="h.isActive ? 'In use' : 'Switched off'"
+                      <app-badge
+                        [label]="h.isActive ? 'In use' : 'Switched off'"
                         [severity]="h.isActive ? 'secondary' : 'warn'"
                       />
                     </td>

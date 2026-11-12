@@ -5,13 +5,13 @@ import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { StaffType } from '../../core/models';
 import { PageHeader } from '../../shared/ui/page-header';
 import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Badge } from '../../shared/ui/badge';
 
 /** The kinds of employee the school has. Each has its own onboarding form. Types are switched off, never deleted. */
 @Component({
@@ -21,10 +21,10 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
     RouterLink,
     ButtonModule,
     DialogModule,
-    TagModule,
     PageHeader,
     CheckboxModule,
     InputTextModule,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -40,7 +40,7 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
     }
 
     <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-      <table class="w-full min-w-[40rem] text-sm">
+      <table class="app-table w-full min-w-[40rem] text-sm">
         <thead>
           <tr class="bg-accent text-left">
             <th scope="col" class="px-4 py-3">Type</th>
@@ -57,8 +57,8 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
               <td class="px-4 py-3">{{ t.isTeaching ? 'Yes' : 'No' }}</td>
               <td class="px-4 py-3">{{ t.staffCount }}</td>
               <td class="px-4 py-3">
-                <p-tag
-                  [value]="t.active ? 'In use' : 'Switched off'"
+                <app-badge
+                  [label]="t.active ? 'In use' : 'Switched off'"
                   [severity]="t.active ? 'success' : 'secondary'"
                 />
               </td>

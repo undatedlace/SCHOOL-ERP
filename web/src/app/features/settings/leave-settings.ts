@@ -8,12 +8,12 @@ import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { FormsModule } from '@angular/forms';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AcademicYear, LeaveEntitlementRow, LeaveType, StaffType } from '../../core/models';
 import { parseDays } from '../leave/leave-utils';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTypeId ?? ''}`;
 
@@ -31,8 +31,8 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
     InputNumberModule,
     InputTextModule,
     SelectModule,
-    TagModule,
     PageHeader,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -55,16 +55,16 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
           <li class="flex flex-wrap items-center gap-3 p-3">
             <span class="font-medium">{{ t.name }}</span>
             @if (t.unlimited) {
-              <p-tag value="No yearly limit" severity="info" />
+              <app-badge label="No yearly limit" severity="info" />
             }
             @if (t.carryForwardDays > 0) {
-              <p-tag
-                [value]="'Carries up to ' + t.carryForwardDays + ' days'"
+              <app-badge
+                [label]="'Carries up to ' + t.carryForwardDays + ' days'"
                 severity="secondary"
               />
             }
             @if (!t.active) {
-              <p-tag value="Switched off" severity="secondary" />
+              <app-badge label="Switched off" severity="secondary" />
             }
             <span class="ml-auto space-x-3">
               <p-button label="Change" size="small" [text]="true" (onClick)="openType(t)" />
@@ -130,7 +130,7 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
         <p class="rounded-xl bg-card p-4 text-sm shadow-sm">Add a kind of leave above first.</p>
       } @else {
         <div class="overflow-x-auto rounded-xl bg-card shadow-sm">
-          <table class="w-full min-w-[34rem] text-sm">
+          <table class="app-table w-full min-w-[34rem] text-sm">
             <thead>
               <tr class="bg-accent text-left">
                 <th scope="col" class="px-4 py-3">Kind of leave</th>

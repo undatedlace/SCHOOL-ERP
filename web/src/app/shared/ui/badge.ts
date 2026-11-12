@@ -2,6 +2,17 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 export type BadgeTone = 'good' | 'warn' | 'bad' | 'info' | 'neutral' | 'primary' | 'amber';
 
+/** Optimus/PrimeNG tag colour names, so a former p-tag can switch over without its logic changing. */
+export type TagSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
+const FROM_SEVERITY: Record<TagSeverity, BadgeTone> = {
+  success: 'good',
+  info: 'info',
+  warn: 'warn',
+  danger: 'bad',
+  secondary: 'neutral',
+  contrast: 'primary',
+};
+
 const TONE: Record<BadgeTone, string> = {
   good: 'bg-good-soft text-good',
   warn: 'bg-warn-soft text-warn',
@@ -33,7 +44,12 @@ export class Badge {
   readonly label = input.required<string>();
   readonly tone = input<BadgeTone>('neutral');
   readonly dot = input(true);
-  protected readonly classes = computed(() => TONE[this.tone()]);
+  /** The same colour named the Optimus way (success, warn, danger...); wins over tone when given. */
+  readonly severity = input<TagSeverity | null | undefined>(undefined);
+  protected readonly classes = computed(() => {
+    const s = this.severity();
+    return TONE[s ? FROM_SEVERITY[s] : this.tone()];
+  });
 }
 
 /** A class and division as a compact pill, for example "Std 1-A". */

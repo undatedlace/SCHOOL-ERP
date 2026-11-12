@@ -8,12 +8,12 @@ import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { TableModule } from '@openng/optimus-ui/table';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { SchoolClass } from '../../core/models';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
+import { Badge } from '../../shared/ui/badge';
 
 type Dialog =
   { kind: 'class'; editing: SchoolClass | null } | { kind: 'division'; parent: SchoolClass };
@@ -28,9 +28,9 @@ type Dialog =
     DialogModule,
     InputTextModule,
     TableModule,
-    TagModule,
     FormField,
     HasPermission,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -59,8 +59,8 @@ type Dialog =
             }
           </td>
           <td>
-            <p-tag
-              [value]="cls.admissionsOpen ? 'Open' : 'Closed'"
+            <app-badge
+              [label]="cls.admissionsOpen ? 'Open' : 'Closed'"
               [severity]="cls.admissionsOpen ? 'success' : 'secondary'"
             />
           </td>

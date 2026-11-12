@@ -256,3 +256,68 @@
   box-shadow: 0 0 0 1px var(--primary);
   background: color-mix(in srgb, var(--primary-soft) 55%, var(--card));
 }
+
+/*
+ * Tabs that fill a card (add class "app-card-tabs" to p-tabs inside a padding-free card):
+ * the tab row sits on the card's top edge, and every panel uses the same inset, so the tab labels,
+ * the toolbar and the tables all line up. Wide tables scroll sideways on a phone instead of squeezing.
+ */
+.app-card-tabs.p-tabs,
+.app-card-tabs .p-tablist,
+.app-card-tabs .p-tablist-tab-list,
+.app-card-tabs .p-tabpanels {
+  background: transparent;
+}
+.app-card-tabs .p-tablist-tab-list {
+  padding: 0 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.app-card-tabs .p-tab {
+  padding: 1rem 0.75rem;
+  font-weight: 600;
+}
+.app-card-tabs .p-tabpanels {
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .app-card-tabs .p-tablist-tab-list {
+    padding: 0 0.75rem;
+  }
+  .app-card-tabs .p-tabpanels {
+    padding: 1.5rem;
+  }
+}
+.app-card-tabs .p-datatable-table-container {
+  overflow-x: auto;
+}
+.app-card-tabs .p-datatable-table {
+  min-width: 48rem;
+}
+.app-card-tabs .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+
+/* Plain HTML tables (class "app-table") styled like the Optimus tables: quiet headings, hairline rows. */
+.app-table thead tr {
+  background: var(--muted);
+}
+.app-table thead th {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.app-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+.app-table tbody tr:hover > td {
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+/* Row actions (the last cell) never break onto two lines. */
+.app-table tbody td:last-child,
+.app-card-tabs .p-datatable-tbody > tr > td:last-child {
+  white-space: nowrap;
+}

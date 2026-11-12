@@ -13,7 +13,6 @@ import { firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { MessageModule } from '@openng/optimus-ui/message';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { FormDetail, FormField, FormSchema, SchoolClass } from '../../core/models';
@@ -33,6 +32,7 @@ import {
   updateField,
 } from './schema-edit';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { Badge } from '../../shared/ui/badge';
 
 const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label ?? t;
 
@@ -42,10 +42,10 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
     RouterLink,
     ButtonModule,
     MessageModule,
-    TagModule,
     FormRenderer,
     FieldEditor,
     InputTextModule,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -100,7 +100,7 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
       </div>
 
       @if (editing() && dirty()) {
-        <p-tag class="mb-4" value="Unsaved changes" severity="warn" />
+        <app-badge class="mb-4" label="Unsaved changes" severity="warn" />
       }
       @if (problems().length) {
         <div class="mb-6 rounded-md border border-destructive/50 p-4" role="alert">
@@ -201,10 +201,10 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
                         </p>
                       </div>
                       @if (f.required) {
-                        <p-tag value="Required" severity="secondary" />
+                        <app-badge label="Required" severity="secondary" />
                       }
                       @if (f.system) {
-                        <p-tag value="Core" severity="info" />
+                        <app-badge label="Core" severity="info" />
                       }
                       <p-button
                         label="Up"

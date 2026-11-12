@@ -15,12 +15,12 @@ import { ButtonModule } from '@openng/optimus-ui/button';
 import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { AssessmentDetail } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Badge } from '../../shared/ui/badge';
 
 interface Draft {
   marks: number | null;
@@ -38,8 +38,8 @@ interface Draft {
     CheckboxModule,
     InputNumberModule,
     InputTextModule,
-    TagModule,
     PageHeader,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -74,8 +74,8 @@ interface Draft {
       </app-page-header>
 
       <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <p-tag
-          [value]="t.published ? 'Published: families can see it' : 'Draft: only you can see it'"
+        <app-badge
+          [label]="t.published ? 'Published: families can see it' : 'Draft: only you can see it'"
           [severity]="t.published ? 'success' : 'warn'"
         />
         <span>{{ t.stats.entered }} of {{ t.students.length }} entered</span>
@@ -95,7 +95,7 @@ interface Draft {
       }
 
       <div class="overflow-x-auto rounded-xl border-0 bg-card shadow-sm">
-        <table class="w-full min-w-[40rem] text-sm">
+        <table class="app-table w-full min-w-[40rem] text-sm">
           <thead>
             <tr class="bg-accent text-left">
               <th scope="col" class="px-4 py-3">Student</th>

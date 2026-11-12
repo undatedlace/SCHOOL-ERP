@@ -16,8 +16,8 @@ import { YearsTab } from './years-tab';
       [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Academic setup' }]"
       subtitle="The school's structure: years, classes, divisions, subjects and who teaches what."
     />
-    <section class="rounded-xl bg-card p-2 shadow-sm sm:p-4">
-      <p-tabs value="years">
+    <section class="overflow-hidden rounded-xl bg-card shadow-sm">
+      <p-tabs value="years" class="app-card-tabs">
         <p-tablist>
           <p-tab value="years">Academic years</p-tab>
           <p-tab value="classes">Classes and divisions</p-tab>

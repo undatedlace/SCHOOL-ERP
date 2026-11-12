@@ -10,7 +10,6 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { MessageService } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { TextareaModule } from '@openng/optimus-ui/textarea';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
@@ -18,13 +17,14 @@ import { FileRef, Homework, HomeworkSubmission } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { FilePicker } from '../../shared/ui/file-picker';
 import { FileLinks } from './file-links';
+import { Badge } from '../../shared/ui/badge';
 
 type Child = Homework['children'][number];
 
 /** One child's hand-in for one homework: what was handed in, the teacher's marks, and the form to hand in. */
 @Component({
   selector: 'app-hand-in-form',
-  imports: [ButtonModule, TagModule, TextareaModule, FilePicker, FileLinks],
+  imports: [ButtonModule, TextareaModule, FilePicker, FileLinks, Badge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -33,9 +33,9 @@ type Child = Homework['children'][number];
     >
       <div class="flex flex-wrap items-center gap-2">
         <h4 class="font-medium">{{ child().name }}</h4>
-        <p-tag [value]="statusText()" [severity]="severity()" />
+        <app-badge [label]="statusText()" [severity]="severity()" />
         @if (sub()?.late) {
-          <p-tag value="Handed in late" severity="warn" />
+          <app-badge label="Handed in late" severity="warn" />
         }
       </div>
 

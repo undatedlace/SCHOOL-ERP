@@ -8,7 +8,6 @@ import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { MultiSelectModule } from '@openng/optimus-ui/multiselect';
-import { TagModule } from '@openng/optimus-ui/tag';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { Assignment, StaffMember } from '../../core/models';
@@ -22,6 +21,7 @@ import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-
 import { AuthService } from '../../core/auth.service';
 import { grantableRoles } from '../../core/admin-roles';
 import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
+import { Badge } from '../../shared/ui/badge';
 
 @Component({
   selector: 'app-staff-page',
@@ -32,13 +32,13 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
     DialogModule,
     MessageModule,
     MultiSelectModule,
-    TagModule,
     FormField,
     HasPermission,
     StaffForm,
     TempPasswordDialog,
     AnswerView,
     PapersChecklist,
+    Badge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -75,8 +75,8 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <p-tag
-            [value]="s.status === 'ACTIVE' ? 'Active' : 'Left'"
+          <app-badge
+            [label]="s.status === 'ACTIVE' ? 'Active' : 'Left'"
             [severity]="s.status === 'ACTIVE' ? 'success' : 'secondary'"
           />
           <ng-container *appHasPermission="'staff.manage'">
@@ -181,14 +181,14 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
           @if (s.account; as a) {
             <div class="flex flex-wrap items-center gap-2">
               @for (role of a.roles; track role.code) {
-                <p-tag [value]="role.name" severity="secondary" />
+                <app-badge [label]="role.name" severity="secondary" />
               }
-              <p-tag
-                [value]="a.status === 'ACTIVE' ? 'Can sign in' : 'Switched off'"
+              <app-badge
+                [label]="a.status === 'ACTIVE' ? 'Can sign in' : 'Switched off'"
                 [severity]="a.status === 'ACTIVE' ? 'success' : 'warn'"
               />
               @if (a.mustChangePassword) {
-                <p-tag value="Temporary password" severity="warn" />
+                <app-badge label="Temporary password" severity="warn" />
               }
             </div>
             @if (a.status !== 'ACTIVE') {
