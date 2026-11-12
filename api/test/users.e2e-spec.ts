@@ -284,7 +284,10 @@ describe('users, roles and tenancy (e2e)', () => {
   describe('school isolation (multi-school readiness)', () => {
     it("never exposes or modifies another school's data", async () => {
       const otherSchool = await prisma.school.create({
-        data: { name: unique('Other School') },
+        data: {
+          name: unique('Other School'),
+          code: unique('other').toLowerCase(),
+        },
       });
       const foreignUser = await prisma.user.create({
         data: {

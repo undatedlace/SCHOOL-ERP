@@ -46,6 +46,7 @@ export class SessionGuard implements CanActivate {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: hashToken(token) },
       include: {
+        school: { select: { status: true } },
         user: {
           include: {
             roles: {
@@ -62,7 +63,8 @@ export class SessionGuard implements CanActivate {
     if (
       !session ||
       session.expiresAt < new Date() ||
-      session.user.status !== 'ACTIVE'
+      session.user.status !== 'ACTIVE' ||
+      session.school.status !== 'ACTIVE'
     ) {
       throw new UnauthorizedException();
     }

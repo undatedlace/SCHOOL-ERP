@@ -7,6 +7,7 @@ import { PortalChildren } from '../features/portal/portal-children';
 import { NotificationBell } from '../shared/ui/notification-bell';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { ButtonModule } from '@openng/optimus-ui/button';
+import { EnvBanner } from '../shared/ui/env-banner';
 
 /** Parent and student portal: mobile first, a single column. */
 @Component({
@@ -18,10 +19,12 @@ import { ButtonModule } from '@openng/optimus-ui/button';
     ThemeToggle,
     NotificationBell,
     ButtonModule,
+    EnvBanner,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-background">
+      <app-env-banner />
       <header
         class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-card px-4 py-3"
       >

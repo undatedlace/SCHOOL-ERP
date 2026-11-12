@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import type { MockInstance } from 'vitest';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
+import { PlatformService } from './platform.service';
 
 describe('authInterceptor', () => {
   let http: HttpClient;
@@ -66,5 +67,24 @@ describe('authInterceptor', () => {
     controller.expectOne('/api/users').flush({}, { status: 500, statusText: 'Server Error' });
 
     expect(onError).toHaveBeenCalled();
+  });
+
+  it('sends a platform owner to the owner sign-in, not the school sign-in', () => {
+    const ownerClear = vi.spyOn(TestBed.inject(PlatformService), 'clear');
+    http.get('/api/platform/schools').subscribe({ error: () => undefined });
+    controller
+      .expectOne('/api/platform/schools')
+      .flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect(ownerClear).toHaveBeenCalled();
+    expect(clear).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/platform/login');
+  });
+
+  it('sends an owner with a temporary password to the owner password page', () => {
+    http.get('/api/platform/schools').subscribe({ error: () => undefined });
+    controller
+      .expectOne('/api/platform/schools')
+      .flush({ code: 'PASSWORD_CHANGE_REQUIRED' }, { status: 403, statusText: 'Forbidden' });
+    expect(navigate).toHaveBeenCalledWith('/platform/change-password');
   });
 });

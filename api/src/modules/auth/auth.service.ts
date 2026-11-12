@@ -41,8 +41,19 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
-  async login(identifier: string, password: string, client: ClientInfo) {
-    const schoolId = await this.schools.getDefaultSchoolId();
+  async login(
+    identifier: string,
+    password: string,
+    client: ClientInfo,
+    schoolCode?: string,
+  ) {
+    const school = await this.schools.resolveForSignIn(schoolCode);
+    if (!school) {
+      // An unknown school code is answered like a wrong password, after the same work.
+      await verifyPassword(await this.dummyHash, password);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const schoolId = school.id;
     const id = identifier.trim();
     const studentName = await this.studentLoginName(schoolId, id);
 
@@ -89,6 +100,13 @@ export class AuthService {
       });
       throw new UnauthorizedException(
         'Your temporary password has expired. Ask the school office for a new one.',
+      );
+    }
+
+    // A paused school is said only after the password was right, so it reveals nothing.
+    if (school.status !== 'ACTIVE') {
+      throw new ForbiddenException(
+        'Sign-in to this school is paused. Please contact the school office.',
       );
     }
 
@@ -218,6 +236,48 @@ export class AuthService {
       ip,
     });
     return { temporaryPassword };
+  }
+
+  /**
+   * The way back in when nobody can sign in to reset a password (for example the only Super Admin
+   * forgot theirs). Used by the `admin:reset-password` command, run by whoever runs the server:
+   * never reachable over HTTP. Issues a temporary password and signs the person out everywhere.
+   */
+  async recoverPassword(identifier: string, schoolCode?: string) {
+    const school = await this.schools.resolveForSignIn(schoolCode);
+    if (!school)
+      throw new NotFoundException(`No school with the code "${schoolCode}"`);
+    const schoolId = school.id;
+    const id = identifier.trim().toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        schoolId,
+        OR: [{ email: id }, { username: id }, { mobile: id }],
+      },
+      select: { id: true, fullName: true },
+    });
+    if (!user)
+      throw new NotFoundException(`No login found for "${identifier}"`);
+
+    const temporaryPassword = generateTemporaryPassword();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: await hashPassword(temporaryPassword),
+          mustChangePassword: true,
+          tempPasswordExpiresAt: tempPasswordExpiry(),
+        },
+      }),
+      this.prisma.session.deleteMany({ where: { userId: user.id } }),
+    ]);
+    await this.audit.log({
+      schoolId,
+      action: 'auth.password_reset_cli',
+      entityType: 'user',
+      entityId: user.id,
+    });
+    return { fullName: user.fullName, temporaryPassword };
   }
 
   private async issueSession(

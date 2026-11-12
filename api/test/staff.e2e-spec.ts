@@ -303,7 +303,7 @@ describe('staff (e2e)', () => {
 
     it("never shows another school's staff", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const foreign = await prisma.staff.create({
         data: {

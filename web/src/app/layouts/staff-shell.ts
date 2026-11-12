@@ -12,6 +12,7 @@ import { GlobalSearch } from '../shared/ui/global-search';
 import { NotificationBell } from '../shared/ui/notification-bell';
 import { Icon } from '../shared/ui/icon';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
+import { EnvBanner } from '../shared/ui/env-banner';
 
 const COLLAPSED_KEY = 'sidebar-collapsed';
 const SECTION_TITLES: Record<NavEntry['section'], string> = {
@@ -98,6 +99,7 @@ const readCollapsed = () => {
     Icon,
     GlobalSearch,
     NotificationBell,
+    EnvBanner,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -261,6 +263,7 @@ const readCollapsed = () => {
         [class.md:pl-64]="!collapsed()"
         [class.md:pl-[76px]]="collapsed()"
       >
+        <app-env-banner />
         <header
           class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur md:px-6"
         >

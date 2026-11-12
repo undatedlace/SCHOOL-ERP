@@ -209,7 +209,7 @@ describe('admissions (e2e)', () => {
 
     it("will not use another school's academic year", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const year = await prisma.academicYear.create({
         data: {
@@ -424,7 +424,7 @@ describe('admissions (e2e)', () => {
   describe('school isolation', () => {
     it("never shows or changes another school's applications", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const year = await prisma.academicYear.create({
         data: {

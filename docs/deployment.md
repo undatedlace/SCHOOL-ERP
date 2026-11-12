@@ -20,8 +20,25 @@ deployment and fix anything it shows.
 1. Copy `deploy/.env.production.example` to `deploy/.env.production` and fill it in (a long random database password, the real `https://` address in `APP_ORIGINS`, the S3 settings). The file is ignored by git.
 2. `cd deploy && docker compose --env-file .env.production up -d --build`
 3. Create the tables: `docker compose --env-file .env.production run --rm api npx prisma migrate deploy --config prisma7.config.ts`
-4. Create the roles and the first administrator (set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` for this one command): `docker compose --env-file .env.production run --rm -e SEED_ADMIN_EMAIL=you@school.org -e SEED_ADMIN_PASSWORD='a-long-temporary-password' api npx prisma db seed --config prisma7.config.ts`. The administrator must change the password at first sign-in.
-5. Open the address, sign in, change the password, then set up the school (Academic setup, classes, staff, fees).
+4. Create the school, the roles and the first administrator (set `SEED_SCHOOL_NAME`, `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` for this one command): `docker compose --env-file .env.production run --rm -e SEED_SCHOOL_NAME='Heera English School' -e SEED_ADMIN_EMAIL=you@school.org -e SEED_ADMIN_PASSWORD='a-long-temporary-password' api npx prisma db seed --config prisma7.config.ts`. The administrator must change the password at first sign-in.
+5. Open the address, sign in, change the password, then set up the school (see *Onboarding the school* below).
+
+## Onboarding the school
+
+**More schools:** the platform owner onboards further schools at `/platform` (see the plan, *Platform owner*). Create the owner once with `npm run owner:create -- you@example.com "Your Name"` (in Docker: `docker compose --env-file .env.production run --rm api npm run owner:create -- you@example.com "Your Name"`). The steps below are the same for every school, whoever creates it.
+
+The first school (the home school, signed in to without a code) is created by the seed. The seed creates it (named by `SEED_SCHOOL_NAME`, used only the first time; later the name is changed in *Settings, School*), the roles, the staff types (Teacher, Clerk, Peon) with their onboarding forms, the admission form, and the **first Super Admin** (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, a temporary password with no expiry, which must be changed at first sign-in). The Super Admin then works through, in order:
+
+1. *Settings, School*: name, address, contact, the student ID convention (prefix, digits, e-mail domain).
+2. *Academic setup*: the academic year (made current), classes in order (with minimum age and "open for admission"), divisions, subjects.
+3. *Settings, Staff types* and *Settings, Forms*: add kinds of staff, adjust the onboarding and admission forms.
+4. *Settings, Users*: a School Admin login for the principal, and the office and accountant logins.
+5. *Staff*: add staff (with logins for teachers), then *Academic setup, Teaching* for class and subject teachers.
+6. *Fee setup*: kinds of fee, what each class pays and when, then *Bill this year's fees* once students are in.
+7. *Admissions*: applications and admitting students (existing students wait for the Excel import).
+8. *Settings, Leave*: kinds of leave and days a year, if leave is used.
+
+**Locked out?** If the only Super Admin forgets their password, nobody can reset it from the screens. From a machine that can reach the database, with `DATABASE_URL` set: `npm run build && npm run admin:reset-password -- you@school.org` (in Docker: `docker compose --env-file .env.production run --rm api npm run admin:reset-password -- you@school.org`). It prints a new temporary password (it works for 2 days and must be changed at sign-in), signs the person out everywhere, and is recorded in the audit log as `auth.password_reset_cli`.
 
 ## Updating
 

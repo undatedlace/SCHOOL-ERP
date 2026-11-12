@@ -43,6 +43,7 @@ export class AuthController {
       dto.identifier,
       dto.password,
       this.client(req),
+      dto.schoolCode,
     );
     if (isMobileClient(req)) {
       // The app keeps the token itself (in the phone's secure storage), so no cookie is set.
