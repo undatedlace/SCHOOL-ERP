@@ -16,3 +16,4 @@ api/.claude/
 
 # Uploaded files in development
 api/storage/
+*.md
