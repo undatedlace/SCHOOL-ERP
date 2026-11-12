@@ -53,19 +53,17 @@ describe('PlatformSchoolsPage', () => {
     const http = setup();
     const fixture = TestBed.createComponent(PlatformSchoolsPage);
     fixture.detectChanges();
-    http
-      .expectOne('/api/platform/schools')
-      .flush([
-        row(),
-        row({
-          id: 's2',
-          name: 'Second School',
-          code: 'second',
-          isHome: false,
-          status: 'SUSPENDED',
-          students: 15,
-        }),
-      ]);
+    http.expectOne('/api/platform/schools').flush([
+      row(),
+      row({
+        id: 's2',
+        name: 'Second School',
+        code: 'second',
+        isHome: false,
+        status: 'SUSPENDED',
+        students: 15,
+      }),
+    ]);
     await fixture.whenStable();
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
