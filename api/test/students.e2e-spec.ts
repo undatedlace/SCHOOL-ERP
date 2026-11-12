@@ -472,7 +472,7 @@ describe('students and the admit flow (e2e)', () => {
 
     it("never shows another school's students", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const foreign = await prisma.student.create({
         data: {

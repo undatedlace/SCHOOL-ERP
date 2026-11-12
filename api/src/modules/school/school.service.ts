@@ -14,10 +14,38 @@ export class SchoolService {
   ) {}
 
   /**
-   * The ONE place that decides which school a request without a session
-   * belongs to (login). V1 has a single school; for multi-school this is
-   * what changes (for example, resolving from the subdomain).
+   * The ONE place that decides which school a sign-in belongs to. With a school code, that school
+   * (any status, so the caller can say it is paused); without one, the home school: the first
+   * school ever created. Null for an unknown code. Later a subdomain can be resolved here too.
    */
+  async resolveForSignIn(
+    code?: string | null,
+  ): Promise<{ id: string; status: 'ACTIVE' | 'SUSPENDED' } | null> {
+    const wanted = code?.trim().toLowerCase();
+    if (wanted) {
+      return this.prisma.school.findUnique({
+        where: { code: wanted },
+        select: { id: true, status: true },
+      });
+    }
+    const id = await this.getDefaultSchoolId();
+    return this.prisma.school.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, status: true },
+    });
+  }
+
+  /** How many schools there are, so the sign-in page knows whether to offer a school code. */
+  async schoolCount(): Promise<number> {
+    const now = Date.now();
+    if (!this.countCache || now - this.countCache.at > 60_000) {
+      this.countCache = { at: now, n: await this.prisma.school.count() };
+    }
+    return this.countCache.n;
+  }
+  private countCache?: { at: number; n: number };
+
+  /** The home school: the first school ever created. */
   async getDefaultSchoolId(): Promise<string> {
     if (!this.defaultSchoolId) {
       const school = await this.prisma.school.findFirstOrThrow({
@@ -35,6 +63,7 @@ export class SchoolService {
       select: {
         id: true,
         name: true,
+        code: true,
         address: true,
         phone: true,
         email: true,

@@ -27,7 +27,7 @@ A school management system for **one school**, structured so it can become multi
 5. **Parent and student portal:** report cards, pending fees, attendance, results, notices and fees (viewing dues and receipts; online payment is on hold, see section 11).
 6. **Dashboard:** overall insights.
 
-**Not in V1:** multi-school onboarding, subscriptions, payroll, library, inventory, transport, timetable, native mobile apps, and SMS/WhatsApp notifications.
+**Not in V1:** subscriptions, payroll, library, inventory, transport, timetable, native mobile apps, and SMS/WhatsApp notifications.
 
 ## 3. Tech stack
 
@@ -63,7 +63,9 @@ Wrap heavily used components (data table especially) in our own shared component
 - Resolve the current school in one place (from the session), never from client input.
 - Keep fee heads, grading rules and branding in the database or config, not code.
 
-**Skip for now:** row-level security, subdomains, school onboarding, subscription billing.
+**Built (12 Nov 2026):** a platform owner who onboards schools and their first administrators (see *Platform owner* in section 10). Each school has a sign-in code; the first school ever created is the home school and needs no code.
+
+**Skip for now:** row-level security, subdomains (the code is resolved in one place, `SchoolService.resolveForSignIn`, so a subdomain can be added there), subscription billing.
 
 ## 5. Authentication
 
@@ -117,7 +119,7 @@ Why it fits: this app holds children's data and money records, and a departing s
 | `PARENT` | Guardians | Linked children only |
 | `STUDENT` | Students | Own records, read-only |
 
-"Class teacher" is an assignment, not a role. `SUPER_ADMIN` is the trustees of this school, not a platform owner; a platform-level owner for many schools is a later, separate concept.
+"Class teacher" is an assignment, not a role. `SUPER_ADMIN` is the trustees of this school, not a platform owner. The **platform owner** (built 12 Nov 2026) is not a role at all: a separate `platform_owners` table with its own sessions and cookie, outside every school.
 
 **Access matrix**
 | Area | Admin | Office | Accountant | Teacher | Staff | Parent | Student |
@@ -348,6 +350,26 @@ The design ideas of the free "Registrar" school-office template by uiCookies (li
 - **Consistency pass (12 Nov 2026):** tabs that fill a card (`app-card-tabs`: Academic setup, Fee setup) put the tab row on the card's edge with one inset for every panel, so labels, toolbars and tables line up; wide tables scroll sideways on a phone. Every Optimus tag is now the app's badge (a dot and a word; `app-badge` also accepts the Optimus colour names). Plain HTML tables use `app-table` (the same quiet headings as the Optimus tables), and row actions never wrap. Every staff page shows a breadcrumb: "Dashboard / <page>" unless the page gives its own.
 - **Remaining pages in the new layout (12 Nov 2026):** the *Dashboard* greets by the time of day in India, offers *New application* and *Record payment*, and shows number tiles each person may open (students studying now, applications waiting, fees collected against billed, staff working now), *Recent applications* (the five newest forms with class and status), upcoming events, the insight cards and a row of "Go to" links. *Admissions* (status tabs with counts and the filters in one card, child with avatar and form number, class pill), *Staff* (a tile per kind of staff for up to eight kinds, counting everyone on record; avatar, number and phone, type pill, login role and status badges) and *Academic setup* and *Fee setup* (breadcrumbs, tabs in a card) follow the same pattern. Export CSV is deliberately left out (a privacy decision for the school).
 
+### PPE test copy on Render (12 Nov 2026, branch `feature/ppe-render`)
+
+A public test copy so people can explore, report bugs and suggest improvements. Guide: `docs/ppe-render.md`; Blueprint: `render.yaml`. **Free plans:** the web app is a Render static site that forwards `/api/*` to the API (one address, first-party cookie); the API is a Render free web service from `api/Dockerfile` that applies migrations as it starts and is kept awake by an uptime check on `/api/health` every minute; the database is **Neon's free Postgres** (a free Render service has no disk, and Render's free Postgres expires after 30 days); files go to Ismail's S3 bucket under `ppe/`. Filled with the demo seed (shared demo logins per role). Sample data only.
+- **Test strip and feedback:** `GET /api/app-info` (public) returns `environmentLabel` (`APP_ENV_LABEL`) and `feedbackUrl` (`FEEDBACK_URL`, only an `https://` address); both are null in production, where nothing shows. When set, a thin amber strip on the sign-in page, the staff app and the portal says it is a test copy with sample data and links to the feedback form (a Google Form).
+- **School name at seed:** `SEED_SCHOOL_NAME` names the school when the seed first creates it (never renames an existing one).
+- **Recovery command:** `npm run admin:reset-password -- <email>` (after `npm run build`, with `DATABASE_URL` set) gives a login a new temporary password and signs it out everywhere, for when the only Super Admin is locked out; audited as `auth.password_reset_cli`; not reachable over HTTP.
+- **Reset:** `deploy/ppe-reset.sh` drops and refills the PPE database (migrations, seed, demo seed); refuses a database whose name lacks `ppe` and asks for the name to be typed back.
+- **Onboarding a school** is written down in `docs/deployment.md`: the seed creates the school, roles, staff types and forms, the admission form and the first Super Admin; the Super Admin then sets up the school from the screens in a set order. There is no onboarding wizard (one school in V1).
+- **Not verified yet:** the Blueprint has not been deployed; in particular, whether Render's static-site rewrite passes the session cookie and the `Origin` header (fallback: the API serves the web app itself).
+
+### Platform owner: onboarding schools (12 Nov 2026, decided by Ismail: needed before PPE, so more schools can follow)
+
+- **Who:** platform owners are people who run the system itself. They live in `platform_owners` (not `users`), sign in at `/platform/login` with their own session (`platform_sessions`, 8 hours) and their own cookie (`psid`, `SameSite=Strict`, path `/api/platform` only), so an owner's session never works on a school's routes and a school user's never works on the platform's. No sign-up: the first owner is made with `npm run owner:create -- <email> "<name>"` and recovered with `npm run owner:reset-password -- <email>` (temporary password, 2 days, password of at least 12 characters).
+- **What an owner can do** (`/api/platform/...`, screens *Schools* and the school page): **onboard a school** in one transaction (name, sign-in code, the starter staff types with their onboarding forms, the admission form, the **Super Admin** and optionally the **School Admin**, whose temporary passwords are shown once); list schools with counts only (students, staff, logins); rename a school or change its code; **add** another Super Admin or School Admin; **reset an administrator's password** (administrators only); **pause** a school (everyone in it is signed out at once and cannot sign in, shown "Sign-in to this school is paused" only after a correct password) and resume it. An owner **cannot open any school's records** (students, staff, fees, attendance): privacy by design.
+- **Schools at sign-in:** `schools.code` (unique, lower-case letters, digits and hyphens) and `schools.status` (ACTIVE, SUSPENDED). Sign-in without a code goes to the home school (the first created), as before, so nothing changes for this school; with a code, to that school. An unknown code is answered like a wrong password. The sign-in page offers "Signing in to another school?" only when there is more than one school (`GET /api/app-info` returns `schoolCodeOffered`), and remembers the code on that device. Sessions of a paused school stop working on the next request.
+- **Shared defaults:** `provisionSchoolDefaults` (`api/src/modules/platform/school-defaults.ts`) is used by both the seed and onboarding, so a school is set up the same way either way. The seed takes `SEED_SCHOOL_NAME` and `SEED_SCHOOL_CODE` (otherwise a code made from the name). The migration gives existing schools a code made from their name.
+- **Audit:** everything an owner does is in `platform_audit_logs`; accounts the owner makes or resets, and pausing, also go in that school's own audit log ("by" the owner's email), since nobody in the school did it.
+- **Recovery of a school admin from the server:** `npm run admin:reset-password -- <email> [school code]`.
+- **Not built:** subdomains per school, MFA for owners (planned with MFA for admins), owner management screens (add or remove owners is by command), deleting a school (pause instead), and per-school limits or billing.
+
 ### Phase 6: Dashboard and launch
 Insights, security review, backups, deployment, staff training data.
 
@@ -397,5 +419,7 @@ Click through the new screens in a browser with each role and fix what that show
 - An Excel sample of existing students, guardians and staff, and any opening balances (Phase 2 Excel import, Phase 3 opening dues).
 - The board and report card format (Phase 4).
 - The fee structure and instalment rules (Phase 3).
+
+**Checkpoint: PPE on Render.** Create the Neon database, the Render Blueprint, the uptime check and the feedback form, then seed and create the platform owner (`docs/ppe-render.md`).
 
 **Checkpoint: real S3 bucket.** Create the bucket and key (`docs/s3-setup.md`), paste the settings into `api/.env`, and run `npm run s3:check`.

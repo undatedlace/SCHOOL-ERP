@@ -10,10 +10,53 @@ import {
 } from './core/auth.guards';
 import { AuthShell } from './layouts/auth-shell';
 import { PortalShell } from './layouts/portal-shell';
+import { PlatformShell } from './layouts/platform-shell';
+import { ownerGuard, ownerGuestGuard, ownerSignedInGuard } from './core/platform.guards';
 import { StaffShell } from './layouts/staff-shell';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', canActivate: [homeGuard], children: [] },
+
+  // The platform owner: onboarding schools. Its own sign-in, separate from the schools'.
+  // The main area comes first: with nothing after /platform, the sign-in group would match too.
+  {
+    path: 'platform',
+    component: PlatformShell,
+    canActivate: [ownerGuard],
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/platform/schools-page').then((m) => m.PlatformSchoolsPage),
+      },
+      {
+        path: 'schools/:id',
+        loadComponent: () =>
+          import('./features/platform/school-page').then((m) => m.PlatformSchoolPage),
+      },
+    ],
+  },
+  {
+    path: 'platform',
+    component: AuthShell,
+    children: [
+      {
+        path: 'login',
+        canActivate: [ownerGuestGuard],
+        loadComponent: () =>
+          import('./features/platform/platform-login').then((m) => m.PlatformLogin),
+      },
+      {
+        path: 'change-password',
+        canActivate: [ownerSignedInGuard],
+        loadComponent: () =>
+          import('./features/platform/platform-change-password').then(
+            (m) => m.PlatformChangePassword,
+          ),
+      },
+    ],
+  },
 
   {
     path: '',

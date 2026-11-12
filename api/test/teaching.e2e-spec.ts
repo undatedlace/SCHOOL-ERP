@@ -262,7 +262,7 @@ describe('teaching assignments (e2e)', () => {
 
     it('never mixes schools', async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const foreignStaff = await prisma.staff.create({
         data: {

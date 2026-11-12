@@ -31,8 +31,14 @@ export class AuthService {
     return this.loading;
   }
 
-  async login(identifier: string, password: string): Promise<Me> {
-    await firstValueFrom(this.http.post('/api/auth/login', { identifier, password }));
+  async login(identifier: string, password: string, schoolCode?: string): Promise<Me> {
+    await firstValueFrom(
+      this.http.post('/api/auth/login', {
+        identifier,
+        password,
+        ...(schoolCode ? { schoolCode } : {}),
+      }),
+    );
     this.resolved = false;
     this.loading = undefined;
     const me = await this.ensureLoaded();

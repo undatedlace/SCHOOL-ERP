@@ -1,0 +1,51 @@
+/// The people who run the system itself (onboard schools, create their first administrators).
+/// Not school users: they have no school, no roles and cannot open any school's records.
+model PlatformOwner {
+  id                    String     @id @default(uuid(7)) @db.Uuid
+  fullName              String     @map("full_name")
+  email                 String     @unique
+  passwordHash          String     @map("password_hash")
+  mustChangePassword    Boolean    @default(true) @map("must_change_password")
+  tempPasswordExpiresAt DateTime?  @map("temp_password_expires_at")
+  status                UserStatus @default(ACTIVE)
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+
+  sessions PlatformSession[]
+
+  @@map("platform_owners")
+}
+
+model PlatformSession {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  ownerId    String   @map("owner_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  expiresAt  DateTime @map("expires_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  owner PlatformOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([expiresAt])
+  @@map("platform_sessions")
+}
+
+/// What platform owners did. Kept apart from a school's audit log, which only school people read.
+model PlatformAuditLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  /// Not a foreign key: the log outlives owners.
+  ownerId    String?  @map("owner_id") @db.Uuid
+  action     String
+  schoolId   String?  @map("school_id") @db.Uuid
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("platform_audit_logs")
+}

@@ -4,11 +4,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
 import {
   DEFAULT_ADMISSION_FORM,
-  DEFAULT_ADMISSION_FORM_NAME,
   PHOTO_FIELDS,
 } from '../src/modules/forms/default-admission-form.js';
-import { STAFF_FORM_PREFIX } from '../src/modules/forms/form-kinds.js';
-import { templateFor } from '../src/modules/forms/staff-form-templates.js';
+import {
+  provisionSchoolDefaults,
+  schoolCodeFrom,
+} from '../src/modules/platform/school-defaults.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -230,72 +231,24 @@ async function main() {
   }
 
   // School
+  const schoolName = process.env.SEED_SCHOOL_NAME?.trim() || 'Demo School';
   const school =
     // Oldest first: the same rule the app uses to decide which school a login belongs to.
     (await prisma.school.findFirst({ orderBy: { createdAt: 'asc' } })) ??
-    (await prisma.school.create({ data: { name: 'Demo School' } }));
-
-  // The kinds of employee the school starts with. The school adds more (Driver, Librarian...) in Settings.
-  for (const [i, t] of [
-    { name: 'Teacher', isTeaching: true },
-    { name: 'Clerk', isTeaching: false },
-    { name: 'Peon', isTeaching: false },
-  ].entries()) {
-    await prisma.staffType.upsert({
-      where: { schoolId_name: { schoolId: school.id, name: t.name } },
-      update: {},
-      create: { schoolId: school.id, ...t, sortOrder: i + 1 },
-    });
-  }
-
-  // Each type's onboarding form, as published version 1, from the template that fits the kind of work.
-  // A type that already has a live version is left alone; one with only a draft is reported, because
-  // publishing over a draft someone is editing would surprise them.
-  for (const type of await prisma.staffType.findMany({
-    where: { schoolId: school.id, active: true },
-  })) {
-    const key = `${STAFF_FORM_PREFIX}${type.id}`;
-    const existing = await prisma.formDefinition.findMany({
-      where: { schoolId: school.id, key },
-      select: { status: true, version: true },
-    });
-    if (existing.some((f) => f.status === 'PUBLISHED')) continue;
-    if (existing.length > 0) {
-      console.warn(
-        `Staff form for ${type.name} has a draft but no live version; publish it from Settings, Forms.`,
-      );
-      continue;
-    }
-    await prisma.formDefinition.create({
+    (await prisma.school.create({
+      // Only when the school is first created; an existing school is never renamed here.
       data: {
-        schoolId: school.id,
-        key,
-        version: 1,
-        name: `Staff onboarding: ${type.name}`,
-        status: 'PUBLISHED',
-        publishedAt: new Date(),
-        schema: templateFor(type) as unknown as Prisma.InputJsonObject,
+        name: schoolName,
+        code:
+          process.env.SEED_SCHOOL_CODE?.trim().toLowerCase() ||
+          schoolCodeFrom(schoolName),
       },
-    });
-  }
+    }));
 
-  // The school's admission form, as published version 1. Editable later in the form builder.
-  const hasAdmissionForm = await prisma.formDefinition.findFirst({
-    where: { schoolId: school.id, key: 'admission' },
-    select: { id: true },
-  });
-  if (!hasAdmissionForm) {
-    await prisma.formDefinition.create({
-      data: {
-        schoolId: school.id,
-        key: 'admission',
-        version: 1,
-        name: DEFAULT_ADMISSION_FORM_NAME,
-        status: 'PUBLISHED',
-        publishedAt: new Date(),
-        schema: DEFAULT_ADMISSION_FORM as unknown as Prisma.InputJsonObject,
-      },
-    });
+  // Staff types with their onboarding forms, and the admission form (shared with onboarding a
+  // school from the platform owner's screens).
+  for (const note of await provisionSchoolDefaults(prisma, school.id)) {
+    console.warn(note);
   }
 
   // Improvements to the admission form reach a database that already has the form as a new

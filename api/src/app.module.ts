@@ -31,6 +31,7 @@ import { FeesModule } from './modules/fees/fees.module.js';
 import { StudentsModule } from './modules/students/students.module.js';
 import { TeachingModule } from './modules/teaching/teaching.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { PlatformModule } from './modules/platform/platform.module.js';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { UsersModule } from './modules/users/users.module.js';
     StaffAttendanceModule,
     InsightsModule,
     AdmissionsModule,
+    PlatformModule,
   ],
   controllers: [AppController],
   providers: [

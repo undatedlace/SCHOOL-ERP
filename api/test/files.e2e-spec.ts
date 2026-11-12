@@ -208,7 +208,7 @@ describe('files (e2e)', () => {
 
     it("never serves another school's file", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const foreign = await prisma.storedFile.create({
         data: {
@@ -344,7 +344,7 @@ describe('files (e2e)', () => {
 
     it("rejects another school's photograph, even with a real id", async () => {
       const other = await prisma.school.create({
-        data: { name: unique('Other') },
+        data: { name: unique('Other'), code: unique('other').toLowerCase() },
       });
       const foreign = await prisma.storedFile.create({
         data: {
