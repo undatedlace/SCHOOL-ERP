@@ -11,6 +11,7 @@ Claude Code writes the code and works through the plan phase by phase. Ismail re
 - Verify its own work before reporting: build, lint, tests, and real requests against the running app.
 - Report briefly after each module: what was built, what was verified, and any decision Ismail should know about.
 - Follow the plan's design decisions (sections 4 to 9). If something needs to change, say so and update the plan.
+- Branches: every feature branch's pull request targets **`PPE`** (the test copy on Render). `main` is production and is updated from `PPE` only when it is stable (decided 12 Nov 2026).
 - Ask before: deleting or resetting data, changing a decision in this plan, adding a paid service, pushing, or anything outward-facing. Commit only when Ismail asks.
 - Pin exact dependency versions, and keep secrets out of git.
 - Keep this plan up to date as things are built.

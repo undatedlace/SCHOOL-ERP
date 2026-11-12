@@ -1,4 +1,6 @@
 # The PPE (test) copy of the School ERP on Render, free plans. See docs/ppe-render.md.
+# Deploys from the PPE branch: pull requests are merged into PPE and tested here; main is
+# updated from PPE only when it is stable, for production.
 # Secrets are marked "sync: false": Render asks for them when the Blueprint is created, and they
 # never live in git. The database is Neon's free Postgres (a free Render service has no disk).
 services:
@@ -8,6 +10,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
+    branch: PPE
     dockerfilePath: ./api/Dockerfile
     dockerContext: ./api
     # Free services have no pre-deploy step, so new migrations are applied as the API starts.
@@ -51,6 +54,7 @@ services:
   - type: web
     name: school-erp-ppe
     runtime: static
+    branch: PPE
     rootDir: web
     buildCommand: npm ci && npx ng build --configuration production
     staticPublishPath: dist/web/browser

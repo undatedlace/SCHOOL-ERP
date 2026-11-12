@@ -18,7 +18,7 @@ Everything is described in `render.yaml` (a Render Blueprint) at the repository 
 
 1. **Neon:** create a free project in the **Singapore** region (next to Render's Singapore region). Create a database whose name contains `ppe`, for example `school_erp_ppe` (the reset script refuses any other name). Copy the connection string (it ends in `?sslmode=require`).
 2. **Google Form** for feedback: ask for the page, the role they signed in as, what happened, what they expected, and an optional screenshot. Copy its link (`https://forms.gle/...`).
-3. **Render:** *New, Blueprint*, choose this repository and the branch to deploy (`main`). Render reads `render.yaml` and asks for the secrets:
+3. **Render:** *New, Blueprint*, choose this repository and the **`PPE`** branch. Render reads `render.yaml` and asks for the secrets:
    - `DATABASE_URL`: the Neon connection string.
    - `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`: your bucket and an IAM key limited to that bucket (see `docs/s3-setup.md`). `S3_REGION` is `ap-south-1`; change it in Render if the bucket is elsewhere.
    - `FEEDBACK_URL`: the Google Form link (must start with `https://`).
@@ -67,9 +67,14 @@ Testers share these logins, so one person's changes are seen by all. If a tester
 
 **If signing in fails through the rewrite** (Render's static-site proxy does not pass on the cookie or the `Origin` header), the fallback is for the API to serve the built web app itself, which keeps one free service and one address. Ask for it to be built.
 
+## Branches
+
+- **`PPE`** is the test copy's branch. Every pull request targets `PPE`; merging it redeploys the test copy.
+- **`main`** is production. It is updated from `PPE` (a pull request from `PPE` to `main`) only when the test copy is stable.
+
 ## Updating
 
-Merging to the deployed branch redeploys: the static site when `web/` changes, the API when `api/` changes (it applies new migrations as it starts). After a change that adds permissions, run the seed command from step 4 again (safe to repeat; it never renames the school or changes your password).
+Merging into `PPE` redeploys: the static site when `web/` changes, the API when `api/` changes (it applies new migrations as it starts). After a change that adds permissions, run the seed command from step 4 again (safe to repeat; it never renames the school or changes your password).
 
 ## Starting over
 
