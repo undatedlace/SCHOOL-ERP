@@ -34,6 +34,7 @@ describe('fees (e2e)', () => {
     cls: string,
     guardianMobile = mobile(),
     surname = unique('Fee'),
+    gender: 'MALE' | 'FEMALE' = 'FEMALE',
   ) {
     const created = (
       await office
@@ -43,7 +44,7 @@ describe('fees (e2e)', () => {
             classApplied: cls,
             surname,
             firstName: 'Noor',
-            gender: 'FEMALE',
+            gender,
             dateOfBirth: '2021-06-15',
             undertakingReceived: true,
           },
@@ -849,6 +850,102 @@ describe('fees (e2e)', () => {
       ).toEqual([students[0].studentId]);
       expect(paidOnly.counts.OVERDUE).toBe(2); // counts ignore the tab chosen
       await accountant.get('/api/fees/dues?status=LATE').expect(400);
+    });
+
+    it('splits dues and collection between boys and girls, and filters by either', async () => {
+      const c = (
+        await admin
+          .post('/api/classes')
+          .send({ name: unique('Gender') })
+          .expect(201)
+      ).body.id;
+      const d = (
+        await admin
+          .post(`/api/classes/${c}/divisions`)
+          .send({ name: 'A' })
+          .expect(201)
+      ).body.id;
+      await accountant
+        .put('/api/fee-structures')
+        .send({
+          academicYearId: yearId,
+          classId: c,
+          items: [{ feeHeadId: tuition, amount: '1000' }],
+          instalments: [{ label: 'All', dueDate: PAST, percent: 100 }],
+        })
+        .expect(200);
+      const boy = await admitInto(d, c, mobile(), unique('Boy'), 'MALE');
+      const girl1 = await admitInto(d, c);
+      const girl2 = await admitInto(d, c);
+      await accountant
+        .post('/api/fee-invoices/generate')
+        .send({ classId: c })
+        .expect(200);
+      const day = '2026-02-03';
+      await pay(boy.studentId, { amount: '400', paidOn: day }).expect(201);
+      await pay(girl1.studentId, { amount: '1000', paidOn: day }).expect(201);
+
+      const report = (
+        await accountant
+          .get(`/api/fees/dues?classId=${c}&pageSize=100`)
+          .expect(200)
+      ).body;
+      expect(report.byGender).toEqual([
+        expect.objectContaining({
+          gender: 'MALE',
+          students: 1,
+          owing: 1,
+          billed: '1000.00',
+          collected: '400.00',
+          pending: '600.00',
+        }),
+        expect.objectContaining({
+          gender: 'FEMALE',
+          students: 2,
+          owing: 1,
+          billed: '2000.00',
+          collected: '1000.00',
+          pending: '1000.00',
+        }),
+      ]);
+      const girls = (
+        await accountant
+          .get(`/api/fees/dues?classId=${c}&gender=FEMALE&pageSize=100`)
+          .expect(200)
+      ).body;
+      expect(girls.totals).toMatchObject({ students: 2, collected: '1000.00' });
+      expect(girls.counts).toMatchObject({ PAID: 1, OVERDUE: 1 });
+      expect(girls.byGender).toHaveLength(2); // the split stays whole
+      await accountant.get('/api/fees/dues?gender=BOY').expect(400);
+
+      const all = (
+        await accountant
+          .get(`/api/payments/collection?from=${day}&to=${day}`)
+          .expect(200)
+      ).body;
+      const sex = (g: string) =>
+        all.byGender.find((x: { gender: string }) => x.gender === g);
+      expect(Number(sex('MALE').total)).toBeGreaterThanOrEqual(400);
+      expect(Number(sex('FEMALE').total)).toBeGreaterThanOrEqual(1000);
+      const boysOnly = (
+        await accountant
+          .get(`/api/payments/collection?from=${day}&to=${day}&gender=MALE`)
+          .expect(200)
+      ).body;
+      expect(boysOnly.gender).toBe('MALE');
+      expect(boysOnly.total).toBe(sex('MALE').total);
+      expect(boysOnly.byGender).toEqual(all.byGender);
+      const boyPayments = (
+        await accountant
+          .get(`/api/payments?from=${day}&to=${day}&gender=MALE&pageSize=100`)
+          .expect(200)
+      ).body;
+      expect(
+        boyPayments.items.map((i: { studentId: string }) => i.studentId),
+      ).toContain(boy.studentId);
+      expect(
+        boyPayments.items.map((i: { studentId: string }) => i.studentId),
+      ).not.toContain(girl1.studentId);
     });
 
     it('tells part paid from nothing paid while nothing is overdue yet', async () => {

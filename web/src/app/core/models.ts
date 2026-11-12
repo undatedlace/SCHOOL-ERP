@@ -543,6 +543,8 @@ export interface DuesReport {
   counts: Record<DuesStatus, number>;
   /** Those who have waited longest since a due date passed. */
   longestOverdue: DuesStudent[];
+  /** Boys and girls side by side (always both, whatever gender filter is chosen). */
+  byGender: (DuesSums & { gender: Gender; students: number; owing: number })[];
   totals: DuesSums & { students: number; owing: number };
   byClass: (DuesSums & { id: string; label: string; students: number; owing: number })[];
   byDivision: (DuesSums & { id: string; label: string; students: number; owing: number })[];
@@ -1097,6 +1099,10 @@ export interface PaymentRow {
 export interface Collection {
   from: string;
   to: string;
+  /** The gender the totals were limited to, if any. */
+  gender: Gender | null;
   total: Money;
   byMode: { mode: PaymentMode; total: Money; count: number }[];
+  /** Money from boys' and girls' fees, always for everyone. */
+  byGender: { gender: Gender; total: Money; count: number; students: number }[];
 }

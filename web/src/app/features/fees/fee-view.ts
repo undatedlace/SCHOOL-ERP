@@ -1,4 +1,4 @@
-import { DuesStatus, LedgerInvoice, PaymentMode, StudentLedger } from '../../core/models';
+import { DuesStatus, Gender, LedgerInvoice, PaymentMode, StudentLedger } from '../../core/models';
 import { BadgeTone } from '../../shared/ui/badge';
 
 /** How each fee status is written and coloured. The word always carries the meaning. */
@@ -9,6 +9,26 @@ export const DUES_STATUS: Record<DuesStatus, { label: string; tone: BadgeTone }>
   OVERDUE: { label: 'Overdue', tone: 'bad' },
   NONE: { label: 'Not billed', tone: 'neutral' },
 };
+
+/** Fee figures are split by the student's gender: boys, girls (and others, when there are any). */
+export const GENDER_GROUP: Record<Gender, string> = {
+  MALE: 'Boys',
+  FEMALE: 'Girls',
+  OTHER: 'Other',
+};
+export type GenderChoice = Gender | 'ALL';
+
+/** Boys and girls always (so the cards do not come and go), and others only when there are some. */
+export function genderGroups<T extends { gender: Gender }>(
+  rows: T[],
+  blank: (g: Gender) => T,
+): T[] {
+  const has = (g: Gender) => rows.find((r) => r.gender === g);
+  const out: T[] = [has('MALE') ?? blank('MALE'), has('FEMALE') ?? blank('FEMALE')];
+  const other = has('OTHER');
+  if (other) out.push(other);
+  return out;
+}
 
 /** The tabs on Fee dues, in order ('ALL' first). */
 export const DUES_TABS: (DuesStatus | 'ALL')[] = ['ALL', 'OVERDUE', 'PARTIAL', 'UNPAID', 'PAID'];

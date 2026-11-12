@@ -132,7 +132,7 @@ const readCollapsed = () => {
           </span>
         </div>
 
-        <nav class="flex-1 overflow-y-auto px-3 pb-4" aria-label="Main">
+        <nav class="app-sidebar-scroll flex-1 overflow-y-auto px-3 pb-4" aria-label="Main">
           @for (section of sections(); track section.title) {
             <p
               class="mt-5 mb-2 px-3 text-[11px] font-semibold tracking-[0.08em] text-white/50 uppercase"

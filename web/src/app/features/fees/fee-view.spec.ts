@@ -2,6 +2,7 @@ import { StudentLedger } from '../../core/models';
 import {
   daysBetween,
   fromPaise,
+  genderGroups,
   lateText,
   percentText,
   share,
@@ -119,5 +120,22 @@ describe('fee helpers', () => {
     expect(percentText(0)).toBe('0%');
     expect(percentText(0.0008)).toBe('under 1%');
     expect(percentText(0.0912)).toBe('9%');
+  });
+});
+
+describe('genderGroups', () => {
+  const blank = (gender: 'MALE' | 'FEMALE' | 'OTHER') => ({ gender, total: '0.00' });
+  it('always gives boys and girls, in that order, filling in a missing one', () => {
+    expect(genderGroups([{ gender: 'FEMALE', total: '5.00' }], blank)).toEqual([
+      { gender: 'MALE', total: '0.00' },
+      { gender: 'FEMALE', total: '5.00' },
+    ]);
+  });
+  it('adds others only when there are some', () => {
+    expect(genderGroups([{ gender: 'OTHER', total: '1.00' }], blank).map((g) => g.gender)).toEqual([
+      'MALE',
+      'FEMALE',
+      'OTHER',
+    ]);
   });
 });

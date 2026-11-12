@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -8,7 +8,7 @@ import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { Collection, PaymentMode, PaymentRow } from '../../core/models';
+import { Collection, Gender, PaymentMode, PaymentRow } from '../../core/models';
 import { formatDate } from '../../shared/dates';
 import { inr } from '../../shared/money';
 import { DateField } from '../../shared/ui/date-field';
@@ -16,7 +16,18 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { Avatar } from '../../shared/ui/avatar';
 import { Badge } from '../../shared/ui/badge';
 import { StatTile } from '../../shared/ui/stat-tile';
-import { MODE_LABEL, percentText, share, todayInIndia } from './fee-view';
+import { FilterCard, FilterCards } from '../../shared/ui/filter-cards';
+import {
+  GENDER_GROUP,
+  genderGroups,
+  GenderChoice,
+  MODE_LABEL,
+  fromPaise,
+  percentText,
+  share,
+  toPaise,
+  todayInIndia,
+} from './fee-view';
 import { ButtonModule } from '@openng/optimus-ui/button';
 
 const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
@@ -30,6 +41,7 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
     Avatar,
     Badge,
     StatTile,
+    FilterCards,
     DateField,
     FormsModule,
     RouterLink,
@@ -109,10 +121,19 @@ const MODE_OPTIONS = (Object.keys(MODE_LABEL) as PaymentMode[])
     @if (error()) {
       <p-message severity="error" [text]="error()!" />
     } @else {
+      @if (genderCards().length > 1) {
+        <app-filter-cards
+          class="mb-6"
+          label="Show money received from everyone, boys or girls"
+          [cards]="genderCards()"
+          [value]="gender()"
+          (changed)="onGender($any($event))"
+        />
+      }
       @if (collection(); as c) {
         <section aria-label="Totals" class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <app-stat-tile
-            label="Collected"
+            [label]="gender() === 'ALL' ? 'Collected' : 'Collected, ' + groupName(gender())"
             icon="wallet"
             tone="good"
             [value]="money(c.total)"
@@ -233,6 +254,42 @@ export class CollectionPage {
   protected readonly from = signal(this.today);
   protected readonly to = signal(this.today);
   protected readonly mode = signal<PaymentMode | null>(null);
+  protected readonly gender = signal<GenderChoice>('ALL');
+  protected readonly groupName = (g: GenderChoice) =>
+    g === 'ALL' ? 'everyone' : GENDER_GROUP[g].toLowerCase();
+  /** Everyone, boys, girls: what came in from each, also a filter. */
+  protected readonly genderCards = computed<FilterCard[]>(() => {
+    const c = this.collection();
+    if (!c) return [];
+    const groups = genderGroups(c.byGender, (gender) => ({
+      gender,
+      total: '0.00',
+      count: 0,
+      students: 0,
+    }));
+    const card = (
+      value: string,
+      label: string,
+      total: string,
+      count: number,
+      students: number,
+    ): FilterCard => ({
+      value,
+      label,
+      amount: inr(total),
+      hint: `${students} ${students === 1 ? 'student' : 'students'} · ${count} ${count === 1 ? 'payment' : 'payments'}`,
+    });
+    return [
+      card(
+        'ALL',
+        'Everyone',
+        fromPaise(groups.reduce((a, g) => a + toPaise(g.total), 0)),
+        groups.reduce((a, g) => a + g.count, 0),
+        groups.reduce((a, g) => a + g.students, 0),
+      ),
+      ...groups.map((g) => card(g.gender, GENDER_GROUP[g.gender], g.total, g.count, g.students)),
+    ];
+  });
   protected readonly search = signal('');
   protected readonly page = signal(1);
   protected readonly payments = signal<PaymentRow[]>([]);
@@ -261,6 +318,11 @@ export class CollectionPage {
     this.page.set(1);
     void this.load();
   }
+  protected onGender(value: GenderChoice) {
+    this.gender.set(value);
+    this.page.set(1);
+    void this.load();
+  }
   protected onMode(mode: PaymentMode | null) {
     this.mode.set(mode);
     this.page.set(1);
@@ -281,6 +343,11 @@ export class CollectionPage {
     void this.load();
   }
 
+  private genderFilter(): Gender | null {
+    const g = this.gender();
+    return g === 'ALL' ? null : g;
+  }
+
   private async load() {
     this.loading.set(true);
     this.error.set(null);
@@ -294,9 +361,10 @@ export class CollectionPage {
             to: this.to(),
             mode: this.mode(),
             search: this.search().trim() || undefined,
+            gender: this.genderFilter(),
           }),
         ),
-        firstValueFrom(this.api.collection(this.from(), this.to())),
+        firstValueFrom(this.api.collection(this.from(), this.to(), this.genderFilter())),
       ]);
       this.payments.set(list.items);
       this.total.set(list.total);

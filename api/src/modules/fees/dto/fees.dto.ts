@@ -20,7 +20,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PageQueryDto } from '../../../common/dto/page-query.dto.js';
-import { PaymentMode } from '../../../generated/prisma/enums.js';
+import { Gender, PaymentMode } from '../../../generated/prisma/enums.js';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -274,6 +274,11 @@ export class ListPaymentsQueryDto extends PageQueryDto {
   @IsString()
   @MaxLength(100)
   search?: string;
+
+  /** Only payments for boys, or girls (the student's gender). */
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 }
 
 export class CollectionQueryDto {
@@ -282,6 +287,11 @@ export class CollectionQueryDto {
 
   @IsDateString({ strict: true })
   to: string;
+
+  /** Totals for boys or girls only; the split by gender is always given in full. */
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 }
 
 // ---------- dues ----------
@@ -321,6 +331,11 @@ export class DuesQueryDto extends PageQueryDto {
   )
   @IsBoolean()
   onlyOwing?: boolean;
+
+  /** Only boys, or girls. The split by gender in the report is always given in full. */
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 
   /** One fee status (see DuesService): paid, part paid, nothing paid yet, or overdue. */
   @IsOptional()

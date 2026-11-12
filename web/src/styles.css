@@ -202,3 +202,57 @@
   border-top: 1px solid var(--border);
   background: transparent;
 }
+
+/* A thin, quiet scrollbar for areas on the dark sidebar (the default one shows as a white strip). */
+.app-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+.app-sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.app-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.app-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.18);
+  border-radius: 9999px;
+}
+.app-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.32);
+}
+
+/* Filter cards (app-filter-cards): an Optimus select button laid out as a row of cards. */
+.app-card-select.p-selectbutton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.app-card-select .p-togglebutton {
+  justify-content: flex-start;
+  min-height: 6rem;
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) !important;
+  box-shadow: 0 1px 3px rgb(21 34 43 / 0.05);
+}
+.app-card-select .p-togglebutton .p-togglebutton-content {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.app-card-select .p-togglebutton:hover:not(.p-togglebutton-checked) {
+  border-color: var(--border-strong);
+}
+.app-card-select .p-togglebutton.p-togglebutton-checked {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  background: color-mix(in srgb, var(--primary-soft) 55%, var(--card));
+}

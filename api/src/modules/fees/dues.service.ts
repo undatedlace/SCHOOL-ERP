@@ -87,6 +87,7 @@ export class DuesService {
             firstName: true,
             fatherName: true,
             surname: true,
+            gender: true,
           },
         },
         division: {
@@ -163,7 +164,7 @@ export class DuesService {
       perStudent.set(t.studentId, s);
     }
 
-    const everyone = enrolments
+    const pool = enrolments
       .map((e) => {
         const s = perStudent.get(e.student.id) ?? blank();
         return {
@@ -181,11 +182,43 @@ export class DuesService {
           classId: e.division.class.id,
           divisionId: e.division.id,
           sortOrder: e.division.class.sortOrder,
+          gender: e.student.gender,
           sums: s,
           status: duesStatus(s),
         };
       })
       .filter((r) => !q.onlyOwing || r.sums.pending > 0);
+
+    // Boys and girls side by side, for whatever else is chosen (the gender filter aside).
+    const genderSums = new Map<
+      string,
+      { students: number; owing: number; sums: Sums }
+    >();
+    for (const r of pool) {
+      const g = genderSums.get(r.gender) ?? {
+        students: 0,
+        owing: 0,
+        sums: zero(),
+      };
+      g.students++;
+      if (r.sums.pending > 0) g.owing++;
+      add(g.sums, r.sums);
+      genderSums.set(r.gender, g);
+    }
+    const byGender = ['MALE', 'FEMALE', 'OTHER']
+      .filter((g) => genderSums.has(g))
+      .map((g) => {
+        const v = genderSums.get(g)!;
+        return {
+          gender: g,
+          students: v.students,
+          owing: v.owing,
+          ...out(v.sums),
+        };
+      });
+    const everyone = q.gender
+      ? pool.filter((r) => r.gender === q.gender)
+      : pool;
 
     // Counts per status are taken before the status filter, so every tab shows its number.
     const counts: Record<DuesStatus, number> = {
@@ -303,6 +336,7 @@ export class DuesService {
     return {
       academicYearId: yearId,
       counts,
+      byGender,
       longestOverdue: longestOverdue.map(row),
       totals: {
         students: students.length,
@@ -324,6 +358,7 @@ export class DuesService {
     return {
       academicYearId: null,
       counts: { PAID: 0, PARTIAL: 0, UNPAID: 0, OVERDUE: 0, NONE: 0 },
+      byGender: [],
       longestOverdue: [],
       totals: { students: 0, owing: 0, ...out(zero()) },
       byClass: [],

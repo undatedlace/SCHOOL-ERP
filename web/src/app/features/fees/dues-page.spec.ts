@@ -30,6 +30,26 @@ const report: DuesReport = {
   academicYearId: 'y',
   counts: { PAID: 1, PARTIAL: 0, UNPAID: 0, OVERDUE: 2, NONE: 0 },
   longestOverdue: [student()],
+  byGender: [
+    {
+      gender: 'MALE',
+      students: 1,
+      owing: 1,
+      billed: '1000.00',
+      collected: '250.50',
+      pending: '749.50',
+      overdue: '749.50',
+    },
+    {
+      gender: 'FEMALE',
+      students: 2,
+      owing: 1,
+      billed: '2000.00',
+      collected: '1000.00',
+      pending: '1000.00',
+      overdue: '1000.00',
+    },
+  ],
   totals: { students: 3, owing: 2, ...sums },
   byClass: [{ id: 'c1', label: 'Nursery', students: 3, owing: 2, ...sums }],
   byDivision: [{ id: 'd1', label: 'Nursery-A', students: 3, owing: 2, ...sums }],
@@ -161,5 +181,27 @@ describe('DuesPage', () => {
   it('offers no payment buttons to someone who may only look', async () => {
     const { el } = await setup(['fees.read_all']);
     expect(el.textContent).not.toContain('Record payment');
+  });
+
+  it('shows boys and girls as cards that filter the page', async () => {
+    const { fixture, http, el } = await setup();
+    const cards = Array.from(
+      el.querySelectorAll('[aria-label="Show fees for everyone, boys or girls"] [role="button"]'),
+    );
+    // Each card: its label, the amount, and the line under it.
+    const lines = (c: Element) =>
+      Array.from(c.querySelectorAll('.app-eyebrow, .text-xl, .text-xs')).map((x) =>
+        x.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+    expect(cards.map(lines)).toEqual([
+      ['Everyone', '₹1,250.50 collected', '3 students · ₹1,749.50 still to collect'],
+      ['Boys', '₹250.50 collected', '1 student · ₹749.50 still to collect'],
+      ['Girls', '₹1,000.00 collected', '2 students · ₹1,000.00 still to collect'],
+    ]);
+    (cards[1] as HTMLElement).click();
+    const req = http.expectOne((r) => r.url === '/api/fees/dues');
+    expect(req.request.params.get('gender')).toBe('MALE');
+    req.flush(report);
+    await fixture.whenStable();
   });
 });

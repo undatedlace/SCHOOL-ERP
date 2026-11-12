@@ -19,6 +19,7 @@ import {
   DuesReport,
   DuesStatus,
   DuesStudent,
+  Gender,
   SchoolClass,
   StudentListItem,
 } from '../../core/models';
@@ -30,9 +31,15 @@ import { Badge } from '../../shared/ui/badge';
 import { Icon } from '../../shared/ui/icon';
 import { PageHeader } from '../../shared/ui/page-header';
 import { StatTile } from '../../shared/ui/stat-tile';
+import { FilterCard, FilterCards } from '../../shared/ui/filter-cards';
 import {
   DUES_STATUS,
   DUES_TABS,
+  GENDER_GROUP,
+  genderGroups,
+  GenderChoice,
+  fromPaise,
+  toPaise,
   MODE_LABEL,
   daysBetween,
   lateText,
@@ -65,6 +72,7 @@ const BREAKDOWN: { status: DuesStatus; bar: string }[] = [
     HasPermission,
     PageHeader,
     StatTile,
+    FilterCards,
     Avatar,
     Badge,
     Icon,
@@ -117,6 +125,16 @@ const BREAKDOWN: { status: DuesStatus; bar: string }[] = [
           [hint]="r.counts.OVERDUE + ' students past a due date'"
         />
       </section>
+
+      @if (genderCards().length > 1) {
+        <app-filter-cards
+          class="mb-6"
+          label="Show fees for everyone, boys or girls"
+          [cards]="genderCards()"
+          [value]="gender()"
+          (changed)="onGender($any($event))"
+        />
+      }
 
       <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
         <section class="min-w-0 overflow-hidden rounded-xl bg-card shadow-sm" aria-label="Students">
@@ -456,6 +474,7 @@ export class DuesPage {
   protected readonly search = signal('');
   protected readonly classId = signal<string | null>(null);
   protected readonly status = signal<DuesStatus | 'ALL'>('ALL');
+  protected readonly gender = signal<GenderChoice>('ALL');
   protected readonly page = signal(1);
   protected readonly reminding = signal<string | null>(null);
   protected readonly pickerOpen = signal(false);
@@ -473,6 +492,41 @@ export class DuesPage {
           ? Object.values(counts).reduce((a, b) => a + b, 0)
           : counts[value],
     }));
+  });
+
+  /** Everyone, boys, girls: what was collected and what is left, also a filter. */
+  protected readonly genderCards = computed<FilterCard[]>(() => {
+    const r = this.report();
+    if (!r) return [];
+    const groups = genderGroups(r.byGender, (gender) => ({
+      gender,
+      students: 0,
+      owing: 0,
+      billed: '0.00',
+      collected: '0.00',
+      pending: '0.00',
+      overdue: '0.00',
+    }));
+    const sum = (k: 'collected' | 'pending') =>
+      fromPaise(groups.reduce((a, g) => a + toPaise(g[k]), 0));
+    const card = (
+      value: string,
+      label: string,
+      g: { collected: string; pending: string; students: number },
+    ): FilterCard => ({
+      value,
+      label,
+      amount: inr(g.collected) + ' collected',
+      hint: `${g.students} ${g.students === 1 ? 'student' : 'students'} · ${inr(g.pending)} still to collect`,
+    });
+    return [
+      card('ALL', 'Everyone', {
+        collected: sum('collected'),
+        pending: sum('pending'),
+        students: groups.reduce((a, g) => a + g.students, 0),
+      }),
+      ...groups.map((g) => card(g.gender, GENDER_GROUP[g.gender], g)),
+    ];
   });
 
   protected readonly collectedShare = computed(() => {
@@ -547,6 +601,11 @@ export class DuesPage {
   }
   protected onClass(id: string | null) {
     this.classId.set(id);
+    this.page.set(1);
+    void this.load();
+  }
+  protected onGender(value: GenderChoice) {
+    this.gender.set(value);
     this.page.set(1);
     void this.load();
   }
@@ -627,6 +686,7 @@ export class DuesPage {
             classId: this.classId(),
             search: this.search().trim() || undefined,
             status: this.status() === 'ALL' ? null : (this.status() as DuesStatus),
+            gender: this.gender() === 'ALL' ? null : (this.gender() as Gender),
           }),
         ),
       );
