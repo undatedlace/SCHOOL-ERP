@@ -7,6 +7,8 @@ import {
   DEFAULT_ADMISSION_FORM_NAME,
   PHOTO_FIELDS,
 } from '../src/modules/forms/default-admission-form.js';
+import { STAFF_FORM_PREFIX } from '../src/modules/forms/form-kinds.js';
+import { templateFor } from '../src/modules/forms/staff-form-templates.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -243,6 +245,37 @@ async function main() {
       where: { schoolId_name: { schoolId: school.id, name: t.name } },
       update: {},
       create: { schoolId: school.id, ...t, sortOrder: i + 1 },
+    });
+  }
+
+  // Each type's onboarding form, as published version 1, from the template that fits the kind of work.
+  // A type that already has a live version is left alone; one with only a draft is reported, because
+  // publishing over a draft someone is editing would surprise them.
+  for (const type of await prisma.staffType.findMany({
+    where: { schoolId: school.id, active: true },
+  })) {
+    const key = `${STAFF_FORM_PREFIX}${type.id}`;
+    const existing = await prisma.formDefinition.findMany({
+      where: { schoolId: school.id, key },
+      select: { status: true, version: true },
+    });
+    if (existing.some((f) => f.status === 'PUBLISHED')) continue;
+    if (existing.length > 0) {
+      console.warn(
+        `Staff form for ${type.name} has a draft but no live version; publish it from Settings, Forms.`,
+      );
+      continue;
+    }
+    await prisma.formDefinition.create({
+      data: {
+        schoolId: school.id,
+        key,
+        version: 1,
+        name: `Staff onboarding: ${type.name}`,
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        schema: templateFor(type) as unknown as Prisma.InputJsonObject,
+      },
     });
   }
 

@@ -8,7 +8,11 @@ import type { AuthContext } from '../../common/auth-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
-import { AssignDto, ListAssignmentsQueryDto } from './dto/teaching.dto.js';
+import {
+  AssignDto,
+  CopyAssignmentsDto,
+  ListAssignmentsQueryDto,
+} from './dto/teaching.dto.js';
 
 const INCLUDE = {
   academicYear: { select: { id: true, name: true } },
@@ -189,7 +193,168 @@ export class TeachingService {
     await this.record(auth, 'teaching.removed', id, {}, ip);
   }
 
+  /**
+   * Carries a year's class teachers and subject teachers into another year (normally the new one),
+   * so the office only changes what is different. A place that already has a teacher in the target
+   * year is left as it is, and so is anyone who has since left the school; both are reported.
+   * Nothing else is touched, and running it again copies nothing new.
+   */
+  async copy(auth: AuthContext, dto: CopyAssignmentsDto, ip?: string) {
+    if (dto.fromAcademicYearId === dto.toAcademicYearId) {
+      throw new BadRequestException('Choose two different years');
+    }
+    const [from, to] = await Promise.all([
+      this.yearOrThrow(auth.schoolId, dto.fromAcademicYearId),
+      this.yearOrThrow(auth.schoolId, dto.toAcademicYearId),
+    ]);
+    const schoolId = auth.schoolId;
+    const place = {
+      division: {
+        select: {
+          name: true,
+          class: { select: { name: true, sortOrder: true } },
+        },
+      },
+      staff: { select: { status: true } },
+    } as const;
+
+    const [classSources, subjectSources, classTaken, subjectTaken] =
+      await Promise.all([
+        this.prisma.classTeacher.findMany({
+          where: { schoolId, academicYearId: from.id },
+          include: place,
+        }),
+        this.prisma.subjectTeacher.findMany({
+          where: { schoolId, academicYearId: from.id },
+          include: { ...place, subject: { select: { name: true } } },
+        }),
+        this.prisma.classTeacher.findMany({
+          where: { schoolId, academicYearId: to.id },
+          select: { divisionId: true },
+        }),
+        this.prisma.subjectTeacher.findMany({
+          where: { schoolId, academicYearId: to.id },
+          select: { divisionId: true, subjectId: true },
+        }),
+      ]);
+    const hasClass = new Set(classTaken.map((r) => r.divisionId));
+    const hasSubject = new Set(
+      subjectTaken.map((r) => `${r.divisionId}:${r.subjectId}`),
+    );
+
+    const skipped: { place: string; role: string; reason: string }[] = [];
+    const toClass: Prisma.ClassTeacherCreateManyInput[] = [];
+    const toSubject: Prisma.SubjectTeacherCreateManyInput[] = [];
+    const label = (d: { name: string; class: { name: string } }) =>
+      `${d.class.name}-${d.name}`;
+
+    const sources = [
+      ...classSources.map((r) => ({
+        r,
+        subjectId: null as string | null,
+        subjectName: null as string | null,
+      })),
+      ...subjectSources.map((r) => ({
+        r,
+        subjectId: r.subjectId as string | null,
+        subjectName: r.subject.name as string | null,
+      })),
+    ].sort(
+      (a, b) =>
+        a.r.division.class.sortOrder - b.r.division.class.sortOrder ||
+        label(a.r.division).localeCompare(label(b.r.division)) ||
+        (a.subjectName ?? '').localeCompare(b.subjectName ?? ''),
+    );
+    for (const { r, subjectId, subjectName } of sources) {
+      const where = label(r.division);
+      const role = subjectName ?? 'Class teacher';
+      if (r.staff.status !== 'ACTIVE') {
+        skipped.push({
+          place: where,
+          role,
+          reason: 'The teacher has left the school',
+        });
+        continue;
+      }
+      if (subjectId) {
+        if (hasSubject.has(`${r.divisionId}:${subjectId}`)) {
+          skipped.push({
+            place: where,
+            role,
+            reason: `Already has a teacher for ${to.name}`,
+          });
+          continue;
+        }
+        toSubject.push({
+          schoolId,
+          academicYearId: to.id,
+          divisionId: r.divisionId,
+          subjectId,
+          staffId: r.staffId,
+        });
+      } else {
+        if (hasClass.has(r.divisionId)) {
+          skipped.push({
+            place: where,
+            role,
+            reason: `Already has a class teacher for ${to.name}`,
+          });
+          continue;
+        }
+        toClass.push({
+          schoolId,
+          academicYearId: to.id,
+          divisionId: r.divisionId,
+          staffId: r.staffId,
+        });
+      }
+    }
+
+    // All or nothing. skipDuplicates keeps a simultaneous copy from failing on the unique places.
+    const [classes, subjects] = await this.prisma.$transaction([
+      this.prisma.classTeacher.createMany({
+        data: toClass,
+        skipDuplicates: true,
+      }),
+      this.prisma.subjectTeacher.createMany({
+        data: toSubject,
+        skipDuplicates: true,
+      }),
+    ]);
+
+    await this.audit.log({
+      schoolId,
+      actorUserId: auth.userId,
+      action: 'teaching.assignments_copied',
+      entityType: 'academic_year',
+      entityId: to.id,
+      metadata: {
+        from: from.name,
+        to: to.name,
+        classTeachers: classes.count,
+        subjectTeachers: subjects.count,
+        skipped: skipped.length,
+      },
+      ip,
+    });
+    return {
+      from: from.name,
+      to: to.name,
+      copied: { classTeachers: classes.count, subjectTeachers: subjects.count },
+      skipped,
+    };
+  }
+
   // ---------- helpers ----------
+
+  private async yearOrThrow(schoolId: string, id: string) {
+    const year = await this.prisma.academicYear.findFirst({
+      where: { id, schoolId },
+      select: { id: true, name: true },
+    });
+    if (!year) throw new NotFoundException('Academic year not found');
+    return year;
+  }
 
   private async collect(where: {
     schoolId: string;

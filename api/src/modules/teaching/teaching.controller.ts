@@ -18,6 +18,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import {
   AssignDto,
   ChangeTeacherDto,
+  CopyAssignmentsDto,
   ListAssignmentsQueryDto,
 } from './dto/teaching.dto.js';
 import { TeachingService } from './teaching.service.js';
@@ -50,6 +51,18 @@ export class TeachingController {
     @Req() req: Request,
   ) {
     return this.teaching.assign(auth, dto, req.ip);
+  }
+
+  /** Carry last year's class and subject teachers into another year. Declared before ':id' routes. */
+  @Post('copy')
+  @RequirePermissions('academics.manage')
+  @HttpCode(200)
+  copy(
+    @CurrentAuth() auth: AuthContext,
+    @Body() dto: CopyAssignmentsDto,
+    @Req() req: Request,
+  ) {
+    return this.teaching.copy(auth, dto, req.ip);
   }
 
   @Patch(':id')

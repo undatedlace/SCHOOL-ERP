@@ -15,6 +15,7 @@ import { Assignment, StaffMember } from '../../core/models';
 import { ageText, formatDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { AnswerView } from '../../shared/forms/answer-view';
+import { PapersChecklist } from '../../shared/forms/papers-checklist';
 import { FormField } from '../../shared/ui/form-field';
 import { genderLabel } from '../../shared/ui/labels';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
@@ -37,6 +38,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
     StaffForm,
     TempPasswordDialog,
     AnswerView,
+    PapersChecklist,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -153,6 +155,7 @@ import { STAFF_ROLE_OPTIONS, StaffForm } from './staff-form';
             <p class="mb-4 text-xs text-muted-foreground">
               Visible to administrators only. Filled in with version {{ o.version }} of the form.
             </p>
+            <app-papers-checklist [schema]="o.schema" [answers]="o.answers" />
             <app-answer-view [schema]="o.schema" [answers]="o.answers" />
           </section>
         }

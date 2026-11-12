@@ -14,6 +14,10 @@ interface Internals {
   error: () => string | null;
   divisionOptions: () => { id: string; label: string }[];
   roleOptions: () => { id: string; label: string }[];
+  openCopy(): Promise<void>;
+  runCopy(): Promise<void>;
+  copyFrom: () => string | null;
+  copyResult: () => { copied: { classTeachers: number; subjectTeachers: number } } | null;
 }
 
 async function setup() {
@@ -132,5 +136,49 @@ describe('TeachingTab', () => {
     req.flush({});
     await reloaded(http);
     await done;
+  });
+
+  it('copies last year into the current year, choosing the most recent earlier year', async () => {
+    const { page, http } = await setup();
+    const opening = page.openCopy();
+    http.expectOne('/api/academic-years').flush([
+      {
+        id: 'y3',
+        name: '2026-27',
+        startDate: '2026-04-01',
+        endDate: '2027-03-31',
+        isCurrent: true,
+      },
+      {
+        id: 'y2',
+        name: '2025-26',
+        startDate: '2025-04-01',
+        endDate: '2026-03-31',
+        isCurrent: false,
+      },
+      {
+        id: 'y1',
+        name: '2024-25',
+        startDate: '2024-04-01',
+        endDate: '2025-03-31',
+        isCurrent: false,
+      },
+    ]);
+    await opening;
+    expect(page.copyFrom()).toBe('y2');
+
+    const done = page.runCopy();
+    const req = http.expectOne('/api/teaching-assignments/copy');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ fromAcademicYearId: 'y2', toAcademicYearId: 'y3' });
+    req.flush({
+      from: '2025-26',
+      to: '2026-27',
+      copied: { classTeachers: 2, subjectTeachers: 5 },
+      skipped: [],
+    });
+    await reloaded(http);
+    await done;
+    expect(page.copyResult()?.copied).toEqual({ classTeachers: 2, subjectTeachers: 5 });
   });
 });

@@ -8,22 +8,19 @@ import { PrismaService } from '../../database/prisma.service.js';
 import type { FormDefinition } from '../../generated/prisma/client.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
-import {
-  DEFAULT_NON_TEACHING_FORM,
-  DEFAULT_TEACHER_FORM,
-} from './default-staff-forms.js';
 import { FORM_KINDS, FormKind, STAFF_FORM_PREFIX } from './form-kinds.js';
 import {
   FormSchema,
   publishErrors,
   validateFormSchema,
 } from './form-schema.js';
+import { templateFor } from './staff-form-templates.js';
 
-/** The onboarding form of a staff type. It starts from the teacher or the non-teaching form. */
+/** The onboarding form of a staff type. It starts from the template that fits the kind of work. */
 const staffKind = (t: { name: string; isTeaching: boolean }): FormKind => ({
   name: `Staff onboarding: ${t.name}`,
   requiredSystem: [],
-  initial: t.isTeaching ? DEFAULT_TEACHER_FORM : DEFAULT_NON_TEACHING_FORM,
+  initial: templateFor(t),
 });
 
 const view = (f: FormDefinition) => ({
@@ -190,6 +187,14 @@ export class FormsService {
     const problems = [...errors, ...publishErrors(schema, kind.requiredSystem)];
     if (problems.length) throw invalid(problems);
 
+    // Versions only go up. A draft started before another version was published (for example the
+    // starting form published when the first person was added) is numbered after it.
+    const latest = await this.prisma.formDefinition.aggregate({
+      where: { schoolId: auth.schoolId, key, id: { not: draft.id } },
+      _max: { version: true },
+    });
+    const version = Math.max(draft.version, (latest._max.version ?? 0) + 1);
+
     const [, published] = await this.prisma.$transaction([
       this.prisma.formDefinition.updateMany({
         where: { schoolId: auth.schoolId, key, status: 'PUBLISHED' },
@@ -197,7 +202,7 @@ export class FormsService {
       }),
       this.prisma.formDefinition.update({
         where: { id: draft.id },
-        data: { status: 'PUBLISHED', publishedAt: new Date() },
+        data: { status: 'PUBLISHED', publishedAt: new Date(), version },
       }),
     ]);
     await this.record(auth, 'forms.published', published);

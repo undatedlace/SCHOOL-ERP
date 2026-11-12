@@ -605,4 +605,163 @@ describe('teaching assignments (e2e)', () => {
       expect(await visibleIds(parent.agent)).toEqual([]);
     });
   });
+
+  describe('copying a year’s teachers into another year', () => {
+    const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
+    let oldYear: string;
+    let newYear: string;
+    let cls: string;
+    let d1: string;
+    let d2: string;
+    let sub: string;
+    let stayer: string;
+    let leaver: string;
+
+    const copy = (
+      who: Agent = admin,
+      from = oldYear,
+      to = newYear,
+    ): request.Test =>
+      who
+        .post('/api/teaching-assignments/copy')
+        .send({ fromAcademicYearId: from, toAcademicYearId: to });
+    const inYear = async (year: string) =>
+      (
+        await admin
+          .get(`/api/teaching-assignments?academicYearId=${year}`)
+          .expect(200)
+      ).body as {
+        kind: string;
+        division: { id: string };
+        subject: { id: string } | null;
+        staff: { id: string };
+      }[];
+
+    beforeAll(async () => {
+      const schoolId = (
+        await prisma.school.findFirstOrThrow({ orderBy: { createdAt: 'asc' } })
+      ).id;
+      const year = async (name: string, start: string, end: string) =>
+        (
+          await prisma.academicYear.create({
+            data: {
+              schoolId,
+              name: unique(name),
+              startDate: day(start),
+              endDate: day(end),
+            },
+          })
+        ).id;
+      oldYear = await year('OLDTCH', '2046-04-01', '2047-03-31');
+      newYear = await year('NEWTCH', '2047-04-01', '2048-03-31');
+      cls = (
+        await admin
+          .post('/api/classes')
+          .send({ name: unique('CopyStd') })
+          .expect(201)
+      ).body.id;
+      d1 = (
+        await admin
+          .post(`/api/classes/${cls}/divisions`)
+          .send({ name: 'A' })
+          .expect(201)
+      ).body.id;
+      d2 = (
+        await admin
+          .post(`/api/classes/${cls}/divisions`)
+          .send({ name: 'B' })
+          .expect(201)
+      ).body.id;
+      sub = (
+        await admin
+          .post('/api/subjects')
+          .send({ name: unique('CopySub') })
+          .expect(201)
+      ).body.id;
+      stayer = (await newStaff()).id;
+      leaver = (await newStaff()).id;
+
+      const put = (body: Record<string, unknown>) =>
+        assign({ academicYearId: oldYear, ...body }).expect(201);
+      await put({ staffId: stayer, divisionId: d1 }); // class teacher of A
+      await put({ staffId: leaver, divisionId: d2 }); // class teacher of B (will leave)
+      await put({ staffId: stayer, divisionId: d1, subjectId: sub });
+      await put({ staffId: stayer, divisionId: d2, subjectId: sub });
+      await admin
+        .patch(`/api/staff/${leaver}`)
+        .send({ status: 'LEFT' })
+        .expect(200);
+    });
+
+    it('copies the teachers, and reports the one who has left', async () => {
+      const res = await copy().expect(200);
+      expect(res.body.copied).toEqual({ classTeachers: 1, subjectTeachers: 2 });
+      expect(res.body.skipped).toHaveLength(1);
+      expect(res.body.skipped[0]).toMatchObject({
+        role: 'Class teacher',
+        reason: expect.stringContaining('left'),
+      });
+
+      const rows = await inYear(newYear);
+      expect(rows).toHaveLength(3);
+      expect(
+        rows.find((r) => r.kind === 'CLASS_TEACHER' && r.division.id === d1)
+          ?.staff.id,
+      ).toBe(stayer);
+      // The old year is untouched.
+      expect(await inYear(oldYear)).toHaveLength(4);
+      // The audit log remembers it.
+      const audit = await prisma.auditLog.findFirst({
+        where: { action: 'teaching.assignments_copied', entityId: newYear },
+      });
+      expect(audit).not.toBeNull();
+    });
+
+    it('copying again changes nothing', async () => {
+      const res = await copy().expect(200);
+      expect(res.body.copied).toEqual({ classTeachers: 0, subjectTeachers: 0 });
+      expect(await inYear(newYear)).toHaveLength(3);
+    });
+
+    it('never overwrites a place that already has a teacher', async () => {
+      const other = (await newStaff()).id;
+      // B has no class teacher in the new year yet (the leaver was skipped); give it one by hand,
+      // then change A's subject teacher to someone else and copy once more.
+      await assign({
+        academicYearId: newYear,
+        staffId: other,
+        divisionId: d2,
+      }).expect(201);
+      const a = (await inYear(newYear)).find(
+        (r) => r.subject?.id === sub && r.division.id === d1,
+      ) as unknown as { id: string };
+      await admin
+        .patch(`/api/teaching-assignments/${a.id}`)
+        .send({ staffId: other })
+        .expect(200);
+
+      const res = await copy().expect(200);
+      expect(res.body.copied).toEqual({ classTeachers: 0, subjectTeachers: 0 });
+      const rows = await inYear(newYear);
+      expect(
+        rows.find((r) => r.subject?.id === sub && r.division.id === d1)?.staff
+          .id,
+      ).toBe(other);
+      expect(
+        rows.find((r) => r.kind === 'CLASS_TEACHER' && r.division.id === d2)
+          ?.staff.id,
+      ).toBe(other);
+    });
+
+    it('refuses the same year twice, and an unknown year', async () => {
+      await copy(admin, oldYear, oldYear).expect(400);
+      await copy(admin, oldYear, randomUUID()).expect(404);
+      await copy(admin, randomUUID(), newYear).expect(404);
+    });
+
+    it('is for people who manage academic setup only', async () => {
+      await copy(office).expect(403);
+      await copy(teacher.agent).expect(403);
+    });
+  });
 });

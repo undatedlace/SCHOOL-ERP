@@ -15,6 +15,7 @@ import {
   Collection,
   PaymentRow,
   CopyResult,
+  TeachingCopyResult,
   AdmissionsInsight,
   AttendanceInsight,
   FeesInsight,
@@ -383,6 +384,11 @@ export class Api {
   changeTeacher = (id: string, staffId: string) =>
     this.http.patch<Assignment>(`/api/teaching-assignments/${id}`, { staffId });
   removeAssignment = (id: string) => this.http.delete<void>(`/api/teaching-assignments/${id}`);
+  copyAssignments = (fromAcademicYearId: string, toAcademicYearId: string) =>
+    this.http.post<TeachingCopyResult>('/api/teaching-assignments/copy', {
+      fromAcademicYearId,
+      toAcademicYearId,
+    });
 
   // ---------- Attendance ----------
   attendanceDivisions = () => this.http.get<AttendanceDivision[]>('/api/attendance/divisions');
