@@ -42,6 +42,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { AuthService } from '../../core/auth.service';
 import { TempPassword, TempPasswordDialog } from '../../shared/ui/temp-password-dialog';
 import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../shared/ui/labels';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
 
 @Component({
   selector: 'app-student-page',
@@ -67,6 +68,7 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
     ClassPill,
     Icon,
     PageHeader,
+    TextareaModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -629,7 +631,8 @@ import { GENDERS, RELATIONSHIPS, genderLabel, relationshipLabel } from '../../sh
             id="remove-reason"
             rows="3"
             maxlength="300"
-            class="rounded-md border bg-background p-3"
+            pTextarea
+            [fluid]="true"
             [value]="removeReason()"
             (input)="removeReason.set($any($event.target).value)"
           ></textarea>

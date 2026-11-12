@@ -88,7 +88,7 @@ describe('PortalHomework', () => {
     expect(el.textContent).toContain('For: Noor Khan');
     expect(el.textContent).not.toContain('Change');
     (
-      Array.from(el.querySelectorAll('[role="tab"]')).find((b) =>
+      Array.from(el.querySelectorAll('[role="group"] [role="button"]')).find((b) =>
         b.textContent?.includes('Everything'),
       ) as HTMLButtonElement
     ).click();
@@ -175,7 +175,7 @@ describe('HomeworkPage', () => {
     clickText('Set homework', el);
     fixture.detectChanges();
     fixture.debugElement
-      .query(By.css('p-selectbutton'))
+      .query(By.css('p-dialog p-selectbutton'))
       .triggerEventHandler('ngModelChange', 'students');
     fixture.detectChanges();
     const selects = () => fixture.debugElement.queryAll(By.css('p-select'));

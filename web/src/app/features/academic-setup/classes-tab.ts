@@ -71,15 +71,17 @@ type Dialog =
                   class="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
                 >
                   {{ d.name }}
-                  <button
+                  <p-button
                     *appHasPermission="'academics.manage'"
-                    type="button"
-                    class="text-muted-foreground hover:text-destructive"
-                    [attr.aria-label]="'Remove division ' + d.name + ' from ' + cls.name"
-                    (click)="confirmDeleteDivision(cls, d)"
+                    severity="danger"
+                    [text]="true"
+                    [rounded]="true"
+                    size="small"
+                    styleClass="!size-6 !p-0"
+                    [ariaLabel]="'Remove division ' + d.name + ' from ' + cls.name"
+                    (onClick)="confirmDeleteDivision(cls, d)"
+                    >&times;</p-button
                   >
-                    &times;
-                  </button>
                 </span>
               } @empty {
                 <span class="text-sm text-muted-foreground">None</span>

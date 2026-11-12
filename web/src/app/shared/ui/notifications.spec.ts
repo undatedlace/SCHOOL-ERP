@@ -142,7 +142,7 @@ describe('NotificationsPage', () => {
   it('asks only for unread ones on the Unread tab', async () => {
     const { fixture, http, el } = await setup([note()]);
     (
-      Array.from(el.querySelectorAll('[role="tab"]')).find((b) =>
+      Array.from(el.querySelectorAll('[role="group"] [role="button"]')).find((b) =>
         b.textContent?.includes('Unread'),
       ) as HTMLButtonElement
     ).click();

@@ -18,11 +18,21 @@ import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { LeaveRequest, LeaveType } from '../../core/models';
 import { toIsoDate } from '../../shared/dates';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 
 /** Ask for leave, or (for an administrator) record leave for a member of staff, which is approved at once. */
 @Component({
   selector: 'app-leave-apply-dialog',
-  imports: [FormsModule, DialogModule, ButtonModule, SelectModule, DateField],
+  imports: [
+    FormsModule,
+    DialogModule,
+    ButtonModule,
+    SelectModule,
+    DateField,
+    TextareaModule,
+    CheckboxModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -88,22 +98,23 @@ import { toIsoDate } from '../../shared/dates';
             />
           </div>
         </div>
-        <label class="flex items-center gap-2 text-sm" for="lv-half">
-          <input
-            id="lv-half"
-            type="checkbox"
-            [checked]="half()"
-            (change)="half.set($any($event.target).checked)"
+        <div class="flex items-center gap-2 text-sm">
+          <p-checkbox
+            [binary]="true"
+            inputId="lv-half"
+            [ngModel]="half()"
+            (ngModelChange)="half.set($event)"
           />
-          Half a day (a single day only)
-        </label>
+          <label for="lv-half">Half a day (a single day only)</label>
+        </div>
         <label class="flex flex-col gap-1 text-sm" for="lv-reason">
           Reason
           <textarea
             id="lv-reason"
             rows="3"
             maxlength="300"
-            class="rounded-md border bg-background p-3"
+            pTextarea
+            [fluid]="true"
             [value]="reason()"
             (input)="reason.set($any($event.target).value)"
           ></textarea>

@@ -12,6 +12,7 @@ import { apiError } from '../../core/api-error';
 import { DuesReport, SchoolClass } from '../../core/models';
 import { inr } from '../../shared/money';
 import { PageHeader } from '../../shared/ui/page-header';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 
 @Component({
   selector: 'app-dues-page',
@@ -23,6 +24,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     SelectModule,
     TableModule,
     PageHeader,
+    CheckboxModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -51,10 +53,15 @@ import { PageHeader } from '../../shared/ui/page-header';
         aria-label="Class"
         class="w-48"
       />
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" [ngModel]="onlyOwing()" (ngModelChange)="onOwing($event)" />
-        Only students who owe
-      </label>
+      <div class="flex items-center gap-2 text-sm">
+        <p-checkbox
+          [binary]="true"
+          inputId="only-owing"
+          [ngModel]="onlyOwing()"
+          (ngModelChange)="onOwing($event)"
+        />
+        <label for="only-owing">Only students who owe</label>
+      </div>
     </div>
 
     @if (error()) {

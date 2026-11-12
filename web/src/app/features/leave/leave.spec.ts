@@ -283,7 +283,7 @@ describe('LeaveRequests (administrator)', () => {
   it('asks for the waiting list by default and switches tabs', async () => {
     const { fixture, http, el } = await setup([]);
     (
-      Array.from(el.querySelectorAll('[role="tab"]')).find(
+      Array.from(el.querySelectorAll('[role="group"] [role="button"]')).find(
         (b) => b.textContent?.trim() === 'Approved',
       ) as HTMLButtonElement
     ).click();

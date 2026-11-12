@@ -32,12 +32,21 @@ import {
   renameSection,
   updateField,
 } from './schema-edit';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 
 const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label ?? t;
 
 @Component({
   selector: 'app-form-builder',
-  imports: [RouterLink, ButtonModule, MessageModule, TagModule, FormRenderer, FieldEditor],
+  imports: [
+    RouterLink,
+    ButtonModule,
+    MessageModule,
+    TagModule,
+    FormRenderer,
+    FieldEditor,
+    InputTextModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/app/settings/forms" class="text-sm text-muted-foreground hover:text-foreground"
@@ -128,7 +137,8 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
               <section class="mb-6 rounded-xl border-0 bg-card shadow-sm">
                 <div class="flex flex-wrap items-center gap-2 border-b p-3">
                   <input
-                    class="min-w-48 flex-1 rounded-md border bg-background px-3 py-2 text-sm font-semibold"
+                    pInputText
+                    class="min-w-48 flex-1 font-semibold"
                     [value]="section.title"
                     [attr.aria-label]="'Title of section ' + (si + 1)"
                     (change)="rename(section.id, $any($event.target).value, section.description)"
@@ -161,7 +171,9 @@ const typeLabel = (t: string) => TYPE_OPTIONS.find((o) => o.value === t)?.label 
                   />
                 </div>
                 <input
-                  class="w-full border-b bg-transparent px-3 py-2 text-sm text-muted-foreground"
+                  pInputText
+                  variant="filled"
+                  class="m-3 w-[calc(100%-1.5rem)] text-sm"
                   placeholder="Short description (optional)"
                   [value]="section.description ?? ''"
                   [attr.aria-label]="'Description of ' + section.title"

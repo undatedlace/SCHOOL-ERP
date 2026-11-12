@@ -17,13 +17,24 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { AttendanceGrid } from '../attendance/attendance-grid';
 import { STATUSES, monthBounds } from '../attendance/attendance-utils';
 import { StaffDrafts, asGridReport, staffChanges, staffDraftsFrom } from './staff-grid';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 
 type Tab = 'take' | 'report';
 
 /** Attendance of teachers and other staff. The admin marks it; the office can look. */
 @Component({
   selector: 'app-staff-attendance-page',
-  imports: [DateField, FormsModule, ButtonModule, MessageModule, PageHeader, AttendanceGrid],
+  imports: [
+    DateField,
+    FormsModule,
+    ButtonModule,
+    MessageModule,
+    PageHeader,
+    AttendanceGrid,
+    SelectButtonModule,
+    InputTextModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -62,37 +73,30 @@ type Tab = 'take' | 'report';
           />
         </div>
         <div class="flex gap-1" role="group" aria-label="Quick range">
-          <button
-            type="button"
-            class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-            (click)="preset(0)"
-          >
-            This month
-          </button>
-          <button
-            type="button"
-            class="h-10 rounded-md border px-3 text-sm hover:bg-accent"
-            (click)="preset(1)"
-          >
-            Last month
-          </button>
+          <p-button
+            label="This month"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="preset(0)"
+          />
+          <p-button
+            label="Last month"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="preset(1)"
+          />
         </div>
       }
-      <div class="ml-auto flex gap-1 rounded-md border p-1" role="tablist">
-        @for (t of tabs; track t.id) {
-          <button
-            type="button"
-            role="tab"
-            class="rounded px-3 py-1 text-sm"
-            [class.bg-primary]="tab() === t.id"
-            [class.text-primary-foreground]="tab() === t.id"
-            [attr.aria-selected]="tab() === t.id"
-            (click)="setTab(t.id)"
-          >
-            {{ t.label }}
-          </button>
-        }
-      </div>
+      <p-selectbutton
+        class="ml-auto"
+        [options]="tabs"
+        optionLabel="label"
+        optionValue="id"
+        [allowEmpty]="false"
+        [ngModel]="tab()"
+        (ngModelChange)="setTab($event)"
+        aria-label="Take attendance or see the report"
+      />
     </div>
 
     @if (error()) {
@@ -141,35 +145,32 @@ type Tab = 'take' | 'report';
                   {{ s.designation }} &middot; No. {{ s.employeeNo }}
                 </div>
               </div>
-              <div class="flex gap-1" role="group" [attr.aria-label]="'Attendance for ' + s.name">
-                @for (o of statuses; track o.value) {
-                  <button
-                    type="button"
-                    class="h-9 rounded-md border px-3 text-sm disabled:cursor-default"
-                    [class.bg-accent]="draft(s.staffId).status === o.value"
-                    [class.font-semibold]="draft(s.staffId).status === o.value"
-                    [class.border-foreground]="draft(s.staffId).status === o.value"
-                    [attr.aria-pressed]="draft(s.staffId).status === o.value"
-                    [disabled]="!r.canMark"
-                    (click)="set(s.staffId, o.value)"
-                  >
-                    {{ o.label }}
-                  </button>
-                }
-              </div>
+              <p-selectbutton
+                [options]="statuses"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [disabled]="!r.canMark"
+                [ngModel]="draft(s.staffId).status"
+                (ngModelChange)="set(s.staffId, $event)"
+                [attr.aria-label]="'Attendance for ' + s.name"
+                size="small"
+              />
               @if (r.canMark && s.status && !s.fromLeave) {
-                <button
-                  type="button"
-                  class="h-9 rounded-md border px-3 text-sm text-destructive hover:bg-accent"
-                  [attr.aria-label]="'Remove the saved mark for ' + s.name"
-                  (click)="remove(s.staffId, s.name)"
-                >
-                  Remove mark
-                </button>
+                <p-button
+                  label="Remove mark"
+                  size="small"
+                  severity="danger"
+                  [text]="true"
+                  [ariaLabel]="'Remove the saved mark for ' + s.name"
+                  (onClick)="remove(s.staffId, s.name)"
+                />
               }
               @if (draft(s.staffId).status && draft(s.staffId).status !== 'PRESENT') {
                 <input
-                  class="h-9 w-full rounded-md border bg-background px-3 text-sm sm:w-56"
+                  pInputText
+                  pSize="small"
+                  class="w-full sm:w-56"
                   placeholder="Note (optional), for example the reason"
                   maxlength="200"
                   [attr.aria-label]="'Note for ' + s.name"

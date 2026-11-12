@@ -67,10 +67,13 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
               <p-tag value="Switched off" severity="secondary" />
             }
             <span class="ml-auto space-x-3">
-              <button type="button" class="app-link" (click)="openType(t)">Change</button>
-              <button type="button" class="app-link" (click)="toggleType(t)">
-                {{ t.active ? 'Switch off' : 'Switch on' }}
-              </button>
+              <p-button label="Change" size="small" [text]="true" (onClick)="openType(t)" />
+              <p-button
+                [label]="t.active ? 'Switch off' : 'Switch on'"
+                size="small"
+                [text]="true"
+                (onClick)="toggleType(t)"
+              />
             </span>
           </li>
         } @empty {
@@ -150,7 +153,9 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
                   </th>
                   <td class="px-4 py-2">
                     <input
-                      class="h-9 w-20 rounded-md border bg-background px-2"
+                      pInputText
+                      pSize="small"
+                      class="w-20"
                       inputmode="decimal"
                       [attr.aria-label]="t.name + ', everyone'"
                       [value]="cell(t.id, null)"
@@ -160,7 +165,9 @@ const key = (typeId: string, staffTypeId: string | null) => `${typeId}:${staffTy
                   @for (s of staffTypes(); track s.id) {
                     <td class="px-4 py-2">
                       <input
-                        class="h-9 w-20 rounded-md border bg-background px-2"
+                        pInputText
+                        pSize="small"
+                        class="w-20"
                         inputmode="decimal"
                         placeholder="same"
                         [attr.aria-label]="t.name + ', ' + s.name"

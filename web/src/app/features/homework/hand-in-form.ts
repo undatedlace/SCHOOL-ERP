@@ -71,14 +71,14 @@ type Child = Homework['children'][number];
             <ul class="flex flex-wrap gap-2">
               @for (f of files(); track f.id) {
                 <li>
-                  <button
-                    type="button"
-                    class="app-link text-xs"
-                    [attr.aria-label]="'Remove ' + f.name"
-                    (click)="removeFile(f.id)"
-                  >
-                    Remove {{ f.name }}
-                  </button>
+                  <p-button
+                    [label]="'Remove ' + f.name"
+                    size="small"
+                    severity="danger"
+                    [text]="true"
+                    [ariaLabel]="'Remove ' + f.name"
+                    (onClick)="removeFile(f.id)"
+                  />
                 </li>
               }
             </ul>

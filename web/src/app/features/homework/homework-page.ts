@@ -54,30 +54,19 @@ type Mode = 'divisions' | 'students';
       <p-button label="Set homework" (onClick)="openNew()" />
     </app-page-header>
 
-    <div class="mb-4 flex gap-1 rounded-md border p-1 w-fit" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="!all()"
-        [class.text-primary-foreground]="!all()"
-        [attr.aria-selected]="!all()"
-        (click)="setAll(false)"
-      >
-        Still open
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="all()"
-        [class.text-primary-foreground]="all()"
-        [attr.aria-selected]="all()"
-        (click)="setAll(true)"
-      >
-        Everything
-      </button>
-    </div>
+    <p-selectbutton
+      class="mb-4 block"
+      [options]="[
+        { label: 'Still open', value: false },
+        { label: 'Everything', value: true },
+      ]"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [ngModel]="all()"
+      (ngModelChange)="setAll($event)"
+      aria-label="Which to show"
+    />
     <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
 
     @if (error()) {
@@ -91,31 +80,29 @@ type Mode = 'divisions' | 'students';
           @if (h.canChange) {
             <div class="flex gap-3 px-2 text-sm">
               @if (h.handIn) {
-                <button
-                  type="button"
-                  class="app-link"
-                  [attr.aria-label]="'Hand-ins for ' + h.title"
-                  (click)="handIns.set(h)"
-                >
-                  Hand-ins
-                </button>
+                <p-button
+                  label="Hand-ins"
+                  size="small"
+                  [text]="true"
+                  [ariaLabel]="'Hand-ins for ' + h.title"
+                  (onClick)="handIns.set(h)"
+                />
               }
-              <button
-                type="button"
-                class="app-link"
-                [attr.aria-label]="'Change ' + h.title"
-                (click)="openEdit(h)"
-              >
-                Change
-              </button>
-              <button
-                type="button"
-                class="app-link"
-                [attr.aria-label]="'Remove ' + h.title"
-                (click)="remove(h)"
-              >
-                Remove
-              </button>
+              <p-button
+                label="Change"
+                size="small"
+                [text]="true"
+                [ariaLabel]="'Change ' + h.title"
+                (onClick)="openEdit(h)"
+              />
+              <p-button
+                label="Remove"
+                size="small"
+                [text]="true"
+                severity="danger"
+                [ariaLabel]="'Remove ' + h.title"
+                (onClick)="remove(h)"
+              />
             </div>
           }
         </div>
@@ -193,14 +180,14 @@ type Mode = 'divisions' | 'students';
               @for (f of attachments(); track f.id) {
                 <li class="flex items-center gap-3">
                   <span>{{ f.name }}</span>
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Remove ' + f.name"
-                    (click)="removeAttachment(f.id)"
-                  >
-                    Remove
-                  </button>
+                  <p-button
+                    label="Remove"
+                    size="small"
+                    [text]="true"
+                    severity="danger"
+                    [ariaLabel]="'Remove ' + f.name"
+                    (onClick)="removeAttachment(f.id)"
+                  />
                 </li>
               }
             </ul>

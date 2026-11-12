@@ -19,6 +19,9 @@ import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar
 import { PageHeader } from '../../shared/ui/page-header';
 import { LeaveApplyDialog } from './leave-apply-dialog';
 import { STATUS_LABEL, STATUS_SEVERITY, daysText } from './leave-utils';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
 
 const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
   { id: 'PENDING', label: 'Waiting' },
@@ -31,7 +34,17 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
 /** For administrators: leave waiting for a decision, everyone's leave, and recording leave for someone. */
 @Component({
   selector: 'app-leave-requests',
-  imports: [ButtonModule, DialogModule, TagModule, PageHeader, FilterBar, LeaveApplyDialog],
+  imports: [
+    ButtonModule,
+    DialogModule,
+    TagModule,
+    PageHeader,
+    FilterBar,
+    LeaveApplyDialog,
+    SelectButtonModule,
+    FormsModule,
+    TextareaModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -41,21 +54,16 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
       <p-button label="Record leave for someone" (onClick)="open()" />
     </app-page-header>
 
-    <div class="mb-4 flex flex-wrap gap-1 rounded-md border p-1 w-fit" role="tablist">
-      @for (t of tabs; track t.id) {
-        <button
-          type="button"
-          role="tab"
-          class="rounded px-3 py-1 text-sm"
-          [class.bg-primary]="tab() === t.id"
-          [class.text-primary-foreground]="tab() === t.id"
-          [attr.aria-selected]="tab() === t.id"
-          (click)="setTab(t.id)"
-        >
-          {{ t.label }}
-        </button>
-      }
-    </div>
+    <p-selectbutton
+      class="mb-4 block"
+      [options]="tabs"
+      optionLabel="label"
+      optionValue="id"
+      [allowEmpty]="false"
+      [ngModel]="tab()"
+      (ngModelChange)="setTab($event)"
+      aria-label="Which requests to show"
+    />
 
     <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
 
@@ -97,31 +105,30 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
               </td>
               <td class="space-x-3 px-4 py-3 text-right whitespace-nowrap">
                 @if (r.status === 'PENDING') {
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Approve leave for ' + r.staff.name"
-                    (click)="approve(r)"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Refuse leave for ' + r.staff.name"
-                    (click)="startRefuse(r)"
-                  >
-                    Refuse
-                  </button>
+                  <p-button
+                    label="Approve"
+                    size="small"
+                    [text]="true"
+                    [ariaLabel]="'Approve leave for ' + r.staff.name"
+                    (onClick)="approve(r)"
+                  />
+                  <p-button
+                    label="Refuse"
+                    size="small"
+                    [text]="true"
+                    severity="danger"
+                    [ariaLabel]="'Refuse leave for ' + r.staff.name"
+                    (onClick)="startRefuse(r)"
+                  />
                 } @else if (r.status === 'APPROVED') {
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Withdraw leave for ' + r.staff.name"
-                    (click)="withdraw(r)"
-                  >
-                    Withdraw
-                  </button>
+                  <p-button
+                    label="Withdraw"
+                    size="small"
+                    [text]="true"
+                    severity="danger"
+                    [ariaLabel]="'Withdraw leave for ' + r.staff.name"
+                    (onClick)="withdraw(r)"
+                  />
                 }
               </td>
             </tr>
@@ -154,7 +161,8 @@ const TABS: { id: LeaveStatus | 'ALL'; label: string }[] = [
           id="refuse-note"
           rows="3"
           maxlength="300"
-          class="rounded-md border bg-background p-3"
+          pTextarea
+          [fluid]="true"
           [value]="note()"
           (input)="note.set($any($event.target).value)"
         ></textarea>

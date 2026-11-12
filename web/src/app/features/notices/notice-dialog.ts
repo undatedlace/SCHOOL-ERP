@@ -9,13 +9,29 @@ import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
 import { Notice, NoticeAudience, NoticeAudiences, NoticeInput } from '../../core/models';
 import { toIsoDate } from '../../shared/dates';
+import { DateField } from '../../shared/ui/date-field';
 import { FormField } from '../../shared/ui/form-field';
 import { AUDIENCE_LABEL, toggle } from './notice-utils';
+import { TextareaModule } from '@openng/optimus-ui/textarea';
+import { RadioButtonModule } from '@openng/optimus-ui/radiobutton';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
+import { FormsModule } from '@angular/forms';
 
 /** Write a new notice, or change one. People who may only write to their own divisions see only that. */
 @Component({
   selector: 'app-notice-dialog',
-  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule, FormField],
+  imports: [
+    DateField,
+    ReactiveFormsModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    FormField,
+    TextareaModule,
+    RadioButtonModule,
+    CheckboxModule,
+    FormsModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -51,7 +67,8 @@ import { AUDIENCE_LABEL, toggle } from './notice-utils';
             formControlName="body"
             rows="6"
             maxlength="5000"
-            class="w-full rounded-md border bg-background p-3 text-sm"
+            pTextarea
+            [fluid]="true"
           ></textarea>
         </app-form-field>
 
@@ -59,43 +76,48 @@ import { AUDIENCE_LABEL, toggle } from './notice-utils';
           <legend class="mb-1 text-sm font-medium">Send to</legend>
           <div class="flex flex-wrap gap-x-4 gap-y-1">
             @for (a of audienceOptions(); track a) {
-              <label class="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
+              <span class="flex items-center gap-2 text-sm">
+                <p-radiobutton
                   name="audience"
+                  [inputId]="'noticeAudience-' + a"
                   [value]="a"
-                  [checked]="audience() === a"
-                  (change)="setAudience(a)"
+                  [ngModel]="audience()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="setAudience($event)"
                 />
-                {{ label[a] }}
-              </label>
+                <label [for]="'noticeAudience-' + a">{{ label[a] }}</label>
+              </span>
             }
           </div>
           @if (audience() === 'CLASSES') {
             <div class="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Classes">
               @for (c of options()?.classes ?? []; track c.id) {
-                <label class="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    [checked]="classIds().includes(c.id)"
-                    (change)="classIds.set(toggle(classIds(), c.id))"
+                <span class="flex items-center gap-2 text-sm">
+                  <p-checkbox
+                    [binary]="true"
+                    [inputId]="'notice-classes-' + c.id"
+                    [ngModel]="classIds().includes(c.id)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="classIds.set(toggle(classIds(), c.id))"
                   />
-                  {{ c.name }}
-                </label>
+                  <label [for]="'notice-classes-' + c.id">{{ c.name }}</label>
+                </span>
               }
             </div>
           }
           @if (audience() === 'DIVISIONS') {
             <div class="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Divisions">
               @for (d of options()?.divisions ?? []; track d.id) {
-                <label class="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    [checked]="divisionIds().includes(d.id)"
-                    (change)="divisionIds.set(toggle(divisionIds(), d.id))"
+                <span class="flex items-center gap-2 text-sm">
+                  <p-checkbox
+                    [binary]="true"
+                    [inputId]="'notice-divisions-' + d.id"
+                    [ngModel]="divisionIds().includes(d.id)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="divisionIds.set(toggle(divisionIds(), d.id))"
                   />
-                  {{ d.label }}
-                </label>
+                  <label [for]="'notice-divisions-' + d.id">{{ d.label }}</label>
+                </span>
               }
             </div>
           }
@@ -109,12 +131,13 @@ import { AUDIENCE_LABEL, toggle } from './notice-utils';
           for="noticeUntil"
           hint="The last day it is shown. Leave empty to keep it until you remove it."
         >
-          <input
-            id="noticeUntil"
-            type="date"
-            formControlName="expiresOn"
+          <app-date-field
+            inputId="noticeUntil"
+            label="Show until"
             [min]="today"
-            class="h-10 rounded-md border bg-background px-3 text-sm"
+            [clearable]="true"
+            [value]="form.controls.expiresOn.value"
+            (valueChange)="form.controls.expiresOn.setValue($event)"
           />
         </app-form-field>
 

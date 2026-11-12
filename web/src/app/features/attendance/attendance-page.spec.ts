@@ -67,8 +67,9 @@ async function setup(divisions: AttendanceDivision[] = [division], canMark = tru
   return { fixture, http, el: fixture.nativeElement as HTMLElement };
 }
 
+// Buttons, and the options of Optimus select buttons (each a role="button" toggle).
 const button = (el: HTMLElement, text: string, within?: Element) =>
-  Array.from((within ?? el).querySelectorAll('button')).find((b) =>
+  Array.from((within ?? el).querySelectorAll('button, [role="button"]')).find((b) =>
     (b.textContent ?? '').trim().startsWith(text),
   ) as HTMLButtonElement | undefined;
 
@@ -105,8 +106,10 @@ describe('AttendancePage', () => {
     const { fixture, el } = await setup();
     const rows = Array.from(el.querySelectorAll('li'));
     button(el, 'Late', rows[0])!.click();
+    await fixture.whenStable();
     fixture.detectChanges();
     button(el, 'Mark everyone present')!.click();
+    await fixture.whenStable();
     fixture.detectChanges();
     const pressed = (row: Element, label: string) =>
       button(el, label, row)!.getAttribute('aria-pressed');
@@ -125,9 +128,9 @@ describe('AttendancePage', () => {
     expect(button(el, 'Mark everyone present')).toBeUndefined();
     expect(button(el, 'Save attendance')).toBeUndefined();
     expect(el.textContent).toContain('look at this day but not change it');
-    const marks = Array.from(el.querySelectorAll('li button')) as HTMLButtonElement[];
+    const marks = Array.from(el.querySelectorAll('li p-togglebutton'));
     expect(marks.length).toBeGreaterThan(0);
-    expect(marks.every((b) => b.disabled)).toBe(true);
+    expect(marks.every((b) => b.getAttribute('data-p-disabled') === 'true')).toBe(true);
   });
 
   it('says so when the person has no divisions', async () => {

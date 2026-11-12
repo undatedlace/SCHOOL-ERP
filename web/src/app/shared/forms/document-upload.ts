@@ -10,6 +10,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
+import { ButtonModule } from '@openng/optimus-ui/button';
 
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
@@ -20,6 +21,7 @@ const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
  */
 @Component({
   selector: 'app-document-upload',
+  imports: [ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => DocumentUpload), multi: true },
@@ -40,13 +42,13 @@ const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
             >Open</a
           >
           @if (!disabled()) {
-            <button
-              type="button"
-              class="text-destructive underline-offset-4 hover:underline"
-              (click)="remove()"
-            >
-              Remove
-            </button>
+            <p-button
+              label="Remove"
+              size="small"
+              [text]="true"
+              severity="danger"
+              (onClick)="remove()"
+            />
           }
         </div>
       }

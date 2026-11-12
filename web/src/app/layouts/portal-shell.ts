@@ -6,11 +6,19 @@ import { School } from '../core/models';
 import { PortalChildren } from '../features/portal/portal-children';
 import { NotificationBell } from '../shared/ui/notification-bell';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
+import { ButtonModule } from '@openng/optimus-ui/button';
 
 /** Parent and student portal: mobile first, a single column. */
 @Component({
   selector: 'app-portal-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle, NotificationBell],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ThemeToggle,
+    NotificationBell,
+    ButtonModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-background">
@@ -24,13 +32,13 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
         <div class="flex items-center gap-2">
           <app-notification-bell allLink="/portal/notifications" />
           <app-theme-toggle />
-          <button
-            type="button"
-            class="rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
-            (click)="signOut()"
-          >
-            Log out
-          </button>
+          <p-button
+            label="Log out"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
+            (onClick)="signOut()"
+          />
         </div>
       </header>
       <nav

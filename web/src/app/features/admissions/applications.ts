@@ -17,10 +17,22 @@ import { HasPermission } from '../../shared/has-permission.directive';
 import { FilterBar, FilterField, FilterValues } from '../../shared/ui/filter-bar';
 import { PageHeader } from '../../shared/ui/page-header';
 import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-tag';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-applications',
-  imports: [RouterLink, ButtonModule, TableModule, FilterBar, PageHeader, StatusTag, HasPermission],
+  imports: [
+    RouterLink,
+    ButtonModule,
+    TableModule,
+    FilterBar,
+    PageHeader,
+    StatusTag,
+    HasPermission,
+    SelectButtonModule,
+    FormsModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header title="Admissions" subtitle="Applications for the current academic year.">
@@ -29,29 +41,25 @@ import { STATUS_OPTIONS, StatusTag, statusLabel } from '../../shared/ui/status-t
       </a>
     </app-page-header>
 
-    @if (summary(); as s) {
-      <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <button
-          type="button"
-          class="rounded-xl border-0 bg-card shadow-sm p-3 text-left hover:bg-accent"
-          (click)="onStatus(null)"
-        >
-          <p class="text-xs text-muted-foreground">All applications</p>
-          <p class="text-2xl font-semibold">{{ s.total }}</p>
-        </button>
-        @for (opt of statuses; track opt.value) {
-          <button
-            type="button"
-            class="rounded-xl border-0 bg-card shadow-sm p-3 text-left hover:bg-accent"
-            [class.ring-2]="status === opt.value"
-            [class.ring-ring]="status === opt.value"
-            (click)="onStatus(opt.value)"
+    @if (statusTabs().length) {
+      <p-selectbutton
+        class="mb-5 block"
+        [options]="statusTabs()"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="statusChoice()"
+        (ngModelChange)="onStatus($event === 'ALL' ? null : $event)"
+        aria-label="Show applications by status"
+      >
+        <ng-template #item let-item>
+          <span>{{ item.label }}</span>
+          <span
+            class="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-muted-foreground tabular-nums"
+            >{{ item.count }}</span
           >
-            <p class="text-xs text-muted-foreground">{{ opt.label }}</p>
-            <p class="text-2xl font-semibold">{{ s.counts[opt.value] }}</p>
-          </button>
-        }
-      </div>
+        </ng-template>
+      </p-selectbutton>
     }
 
     <app-filter-bar [fields]="fields()" (changed)="onFilters($event)" />
@@ -113,6 +121,17 @@ export class Applications {
   protected readonly classes = signal<SchoolClass[]>([]);
 
   protected status: ApplicationStatus | null = null;
+  /** The chosen status tab ('ALL' for every application). */
+  protected readonly statusChoice = signal<ApplicationStatus | 'ALL'>('ALL');
+  /** The status tabs above the list, each with its count. */
+  protected readonly statusTabs = computed(() => {
+    const s = this.summary();
+    if (!s) return [];
+    return [
+      { label: 'All', value: 'ALL' as const, count: s.total },
+      ...this.statuses.map((o) => ({ label: o.label, value: o.value, count: s.counts[o.value] })),
+    ];
+  });
   private filters: FilterValues = {};
   private pageSize = 20;
 
@@ -163,6 +182,7 @@ export class Applications {
   /** The status tiles above the list. */
   protected onStatus(value: ApplicationStatus | null) {
     this.status = value;
+    this.statusChoice.set(value ?? 'ALL');
     this.first.set(0);
     void this.fetch();
   }

@@ -43,12 +43,11 @@ const MAX_CLASS_TILES = 12;
       [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Students' }]"
       [subtitle]="subtitle()"
     >
-      <a
+      <p-button
         *appHasPermission="'admissions.manage'"
+        label="New application"
         routerLink="/app/admissions/new"
-        class="inline-flex items-center gap-2 rounded-[9px] bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-        ><app-icon name="user-plus" />New application</a
-      >
+      />
     </app-page-header>
 
     @if (classTiles().length) {

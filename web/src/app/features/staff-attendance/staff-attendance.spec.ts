@@ -97,7 +97,7 @@ describe('StaffAttendancePage', () => {
     expect(el.querySelectorAll('button[aria-label^="Remove the saved mark"]').length).toBe(1);
 
     const group = el.querySelector('[aria-label="Attendance for Meera Iyer"]')!;
-    const leave = Array.from(group.querySelectorAll('button')).find(
+    const leave = Array.from(group.querySelectorAll('[role="button"]')).find(
       (b) => b.textContent?.trim() === 'Leave',
     ) as HTMLButtonElement;
     leave.click();
@@ -141,7 +141,7 @@ describe('StaffAttendancePage', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     (
-      Array.from(el.querySelectorAll('[role="tab"]')).find(
+      Array.from(el.querySelectorAll('[role="group"] [role="button"]')).find(
         (b) => b.textContent?.trim() === 'Report',
       ) as HTMLButtonElement
     ).click();

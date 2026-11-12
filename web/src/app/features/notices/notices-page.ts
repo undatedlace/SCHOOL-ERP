@@ -10,13 +10,24 @@ import { HasPermission } from '../../shared/has-permission.directive';
 import { PageHeader } from '../../shared/ui/page-header';
 import { NoticeCard } from './notice-card';
 import { NoticeDialog } from './notice-dialog';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { FormsModule } from '@angular/forms';
 
 type Tab = 'active' | 'all';
 
 /** The staff view: what is showing to you, and (for writers) everything you may change. */
 @Component({
   selector: 'app-notices-page',
-  imports: [ButtonModule, MessageModule, HasPermission, PageHeader, NoticeCard, NoticeDialog],
+  imports: [
+    ButtonModule,
+    MessageModule,
+    HasPermission,
+    PageHeader,
+    NoticeCard,
+    NoticeDialog,
+    SelectButtonModule,
+    FormsModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -30,34 +41,17 @@ type Tab = 'active' | 'all';
       />
     </app-page-header>
 
-    <div
-      class="mb-4 flex gap-1 rounded-md border p-1 w-fit"
-      role="tablist"
+    <p-selectbutton
+      class="mb-4 block"
       *appHasPermission="'notices.create'"
-    >
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="tab() === 'active'"
-        [class.text-primary-foreground]="tab() === 'active'"
-        [attr.aria-selected]="tab() === 'active'"
-        (click)="setTab('active')"
-      >
-        Showing now
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="rounded px-3 py-1 text-sm"
-        [class.bg-primary]="tab() === 'all'"
-        [class.text-primary-foreground]="tab() === 'all'"
-        [attr.aria-selected]="tab() === 'all'"
-        (click)="setTab('all')"
-      >
-        Ones I can change
-      </button>
-    </div>
+      [options]="tabOptions"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [ngModel]="tab()"
+      (ngModelChange)="setTab($event)"
+      aria-label="Which notices to show"
+    />
 
     @if (error()) {
       <p-message severity="error" [text]="error()!" />
@@ -95,6 +89,10 @@ type Tab = 'active' | 'all';
   `,
 })
 export class NoticesPage {
+  protected readonly tabOptions = [
+    { label: 'Showing now', value: 'active' as const },
+    { label: 'Ones I can change', value: 'all' as const },
+  ];
   private readonly api = inject(Api);
   private readonly toast = inject(MessageService);
   private readonly confirmation = inject(ConfirmationService);

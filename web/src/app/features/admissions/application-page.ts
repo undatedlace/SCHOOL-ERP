@@ -37,6 +37,8 @@ import { FormRenderer } from '../../shared/forms/form-renderer';
 import { HasPermission } from '../../shared/has-permission.directive';
 import { FormField } from '../../shared/ui/form-field';
 import { StatusTag } from '../../shared/ui/status-tag';
+import { RadioButtonModule } from '@openng/optimus-ui/radiobutton';
+import { FormsModule } from '@angular/forms';
 
 const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondary' | 'success' }> =
   {
@@ -63,6 +65,8 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
     FormRenderer,
     HasPermission,
     StatusTag,
+    RadioButtonModule,
+    FormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -346,23 +350,25 @@ const ACTIONS: Record<Decision, { label: string; severity?: 'danger' | 'secondar
                   />
                 </div>
                 <div class="mt-2 flex items-center justify-between text-sm">
-                  <label class="flex items-center gap-2">
-                    <input
-                      type="radio"
+                  <span class="flex items-center gap-2">
+                    <p-radiobutton
                       name="primaryGuardian"
-                      [checked]="primaryIndex() === i"
-                      (change)="primaryIndex.set(i)"
+                      [inputId]="'primaryGuardian-' + i"
+                      [value]="i"
+                      [ngModel]="primaryIndex()"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="primaryIndex.set($event)"
                     />
-                    Primary contact
-                  </label>
+                    <label [for]="'primaryGuardian-' + i">Primary contact</label>
+                  </span>
                   @if (guardianRows.length > 1) {
-                    <button
-                      type="button"
-                      class="text-destructive underline-offset-4 hover:underline"
-                      (click)="removeGuardianRow(i)"
-                    >
-                      Remove
-                    </button>
+                    <p-button
+                      label="Remove"
+                      size="small"
+                      [text]="true"
+                      severity="danger"
+                      (onClick)="removeGuardianRow(i)"
+                    />
                   }
                 </div>
               </div>

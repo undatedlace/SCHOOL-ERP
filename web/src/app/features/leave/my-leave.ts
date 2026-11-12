@@ -99,14 +99,14 @@ import { STATUS_LABEL, STATUS_SEVERITY, canWithdraw, daysText } from './leave-ut
               <td class="px-4 py-3 text-muted-foreground">{{ r.decisionNote || r.reason }}</td>
               <td class="px-4 py-3 text-right">
                 @if (withdrawable(r)) {
-                  <button
-                    type="button"
-                    class="app-link"
-                    [attr.aria-label]="'Withdraw leave from ' + format(r.startsOn)"
-                    (click)="withdraw(r)"
-                  >
-                    Withdraw
-                  </button>
+                  <p-button
+                    label="Withdraw"
+                    size="small"
+                    [text]="true"
+                    severity="danger"
+                    [ariaLabel]="'Withdraw leave from ' + format(r.startsOn)"
+                    (onClick)="withdraw(r)"
+                  />
                 }
               </td>
             </tr>
