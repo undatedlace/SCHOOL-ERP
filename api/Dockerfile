@@ -1,6 +1,9 @@
 # The School ERP API. Build:  docker build -t school-erp-api api
 # A glibc image (not alpine) because argon2 and sharp ship native binaries for it.
 FROM node:24-slim AS build
+# Prisma's tools need OpenSSL, which the slim image leaves out.
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -10,6 +13,8 @@ RUN npx prisma generate && npm run build
 
 FROM node:24-slim
 ENV NODE_ENV=production
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # Everything stays installed so `prisma migrate deploy` and the seed can run from this image.
 COPY --from=build /app/node_modules ./node_modules

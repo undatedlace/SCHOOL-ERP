@@ -13,8 +13,9 @@ services:
     branch: PPE
     dockerfilePath: ./api/Dockerfile
     dockerContext: ./api
-    # Free services have no pre-deploy step, so new migrations are applied as the API starts.
-    dockerCommand: sh -c "npx prisma migrate deploy --config prisma7.config.ts && node dist/main"
+    # Free services have no pre-deploy step, so new migrations are applied as the API starts
+    # (npm run start:migrate). Render runs this as a plain command: no quotes, no "sh -c".
+    dockerCommand: npm run start:migrate
     healthCheckPath: /api/health
     buildFilter:
       paths: ['api/**']
