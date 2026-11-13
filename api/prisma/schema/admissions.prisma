@@ -37,6 +37,9 @@ model Application {
   studentId  String?   @unique @map("student_id") @db.Uuid
   admittedAt DateTime? @map("admitted_at")
 
+  /// Set when the application came in through an Excel import.
+  importBatchId String? @map("import_batch_id") @db.Uuid
+
   createdById String   @map("created_by_id") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -48,6 +51,7 @@ model Application {
   grantedClass    SchoolClass?   @relation("GrantedClass", fields: [grantedClassId], references: [id])
   grantedDivision Division?      @relation(fields: [grantedDivisionId], references: [id])
   student         Student?       @relation(fields: [studentId], references: [id])
+  importBatch     ImportBatch?   @relation(fields: [importBatchId], references: [id])
 
   @@unique([schoolId, academicYearId, seq])
   @@unique([schoolId, academicYearId, formNo])

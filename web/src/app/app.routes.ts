@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import {
+  anyPermissionGuard,
   authGuard,
   guestGuard,
   homeGuard,
@@ -8,6 +9,7 @@ import {
   portalGuard,
   staffGuard,
 } from './core/auth.guards';
+import { IMPORT_PERMISSIONS } from './core/nav';
 import { AuthShell } from './layouts/auth-shell';
 import { PortalShell } from './layouts/portal-shell';
 import { PlatformShell } from './layouts/platform-shell';
@@ -247,6 +249,12 @@ export const routes: Routes = [
         path: 'settings/users',
         canActivate: [permissionGuard('users.manage')],
         loadComponent: () => import('./features/settings/users').then((m) => m.Users),
+      },
+      {
+        path: 'settings/imports',
+        canActivate: [anyPermissionGuard(IMPORT_PERMISSIONS)],
+        loadComponent: () =>
+          import('./features/imports/imports-history').then((m) => m.ImportsHistory),
       },
       {
         path: 'audit-log',

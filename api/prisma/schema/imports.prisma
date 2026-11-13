@@ -1,0 +1,45 @@
+/// What an Excel import brings in.
+enum ImportKind {
+  ADMISSIONS
+  FEES
+  STUDENT_ATTENDANCE
+  STAFF_ATTENDANCE
+}
+
+/// CHECKED: uploaded and checked, waiting for "Import". RUNNING: being imported now.
+/// IMPORTED: done (each row records whether it went in). CANCELLED: thrown away unused.
+enum ImportStatus {
+  CHECKED
+  RUNNING
+  IMPORTED
+  CANCELLED
+}
+
+/// One uploaded Excel file: what was in it, what the check found, and what the import did.
+/// The file itself is not kept; the rows are, so the bad ones can be handed back to fix.
+model ImportBatch {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  schoolId     String       @map("school_id") @db.Uuid
+  kind         ImportKind
+  status       ImportStatus @default(CHECKED)
+  fileName     String       @map("file_name")
+  /// What the template was made for (year, month, division, form version ...).
+  params       Json
+  /// Every row: where it was, what it said, its errors and warnings, and later what happened to it.
+  rows         Json
+  /// Counts for the list screen.
+  summary      Json
+  createdById  String       @map("created_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at")
+  importedAt   DateTime?    @map("imported_at")
+  importedById String?      @map("imported_by_id") @db.Uuid
+
+  school       School        @relation(fields: [schoolId], references: [id])
+  createdBy    User          @relation("ImportCreator", fields: [createdById], references: [id])
+  applications Application[]
+  feeInvoices  FeeInvoice[]
+  payments     Payment[]
+
+  @@index([schoolId, createdAt])
+  @@map("import_batches")
+}

@@ -20,6 +20,7 @@ import {
 } from '../forms/form-schema.js';
 import { FilesService } from '../files/files.service.js';
 import { StudentsService } from '../students/students.service.js';
+import type { GuardianInputDto } from '../students/dto/students.dto.js';
 import { suggestGuardians } from './guardian-suggestions.js';
 import { GENDER_VALUES } from '../forms/form-schema.js';
 import { FormsService } from '../forms/forms.service.js';
@@ -33,6 +34,40 @@ import {
 } from './dto/admissions.dto.js';
 
 const FORM_KEY = 'admission';
+
+/** One application from an Excel import, already checked and converted. */
+export interface ImportedApplication {
+  academicYearId: string;
+  formNo: string | null;
+  receivedOn: string;
+  status: ApplicationStatus;
+  decidedOn: string | null;
+  decisionNote: string | null;
+  answers: Record<string, unknown>;
+  studentName: string;
+  dateOfBirth: string | null;
+  classId: string | null;
+  /** Set when the child was admitted. */
+  enrol: null | {
+    admissionNo: string | null;
+    student: {
+      firstName: string;
+      fatherName: string | null;
+      surname: string;
+      gender: 'MALE' | 'FEMALE' | 'OTHER';
+      dateOfBirth: string;
+    };
+    guardians: GuardianInputDto[];
+    /** First the admission year, then each later year studied here, in order. */
+    years: {
+      academicYearId: string;
+      divisionId: string;
+      startedOn: string;
+      endedOn: string | null;
+    }[];
+    leftOn: string | null;
+  };
+}
 
 /** Where an application may go next. A granted application is final (it becomes a student later). */
 const TRANSITIONS: Record<ApplicationStatus, Decision[]> = {
@@ -362,36 +397,12 @@ export class AdmissionsService {
     let created;
     try {
       created = await this.prisma.$transaction(async (tx) => {
-        // One save at a time per school and year, so two people saving together
-        // can never be given the same number. The lock is released when the
-        // transaction ends.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`applications:${auth.schoolId}:${yearId}`}))`;
-
-        const last = await tx.application.aggregate({
-          where: { schoolId: auth.schoolId, academicYearId: yearId },
-          _max: { seq: true },
-        });
-        const seq = (last._max.seq ?? 0) + 1;
-
-        // Unless the office typed the number from the paper form, use the sequence
-        // number, skipping any that was already typed in by hand.
-        let formNo = dto.formNo;
-        if (!formNo) {
-          let candidate = seq;
-          while (
-            await tx.application.findFirst({
-              where: {
-                schoolId: auth.schoolId,
-                academicYearId: yearId,
-                formNo: String(candidate),
-              },
-              select: { id: true },
-            })
-          ) {
-            candidate++;
-          }
-          formNo = String(candidate);
-        }
+        const { seq, formNo } = await this.nextNumber(
+          tx,
+          auth.schoolId,
+          yearId,
+          dto.formNo,
+        );
 
         return tx.application.create({
           data: {
@@ -532,11 +543,26 @@ export class AdmissionsService {
     }
 
     const reopening = dto.decision === 'UNDER_REVIEW';
+    // A decision taken on paper earlier can carry its real date (never later than today).
+    if (dto.decidedOn) {
+      if (dto.decidedOn > todayIso())
+        throw new BadRequestException(
+          'The decision date cannot be in the future',
+        );
+      if (dto.decidedOn < iso(app.receivedOn))
+        throw new BadRequestException(
+          'The decision date cannot be before the form was received',
+        );
+    }
     await this.prisma.application.update({
       where: { id },
       data: {
         status: dto.decision,
-        decidedAt: reopening ? null : new Date(),
+        decidedAt: reopening
+          ? null
+          : dto.decidedOn
+            ? dateOnly(dto.decidedOn)
+            : new Date(),
         decidedById: reopening ? null : auth.userId,
         decisionNote: dto.note || null,
         ...granted,
@@ -554,7 +580,159 @@ export class AdmissionsService {
     return this.findOne(auth.schoolId, id);
   }
 
+  /**
+   * Brings in one application from an Excel import, already checked: with its status and
+   * decision date, and, when the child was admitted, the student, guardians and an enrolment
+   * for every year they studied here. All of it or none of it.
+   */
+  async importOne(
+    auth: AuthContext,
+    batchId: string,
+    formId: string,
+    row: ImportedApplication,
+  ): Promise<{ applicationId: string; studentId: string | null }> {
+    const decided = ['GRANTED', 'REFUSED', 'WITHDRAWN'].includes(row.status);
+    const result = await this.prisma.$transaction(async (tx) => {
+      const { seq, formNo } = await this.nextNumber(
+        tx,
+        auth.schoolId,
+        row.academicYearId,
+        row.formNo ?? undefined,
+      );
+      const app = await tx.application.create({
+        data: {
+          schoolId: auth.schoolId,
+          academicYearId: row.academicYearId,
+          formId,
+          seq,
+          formNo,
+          status: row.status,
+          receivedOn: dateOnly(row.receivedOn),
+          answers: row.answers as Prisma.InputJsonObject,
+          studentName: row.studentName,
+          dateOfBirth: row.dateOfBirth ? dateOnly(row.dateOfBirth) : null,
+          classId: row.classId,
+          grantedClassId: row.status === 'GRANTED' ? row.classId : null,
+          grantedDivisionId: row.enrol?.years[0]?.divisionId ?? null,
+          decidedAt: decided && row.decidedOn ? dateOnly(row.decidedOn) : null,
+          decidedById: decided ? auth.userId : null,
+          decisionNote: row.decisionNote,
+          importBatchId: batchId,
+          createdById: auth.userId,
+        },
+      });
+      if (!row.enrol) return { applicationId: app.id, studentId: null };
+
+      const e = row.enrol;
+      const [first, ...later] = e.years;
+      const student = await this.students.createInTransaction(
+        tx,
+        auth.schoolId,
+        {
+          ...e.student,
+          photoFileId: null,
+          admissionNo: e.admissionNo ?? undefined,
+          joinedOn: first.startedOn,
+          academicYearId: first.academicYearId,
+          divisionId: first.divisionId,
+          guardians: e.guardians,
+        },
+      );
+      if (first.endedOn) {
+        await tx.enrollment.updateMany({
+          where: {
+            studentId: student.id,
+            academicYearId: first.academicYearId,
+          },
+          data: { endedOn: dateOnly(first.endedOn) },
+        });
+      }
+      // Each later year, the same way year-end promotion writes it.
+      for (const y of later) {
+        await tx.enrollment.create({
+          data: {
+            schoolId: auth.schoolId,
+            studentId: student.id,
+            academicYearId: y.academicYearId,
+            divisionId: y.divisionId,
+            startedOn: dateOnly(y.startedOn),
+            endedOn: y.endedOn ? dateOnly(y.endedOn) : null,
+          },
+        });
+      }
+      if (e.leftOn) {
+        await tx.student.update({
+          where: { id: student.id },
+          data: { status: 'LEFT', leftOn: dateOnly(e.leftOn) },
+        });
+      }
+      await tx.application.update({
+        where: { id: app.id },
+        data: { studentId: student.id, admittedAt: dateOnly(first.startedOn) },
+      });
+      return { applicationId: app.id, studentId: student.id };
+    });
+
+    await this.audit.log({
+      schoolId: auth.schoolId,
+      actorUserId: auth.userId,
+      action: 'admissions.imported',
+      entityType: 'application',
+      entityId: result.applicationId,
+      metadata: { importBatchId: batchId, studentId: result.studentId },
+    });
+    if (result.studentId) {
+      await this.audit.log({
+        schoolId: auth.schoolId,
+        actorUserId: auth.userId,
+        action: 'students.created',
+        entityType: 'student',
+        entityId: result.studentId,
+        metadata: { importBatchId: batchId },
+      });
+    }
+    return result;
+  }
+
   // ---------- helpers ----------
+
+  /**
+   * The next sequence number and form number for a year. One save at a time per school and year,
+   * so two people saving together can never be given the same number; the lock is released when
+   * the transaction ends. Unless a number was typed from the paper form, the sequence number is
+   * used, skipping any that was already typed in by hand.
+   */
+  private async nextNumber(
+    tx: Prisma.TransactionClient,
+    schoolId: string,
+    yearId: string,
+    typed?: string,
+  ) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`applications:${schoolId}:${yearId}`}))`;
+    const last = await tx.application.aggregate({
+      where: { schoolId, academicYearId: yearId },
+      _max: { seq: true },
+    });
+    const seq = (last._max.seq ?? 0) + 1;
+    let formNo = typed;
+    if (!formNo) {
+      let candidate = seq;
+      while (
+        await tx.application.findFirst({
+          where: {
+            schoolId,
+            academicYearId: yearId,
+            formNo: String(candidate),
+          },
+          select: { id: true },
+        })
+      ) {
+        candidate++;
+      }
+      formNo = String(candidate);
+    }
+    return { seq, formNo };
+  }
 
   private async currentYearId(schoolId: string): Promise<string | null> {
     const year = await this.prisma.academicYear.findFirst({

@@ -30,6 +30,7 @@ import { Avatar } from '../../shared/ui/avatar';
 import { Badge } from '../../shared/ui/badge';
 import { Icon } from '../../shared/ui/icon';
 import { PageHeader } from '../../shared/ui/page-header';
+import { FeesImport } from '../imports/import-launchers';
 import { StatTile } from '../../shared/ui/stat-tile';
 import { FilterCard, FilterCards } from '../../shared/ui/filter-cards';
 import {
@@ -76,6 +77,7 @@ const BREAKDOWN: { status: DuesStatus; bar: string }[] = [
     Avatar,
     Badge,
     Icon,
+    FeesImport,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -84,6 +86,9 @@ const BREAKDOWN: { status: DuesStatus; bar: string }[] = [
       [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Fee dues' }]"
       subtitle="Who owes what this year. Dues carried from earlier years are included."
     >
+      <ng-container *appHasPermission="'fees.structure.manage'">
+        <app-fees-import *appHasPermission="'fees.payment.create'" (imported)="reloadAll()" />
+      </ng-container>
       <p-button
         *appHasPermission="'fees.payment.create'"
         label="Record payment"
@@ -661,6 +666,12 @@ export class DuesPage {
   }
 
   /** Money received this academic year, by payment method (for the side panel). */
+  /** After an Excel import: the totals and lists change. */
+  protected reloadAll() {
+    void this.load();
+    void this.loadCollection();
+  }
+
   private async loadCollection() {
     try {
       const year = (await firstValueFrom(this.api.years())).find((y) => y.isCurrent);

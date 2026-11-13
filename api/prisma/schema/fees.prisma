@@ -91,6 +91,8 @@ model FeeInvoice {
   kind           InvoiceKind
   structureId    String?     @map("structure_id") @db.Uuid
   note           String?
+  /// Set when the invoice came in through an Excel import.
+  importBatchId  String?     @map("import_batch_id") @db.Uuid
   createdById    String      @map("created_by_id") @db.Uuid
   createdAt      DateTime    @default(now()) @map("created_at")
 
@@ -98,6 +100,7 @@ model FeeInvoice {
   student      Student             @relation(fields: [studentId], references: [id])
   academicYear AcademicYear        @relation(fields: [academicYearId], references: [id])
   structure    FeeStructure?       @relation(fields: [structureId], references: [id])
+  importBatch  ImportBatch?        @relation(fields: [importBatchId], references: [id])
   lines        FeeInvoiceLine[]
   instalments  FeeInstalment[]
   concessions  Concession[]
@@ -173,11 +176,14 @@ model Payment {
   paidOn         DateTime    @map("paid_on") @db.Date
   note           String?
   receivedById   String      @map("received_by_id") @db.Uuid
+  /// Set when the payment came in through an Excel import.
+  importBatchId  String?     @map("import_batch_id") @db.Uuid
   createdAt      DateTime    @default(now()) @map("created_at")
 
   school       School              @relation(fields: [schoolId], references: [id])
   student      Student             @relation(fields: [studentId], references: [id])
   academicYear AcademicYear        @relation(fields: [academicYearId], references: [id])
+  importBatch  ImportBatch?        @relation(fields: [importBatchId], references: [id])
   allocations  PaymentAllocation[]
   reversal     PaymentReversal?
 
