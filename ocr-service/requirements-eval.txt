@@ -1,0 +1,16 @@
+# Phase 1, laptop only: everything needed to measure accuracy.
+# PyTorch and transformers are here for TrOCR; they will NOT be in the deployed
+# service (Phase 2 runs the chosen model as ONNX int8 on onnxruntime).
+# Install: uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r requirements-eval.txt
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+pillow==13.0.0
+pymupdf==2.1
+rapidfuzz==3.14.6
+pytest==9.2.0
+torch==2.15.0
+transformers==5.22.2
+sentencepiece==0.2.3
+rapidocr-onnxruntime==1.4.4
+onnxruntime==1.31.1
+httpx==0.28.1  # FastAPI's TestClient

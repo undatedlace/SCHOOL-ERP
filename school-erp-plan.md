@@ -371,6 +371,10 @@ A public test copy so people can explore, report bugs and suggest improvements. 
 - **Recovery of a school admin from the server:** `npm run admin:reset-password -- <email> [school code]`.
 - **Not built:** subdomains per school, MFA for owners (planned with MFA for admins), owner management screens (add or remove owners is by command), deleting a school (pause instead), and per-school limits or billing.
 
+### OCR of handwritten admission forms (13 Nov 2026, branch `feature/ocr-service`, Phase 1 of its own plan)
+
+A separate Python service in `ocr-service/` (next to `api/` and `web/`, deployed on its own) that reads photos of the paper admission form into the admission JSON, with a confidence per field, so the office checks a prefilled application instead of typing it. No LLM: the form is fixed, so each field is cropped from a known box and read as one handwritten line. Plan and results: `ocr-service/PLAN.md`. **Phase 1 (accuracy on the laptop) is built and checked on synthetic forms; it waits for 15 to 20 real photographed forms with typed answer keys** (kept in `ocr-service/data/`, never committed). Go ahead with the service (Phase 2: ONNX int8 in 512 MB on Render Starter) only if about 70% of filled fields come out right on real forms. **Wired into the app early for local trials (13 Nov 2026, decided by Ismail):** FastAPI `POST /extract`; Nest `POST /api/admissions/ocr` (`admissions.manage`), which maps the result onto the published admission form and saves nothing; and a *Fill from photos* card on *New application* that prefills the form and outlines answers to check. It is shown only when the API has `OCR_SERVICE_URL`. It is synchronous for now; a job-and-poll flow may be needed on Render's half CPU.
+
 ### Phase 6: Dashboard and launch
 Insights, security review, backups, deployment, staff training data.
 

@@ -9,7 +9,7 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TextareaModule } from '@openng/optimus-ui/textarea';
-import { AnswerErrors, FormField as Field, FormSchema } from '../../core/models';
+import { AnswerErrors, FormField as Field, FormSchema, ReviewNote } from '../../core/models';
 import { FormField } from '../ui/form-field';
 import { buildGroup, newRow, readAnswers } from './form-values';
 import { DocumentUpload } from './document-upload';
@@ -171,97 +171,108 @@ export interface ClassInfo {
           <small class="text-destructive" role="alert">{{ text }}</small>
         }
       } @else {
-        <app-form-field
-          [label]="f.label"
-          [for]="id(path)"
-          [control]="ctrl"
-          [required]="!!f.required"
-          [hint]="f.helpText"
-          [error]="errors()[path] ?? null"
-        >
-          @switch (f.type) {
-            @case ('textarea') {
-              <textarea
-                pTextarea
-                [formControl]="ctrl"
-                [id]="id(path)"
-                rows="2"
-                [autoResize]="true"
-                [fluid]="true"
-                [placeholder]="f.placeholder ?? ''"
-              ></textarea>
+        <div [class]="review()[path] ? 'rounded-lg bg-warn-soft p-2 ring-2 ring-amber' : ''">
+          <app-form-field
+            [label]="f.label"
+            [for]="id(path)"
+            [control]="ctrl"
+            [required]="!!f.required"
+            [hint]="f.helpText"
+            [error]="errors()[path] ?? null"
+          >
+            @switch (f.type) {
+              @case ('textarea') {
+                <textarea
+                  pTextarea
+                  [formControl]="ctrl"
+                  [id]="id(path)"
+                  rows="2"
+                  [autoResize]="true"
+                  [fluid]="true"
+                  [placeholder]="f.placeholder ?? ''"
+                ></textarea>
+              }
+              @case ('number') {
+                <p-inputnumber
+                  [formControl]="ctrl"
+                  [inputId]="id(path)"
+                  [useGrouping]="false"
+                  [min]="f.min ?? null"
+                  [max]="f.max ?? null"
+                  [fluid]="true"
+                  [placeholder]="f.placeholder ?? ''"
+                />
+              }
+              @case ('date') {
+                <p-datepicker
+                  [formControl]="ctrl"
+                  [inputId]="id(path)"
+                  dateFormat="dd/mm/yy"
+                  appendTo="body"
+                  [fluid]="true"
+                  [placeholder]="f.placeholder || 'dd/mm/yyyy'"
+                />
+              }
+              @case ('select') {
+                <p-select
+                  [formControl]="ctrl"
+                  [inputId]="id(path)"
+                  [options]="options(f)"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  [showClear]="!f.required"
+                  [fluid]="true"
+                  [placeholder]="f.placeholder || 'Select'"
+                />
+              }
+              @case ('image') {
+                <app-image-upload
+                  [formControl]="ctrl"
+                  [inputId]="id(path)"
+                  [altText]="f.label"
+                  [purpose]="photoPurpose()"
+                />
+              }
+              @case ('document') {
+                <app-document-upload
+                  [formControl]="ctrl"
+                  [inputId]="id(path)"
+                  [label]="f.label"
+                  [purpose]="documentPurpose()"
+                />
+              }
+              @case ('radio') {
+                <p-selectbutton
+                  [formControl]="ctrl"
+                  [options]="options(f)"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ariaLabelledBy]="id(path)"
+                />
+              }
+              @default {
+                <input
+                  pInputText
+                  [formControl]="ctrl"
+                  [id]="id(path)"
+                  [fluid]="true"
+                  [placeholder]="f.placeholder ?? ''"
+                />
+              }
             }
-            @case ('number') {
-              <p-inputnumber
-                [formControl]="ctrl"
-                [inputId]="id(path)"
-                [useGrouping]="false"
-                [min]="f.min ?? null"
-                [max]="f.max ?? null"
-                [fluid]="true"
-                [placeholder]="f.placeholder ?? ''"
-              />
-            }
-            @case ('date') {
-              <p-datepicker
-                [formControl]="ctrl"
-                [inputId]="id(path)"
-                dateFormat="dd/mm/yy"
-                appendTo="body"
-                [fluid]="true"
-                [placeholder]="f.placeholder || 'dd/mm/yyyy'"
-              />
-            }
-            @case ('select') {
-              <p-select
-                [formControl]="ctrl"
-                [inputId]="id(path)"
-                [options]="options(f)"
-                optionLabel="label"
-                optionValue="value"
-                appendTo="body"
-                [showClear]="!f.required"
-                [fluid]="true"
-                [placeholder]="f.placeholder || 'Select'"
-              />
-            }
-            @case ('image') {
-              <app-image-upload
-                [formControl]="ctrl"
-                [inputId]="id(path)"
-                [altText]="f.label"
-                [purpose]="photoPurpose()"
-              />
-            }
-            @case ('document') {
-              <app-document-upload
-                [formControl]="ctrl"
-                [inputId]="id(path)"
-                [label]="f.label"
-                [purpose]="documentPurpose()"
-              />
-            }
-            @case ('radio') {
-              <p-selectbutton
-                [formControl]="ctrl"
-                [options]="options(f)"
-                optionLabel="label"
-                optionValue="value"
-                [allowEmpty]="false"
-                [ariaLabelledBy]="id(path)"
-              />
-            }
-            @default {
-              <input
-                pInputText
-                [formControl]="ctrl"
-                [id]="id(path)"
-                [fluid]="true"
-                [placeholder]="f.placeholder ?? ''"
-              />
-            }
+          </app-form-field>
+          @if (review()[path]; as r) {
+            <p class="mt-1 text-xs text-warn">
+              <span class="font-semibold">Check against the paper.</span>
+              {{ r.note }}
+              @if (r.read) {
+                · read as “{{ r.read }}”
+              }
+            </p>
           }
-        </app-form-field>
+        </div>
       }
     </ng-template>
   `,
@@ -280,6 +291,11 @@ export class FormRenderer {
   readonly documentPurpose = input('staff-document');
   /** Messages from the server, by field id. */
   readonly errors = input<AnswerErrors>({});
+  /**
+   * Answers filled in from photos that a person should check, by field path
+   * (`surname`, `siblings[0].age`). Those fields are outlined with a note.
+   */
+  readonly review = input<Record<string, ReviewNote>>({});
 
   /** Classes that have a minimum age, in the order the school lists them, for the age limits table. */
   protected readonly limits = computed(() =>

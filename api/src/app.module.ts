@@ -32,6 +32,7 @@ import { StudentsModule } from './modules/students/students.module.js';
 import { TeachingModule } from './modules/teaching/teaching.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { PlatformModule } from './modules/platform/platform.module.js';
+import { OcrModule } from './modules/ocr/ocr.module.js';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { PlatformModule } from './modules/platform/platform.module.js';
     StaffAttendanceModule,
     InsightsModule,
     AdmissionsModule,
+    OcrModule,
     PlatformModule,
   ],
   controllers: [AppController],

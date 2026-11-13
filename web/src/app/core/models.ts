@@ -1106,3 +1106,27 @@ export interface Collection {
   /** Money from boys' and girls' fees, always for everyone. */
   byGender: { gender: Gender; total: Money; count: number; students: number }[];
 }
+
+/** A field filled in from a photo of the paper form that a person should check. */
+export interface ReviewNote {
+  confidence: number | null;
+  /** What was read from the paper. */
+  read: string | null;
+  note: string;
+}
+
+/** What the server read from photos of a paper admission form. */
+export interface FormPhotoRead {
+  /** Answers for the published admission form, by field id. */
+  answers: Record<string, unknown>;
+  header: { formNo?: string; receivedOn?: string };
+  review: Record<string, ReviewNote>;
+  summary: {
+    filled: number;
+    toCheck: number;
+    /** Pages of the paper form not found in any photo (page1 to page4). */
+    missingPages: string[];
+    seconds: number;
+    reader: string | null;
+  };
+}

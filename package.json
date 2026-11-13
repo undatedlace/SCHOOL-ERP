@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ocr": "cd ocr-service && OCR_READER=trocr-base .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 1",
+    "ocr:trocr-small": "cd ocr-service && OCR_READER=trocr-small .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 1",
+    "ocr:rapid": "cd ocr-service && OCR_READER=rapidocr .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 1",
+    "ocr:setup": "cd ocr-service && uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r requirements-eval.txt",
+    "ocr:test": "cd ocr-service && .venv/bin/python -m pytest -q"
   },
   "keywords": [],
   "author": "",

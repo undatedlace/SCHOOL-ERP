@@ -18,8 +18,15 @@ import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MessageModule } from '@openng/optimus-ui/message';
 import { Api } from '../../core/api';
 import { apiError } from '../../core/api-error';
-import { AnswerErrors, Eligibility, FormSchema, SchoolClass } from '../../core/models';
-import { formatDate, toIsoDate } from '../../shared/dates';
+import {
+  AnswerErrors,
+  Eligibility,
+  FormPhotoRead,
+  FormSchema,
+  ReviewNote,
+  SchoolClass,
+} from '../../core/models';
+import { formatDate, fromIsoDate, toIsoDate } from '../../shared/dates';
 import { FormRenderer } from '../../shared/forms/form-renderer';
 import { FormField } from '../../shared/ui/form-field';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -70,9 +77,84 @@ import { PageHeader } from '../../shared/ui/page-header';
           </app-form-field>
         </div>
 
+        @if (photosAvailable()) {
+          <div class="mb-6 rounded-xl border-0 bg-card p-5 shadow-sm">
+            <h2 class="text-base font-semibold">Fill from photos of the paper form</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Photograph each page of the filled-in form, flat and in good light, then let the
+              system fill in what it can read. Check every answer before saving: answers it was
+              unsure of are outlined.
+            </p>
+            <input
+              #photoInput
+              type="file"
+              class="hidden"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              (change)="choosePhotos(photoInput)"
+            />
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <p-button
+                label="Choose photos"
+                severity="secondary"
+                [disabled]="reading()"
+                (onClick)="photoInput.click()"
+              />
+              <p-button
+                label="Read the form"
+                [disabled]="photos().length === 0"
+                [loading]="reading()"
+                (onClick)="readPhotos()"
+              />
+              @if (photos().length) {
+                <span class="text-sm text-muted-foreground">
+                  {{ photos().length }} {{ photos().length === 1 ? 'photo' : 'photos' }}:
+                  {{ photoNames() }}
+                </span>
+              }
+            </div>
+            @if (reading()) {
+              <p class="mt-2 text-sm text-muted-foreground" role="status">
+                Reading the form. This can take up to a minute.
+              </p>
+            }
+            @if (readSummary(); as r) {
+              <div class="mt-3" role="status">
+                <p-message
+                  [severity]="
+                    r.summary.toCheck || r.summary.missingPages.length ? 'warn' : 'success'
+                  "
+                >
+                  <div>
+                    <p>
+                      Filled in {{ r.summary.filled }}
+                      {{ r.summary.filled === 1 ? 'answer' : 'answers' }} in
+                      {{ r.summary.seconds }} seconds.
+                      @if (r.summary.toCheck) {
+                        {{ r.summary.toCheck }} {{ r.summary.toCheck === 1 ? 'is' : 'are' }}
+                        outlined for checking.
+                      }
+                    </p>
+                    @if (r.summary.missingPages.length) {
+                      <p class="mt-1">
+                        Not found in the photos: {{ pageNames(r.summary.missingPages) }}. Add a
+                        photo of
+                        {{ r.summary.missingPages.length === 1 ? 'that page' : 'those pages' }}
+                        or type those answers.
+                      </p>
+                    }
+                  </div>
+                </p-message>
+              </div>
+            }
+          </div>
+        }
+
         <div class="mb-6 rounded-xl border-0 bg-card p-5 shadow-sm">
           <app-form-renderer
             [schema]="s"
+            [value]="prefill()"
+            [review]="review()"
             [classes]="classes()"
             [errors]="errors()"
             [ageAsOn]="ageAsOn()"
@@ -133,6 +215,14 @@ export class ApplicationNew {
   protected readonly ageAsOn = signal<string | null>(null);
   private adviceTimer?: ReturnType<typeof setTimeout>;
   private adviceRun = 0;
+  /** Filling the form from photos of the paper form (only when the server offers it). */
+  protected readonly photosAvailable = signal(false);
+  protected readonly photos = signal<File[]>([]);
+  protected readonly reading = signal(false);
+  protected readonly readSummary = signal<FormPhotoRead | null>(null);
+  /** Starting answers for the renderer; replaced when photos are read. */
+  protected readonly prefill = signal<Record<string, unknown> | null>(null);
+  protected readonly review = signal<Record<string, ReviewNote>>({});
   protected readonly header = inject(FormBuilder).group({
     formNo: [''],
     receivedOn: [new Date() as Date | null],
@@ -150,6 +240,10 @@ export class ApplicationNew {
       })
       .catch(() => undefined);
 
+    firstValueFrom(this.api.formPhotosStatus())
+      .then((s) => this.photosAvailable.set(s.available))
+      .catch(() => undefined);
+
     Promise.all([firstValueFrom(this.api.admissionForm()), firstValueFrom(this.api.classes())])
       .then(([form, classes]) => {
         this.formName.set(form.name);
@@ -163,6 +257,57 @@ export class ApplicationNew {
             : apiError(e),
         ),
       );
+  }
+
+  protected choosePhotos(input: HTMLInputElement) {
+    this.photos.set(Array.from(input.files ?? []).slice(0, 8));
+    input.value = ''; // choosing the same photos again still fires (change)
+  }
+
+  protected photoNames(): string {
+    return this.photos()
+      .map((f) => f.name)
+      .join(', ');
+  }
+
+  private static readonly PAGES: Record<string, string> = {
+    page1: 'page 1 (class, photographs, student details)',
+    page2: 'page 2 (languages, last school, family, guardian)',
+    page3: 'page 3 (age limits, undertaking)',
+    page4: 'page 4 (declaration, signatures, office use)',
+  };
+
+  protected pageNames(pages: string[]): string {
+    return pages.map((p) => ApplicationNew.PAGES[p] ?? p).join('; ');
+  }
+
+  protected async readPhotos() {
+    const renderer = this.renderer();
+    if (!renderer || this.reading() || this.photos().length === 0) return;
+    this.reading.set(true);
+    this.readSummary.set(null);
+    try {
+      const result = await firstValueFrom(this.api.readFormPhotos(this.photos()));
+      // What was read wins over what is on the screen; anything typed that the
+      // photos did not cover is kept.
+      this.prefill.set({ ...renderer.answers(), ...result.answers });
+      this.review.set(result.review);
+      const { formNo } = this.header.getRawValue();
+      this.header.patchValue({
+        ...(!formNo?.trim() && result.header.formNo ? { formNo: result.header.formNo } : {}),
+        ...(result.header.receivedOn ? { receivedOn: fromIsoDate(result.header.receivedOn) } : {}),
+      });
+      this.readSummary.set(result);
+      this.onChanged();
+    } catch (error) {
+      this.toast.add({
+        severity: 'error',
+        summary: 'Could not read the photos',
+        detail: apiError(error),
+      });
+    } finally {
+      this.reading.set(false);
+    }
   }
 
   /** Re-checks the child's age a moment after the last change. */

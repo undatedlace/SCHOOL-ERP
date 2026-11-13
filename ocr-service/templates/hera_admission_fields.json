@@ -1,0 +1,1441 @@
+{
+ "form": "hera_admission",
+ "version": 1,
+ "units": "fractions of the A4 panel (x0, y0, x1, y1)",
+ "fields": [
+  {
+   "key": "formNo",
+   "panel": "page1",
+   "type": "digits",
+   "boxes": [
+    [
+     0.154,
+     0.2596,
+     0.3524,
+     0.2906
+    ]
+   ]
+  },
+  {
+   "key": "date",
+   "panel": "page1",
+   "type": "date",
+   "boxes": [
+    [
+     0.7629,
+     0.2585,
+     0.9411,
+     0.2895
+    ]
+   ]
+  },
+  {
+   "key": "photographs.child",
+   "panel": "page1",
+   "type": "mark",
+   "boxes": [
+    [
+     0.1342,
+     0.4821,
+     0.2625,
+     0.5755
+    ]
+   ]
+  },
+  {
+   "key": "photographs.mother",
+   "panel": "page1",
+   "type": "mark",
+   "boxes": [
+    [
+     0.3278,
+     0.4821,
+     0.4561,
+     0.5755
+    ]
+   ]
+  },
+  {
+   "key": "photographs.father",
+   "panel": "page1",
+   "type": "mark",
+   "boxes": [
+    [
+     0.5229,
+     0.4821,
+     0.6513,
+     0.5755
+    ]
+   ]
+  },
+  {
+   "key": "photographs.guardian",
+   "panel": "page1",
+   "type": "mark",
+   "boxes": [
+    [
+     0.7173,
+     0.4821,
+     0.8456,
+     0.5755
+    ]
+   ]
+  },
+  {
+   "key": "admissionClass",
+   "panel": "page1",
+   "type": "choice",
+   "options": [
+    {
+     "value": "STD_1",
+     "box": [
+      0.1941,
+      0.6108,
+      0.2317,
+      0.6207
+     ]
+    },
+    {
+     "value": "STD_2",
+     "box": [
+      0.357,
+      0.6108,
+      0.3938,
+      0.6207
+     ]
+    },
+    {
+     "value": "NURSERY",
+     "box": [
+      0.4812,
+      0.6108,
+      0.5188,
+      0.6207
+     ]
+    },
+    {
+     "value": "JR_KG",
+     "box": [
+      0.5982,
+      0.6108,
+      0.6357,
+      0.6207
+     ]
+    },
+    {
+     "value": "SR_KG",
+     "box": [
+      0.7199,
+      0.6108,
+      0.7575,
+      0.6207
+     ]
+    },
+    {
+     "value": "PLAY_GROUP",
+     "box": [
+      0.8659,
+      0.6108,
+      0.9026,
+      0.6207
+     ]
+    }
+   ]
+  },
+  {
+   "key": "student.name.surname",
+   "panel": "page1",
+   "type": "name",
+   "boxes": [
+    [
+     0.1218,
+     0.6519,
+     0.3895,
+     0.6829
+    ]
+   ]
+  },
+  {
+   "key": "student.name.childName",
+   "panel": "page1",
+   "type": "name",
+   "boxes": [
+    [
+     0.3935,
+     0.6519,
+     0.6612,
+     0.6829
+    ]
+   ]
+  },
+  {
+   "key": "student.name.fatherName",
+   "panel": "page1",
+   "type": "name",
+   "boxes": [
+    [
+     0.6653,
+     0.6519,
+     0.933,
+     0.6829
+    ]
+   ]
+  },
+  {
+   "key": "student.gender",
+   "panel": "page1",
+   "type": "choice",
+   "options": [
+    {
+     "value": "MALE",
+     "box": [
+      0.1845,
+      0.7202,
+      0.2043,
+      0.733
+     ]
+    },
+    {
+     "value": "FEMALE",
+     "box": [
+      0.2901,
+      0.7202,
+      0.3099,
+      0.733
+     ]
+    }
+   ]
+  },
+  {
+   "key": "student.ageAsOn.date",
+   "panel": "page1",
+   "type": "date",
+   "boxes": [
+    [
+     0.4048,
+     0.7072,
+     0.5725,
+     0.7382
+    ]
+   ]
+  },
+  {
+   "key": "student.ageAsOn.years",
+   "panel": "page1",
+   "type": "digits",
+   "boxes": [
+    [
+     0.5694,
+     0.7072,
+     0.7193,
+     0.7382
+    ]
+   ]
+  },
+  {
+   "key": "student.ageAsOn.months",
+   "panel": "page1",
+   "type": "digits",
+   "boxes": [
+    [
+     0.7556,
+     0.706,
+     0.8709,
+     0.737
+    ]
+   ]
+  },
+  {
+   "key": "student.dateOfBirth",
+   "panel": "page1",
+   "type": "date",
+   "boxes": [
+    [
+     0.1669,
+     0.7383,
+     0.3419,
+     0.7661
+    ]
+   ]
+  },
+  {
+   "key": "student.dateOfBirthInWords.day",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.4185,
+     0.7372,
+     0.568,
+     0.7661
+    ]
+   ]
+  },
+  {
+   "key": "student.dateOfBirthInWords.month",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.56,
+     0.7372,
+     0.748,
+     0.7661
+    ]
+   ],
+   "list": "months"
+  },
+  {
+   "key": "student.dateOfBirthInWords.year",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.74,
+     0.736,
+     0.9403,
+     0.7661
+    ]
+   ]
+  },
+  {
+   "key": "student.placeOfBirth.townCity",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.1742,
+     0.7739,
+     0.478,
+     0.8049
+    ]
+   ]
+  },
+  {
+   "key": "student.placeOfBirth.state",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.47,
+     0.7739,
+     0.6717,
+     0.8049
+    ]
+   ],
+   "list": "states"
+  },
+  {
+   "key": "student.nationality",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.7516,
+     0.7739,
+     0.9403,
+     0.8049
+    ]
+   ],
+   "list": "nationalities"
+  },
+  {
+   "key": "student.religion",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.1371,
+     0.8127,
+     0.3564,
+     0.8437
+    ]
+   ],
+   "list": "religions"
+  },
+  {
+   "key": "student.community",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.4508,
+     0.8121,
+     0.6572,
+     0.8431
+    ]
+   ]
+  },
+  {
+   "key": "student.motherTongue",
+   "panel": "page1",
+   "type": "text",
+   "boxes": [
+    [
+     0.7823,
+     0.8121,
+     0.9403,
+     0.8431
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.permanentAddress",
+   "panel": "page1",
+   "type": "address",
+   "boxes": [
+    [
+     0.2306,
+     0.8427,
+     0.9403,
+     0.8687
+    ],
+    [
+     0.0629,
+     0.8677,
+     0.9411,
+     0.8927
+    ],
+    [
+     0.0629,
+     0.8917,
+     0.9411,
+     0.9172
+    ]
+   ]
+  },
+  {
+   "key": "student.communicationAddress",
+   "panel": "page1",
+   "type": "address",
+   "boxes": [
+    [
+     0.2734,
+     0.9162,
+     0.9403,
+     0.9446
+    ],
+    [
+     0.0629,
+     0.9436,
+     0.9411,
+     0.9645
+    ]
+   ]
+  },
+  {
+   "key": "student.languagesKnown.0",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.4379,
+     0.0778,
+     0.5919,
+     0.1088
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.languagesKnown.1",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6048,
+     0.0778,
+     0.7564,
+     0.1088
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.languagesKnown.2",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.7685,
+     0.0778,
+     0.9322,
+     0.1088
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.languagesSpokenAtHome.main",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.125,
+     0.1222,
+     0.4669,
+     0.1532
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.languagesSpokenAtHome.other",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6089,
+     0.1257,
+     0.933,
+     0.1567
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.lastSchool.attendedFrom",
+   "panel": "page2",
+   "type": "date",
+   "boxes": [
+    [
+     0.5024,
+     0.1557,
+     0.7032,
+     0.1783
+    ]
+   ]
+  },
+  {
+   "key": "student.lastSchool.attendedTo",
+   "panel": "page2",
+   "type": "date",
+   "boxes": [
+    [
+     0.7234,
+     0.1557,
+     0.9322,
+     0.1812
+    ]
+   ]
+  },
+  {
+   "key": "student.lastSchool.nameAndAddress",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.3137,
+     0.181,
+     0.933,
+     0.212
+    ]
+   ]
+  },
+  {
+   "key": "student.lastSchool.lastClassAttended",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.2419,
+     0.211,
+     0.4636,
+     0.2359
+    ]
+   ]
+  },
+  {
+   "key": "student.lastSchool.mediumOfInstruction",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6395,
+     0.211,
+     0.933,
+     0.2382
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "student.lastSchool.reasonForChange",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.3798,
+     0.2372,
+     0.933,
+     0.2598
+    ],
+    [
+     0.075,
+     0.2588,
+     0.9185,
+     0.2844
+    ]
+   ]
+  },
+  {
+   "key": "student.illnessOrDisabilities",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.85,
+     0.2834,
+     0.933,
+     0.3112
+    ],
+    [
+     0.0758,
+     0.3149,
+     0.9193,
+     0.3459
+    ]
+   ]
+  },
+  {
+   "key": "father.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.2008,
+     0.378,
+     0.933,
+     0.4012
+    ]
+   ]
+  },
+  {
+   "key": "father.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.1194,
+     0.393,
+     0.2145,
+     0.424
+    ]
+   ]
+  },
+  {
+   "key": "father.qualification",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.3621,
+     0.4002,
+     0.5185,
+     0.4246
+    ]
+   ]
+  },
+  {
+   "key": "father.occupation",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6121,
+     0.4002,
+     0.9185,
+     0.4229
+    ]
+   ]
+  },
+  {
+   "key": "father.email",
+   "panel": "page2",
+   "type": "email",
+   "boxes": [
+    [
+     0.129,
+     0.4236,
+     0.5145,
+     0.4474
+    ]
+   ]
+  },
+  {
+   "key": "father.designation",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.1694,
+     0.4464,
+     0.5145,
+     0.4668
+    ]
+   ]
+  },
+  {
+   "key": "father.officeAddress",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.6387,
+     0.4381,
+     0.933,
+     0.4691
+    ]
+   ]
+  },
+  {
+   "key": "mother.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.196,
+     0.474,
+     0.508,
+     0.505
+    ]
+   ]
+  },
+  {
+   "key": "mother.occupation",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6145,
+     0.4763,
+     0.7233,
+     0.5073
+    ]
+   ]
+  },
+  {
+   "key": "mother.qualification",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.821,
+     0.4774,
+     0.933,
+     0.5084
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.residentialAddress",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.2379,
+     0.5076,
+     0.933,
+     0.5386
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.phone",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.1339,
+     0.5376,
+     0.3612,
+     0.5614
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.mobile",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.4194,
+     0.5376,
+     0.6774,
+     0.5632
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.fax",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.7113,
+     0.5376,
+     0.933,
+     0.5643
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.monthlyIncome",
+   "panel": "page2",
+   "type": "money",
+   "boxes": [
+    [
+     0.1992,
+     0.5622,
+     0.5072,
+     0.5842
+    ]
+   ]
+  },
+  {
+   "key": "familyContact.motherTongue",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6298,
+     0.5633,
+     0.933,
+     0.5848
+    ]
+   ],
+   "list": "languages"
+  },
+  {
+   "key": "siblings.0.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.0903,
+     0.6143,
+     0.3935,
+     0.6453
+    ]
+   ]
+  },
+  {
+   "key": "siblings.0.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.4016,
+     0.6143,
+     0.5088,
+     0.6453
+    ]
+   ]
+  },
+  {
+   "key": "siblings.0.schoolCollege",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.525,
+     0.6143,
+     0.7911,
+     0.6453
+    ]
+   ]
+  },
+  {
+   "key": "siblings.0.class",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.804,
+     0.6143,
+     0.9088,
+     0.6453
+    ]
+   ]
+  },
+  {
+   "key": "siblings.1.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.0903,
+     0.6443,
+     0.3935,
+     0.6681
+    ]
+   ]
+  },
+  {
+   "key": "siblings.1.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.4016,
+     0.6443,
+     0.5088,
+     0.6681
+    ]
+   ]
+  },
+  {
+   "key": "siblings.1.schoolCollege",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.525,
+     0.6443,
+     0.7911,
+     0.6681
+    ]
+   ]
+  },
+  {
+   "key": "siblings.1.class",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.804,
+     0.6443,
+     0.9088,
+     0.6681
+    ]
+   ]
+  },
+  {
+   "key": "siblings.2.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.0903,
+     0.6671,
+     0.3935,
+     0.6903
+    ]
+   ]
+  },
+  {
+   "key": "siblings.2.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.4016,
+     0.6671,
+     0.5088,
+     0.6903
+    ]
+   ]
+  },
+  {
+   "key": "siblings.2.schoolCollege",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.525,
+     0.6671,
+     0.7911,
+     0.6903
+    ]
+   ]
+  },
+  {
+   "key": "siblings.2.class",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.804,
+     0.6671,
+     0.9088,
+     0.6903
+    ]
+   ]
+  },
+  {
+   "key": "siblings.3.name",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.0903,
+     0.6893,
+     0.3935,
+     0.7137
+    ]
+   ]
+  },
+  {
+   "key": "siblings.3.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.4016,
+     0.6893,
+     0.5088,
+     0.7137
+    ]
+   ]
+  },
+  {
+   "key": "siblings.3.schoolCollege",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.525,
+     0.6893,
+     0.7911,
+     0.7137
+    ]
+   ]
+  },
+  {
+   "key": "siblings.3.class",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.804,
+     0.6893,
+     0.9088,
+     0.7137
+    ]
+   ]
+  },
+  {
+   "key": "guardian.name.firstName",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.3105,
+     0.7505,
+     0.518,
+     0.7815
+    ]
+   ]
+  },
+  {
+   "key": "guardian.name.middleName",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.51,
+     0.7505,
+     0.718,
+     0.7815
+    ]
+   ]
+  },
+  {
+   "key": "guardian.name.lastName",
+   "panel": "page2",
+   "type": "name",
+   "boxes": [
+    [
+     0.71,
+     0.7505,
+     0.9177,
+     0.7815
+    ]
+   ]
+  },
+  {
+   "key": "guardian.relationshipWithStudent",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.2823,
+     0.7859,
+     0.9233,
+     0.8169
+    ]
+   ]
+  },
+  {
+   "key": "guardian.age",
+   "panel": "page2",
+   "type": "digits",
+   "boxes": [
+    [
+     0.1153,
+     0.8127,
+     0.2112,
+     0.8437
+    ]
+   ]
+  },
+  {
+   "key": "guardian.qualification",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.3605,
+     0.8159,
+     0.512,
+     0.8437
+    ]
+   ]
+  },
+  {
+   "key": "guardian.occupation",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.6073,
+     0.8159,
+     0.9225,
+     0.8459
+    ]
+   ]
+  },
+  {
+   "key": "guardian.designation",
+   "panel": "page2",
+   "type": "text",
+   "boxes": [
+    [
+     0.1702,
+     0.8427,
+     0.3491,
+     0.8693
+    ]
+   ]
+  },
+  {
+   "key": "guardian.officeAddress",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.4645,
+     0.8449,
+     0.9225,
+     0.8699
+    ],
+    [
+     0.0734,
+     0.8689,
+     0.5274,
+     0.8978
+    ]
+   ]
+  },
+  {
+   "key": "guardian.email",
+   "panel": "page2",
+   "type": "email",
+   "boxes": [
+    [
+     0.5766,
+     0.8689,
+     0.9225,
+     0.8978
+    ]
+   ]
+  },
+  {
+   "key": "guardian.residentialAddress",
+   "panel": "page2",
+   "type": "address",
+   "boxes": [
+    [
+     0.2452,
+     0.8968,
+     0.9225,
+     0.9218
+    ]
+   ]
+  },
+  {
+   "key": "guardian.phone",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.1379,
+     0.921,
+     0.3556,
+     0.952
+    ]
+   ]
+  },
+  {
+   "key": "guardian.mobile",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.4097,
+     0.921,
+     0.6717,
+     0.952
+    ]
+   ]
+  },
+  {
+   "key": "guardian.fax",
+   "panel": "page2",
+   "type": "phone",
+   "boxes": [
+    [
+     0.7056,
+     0.921,
+     0.9225,
+     0.952
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.studentName",
+   "panel": "page3",
+   "type": "name",
+   "boxes": [
+    [
+     0.1653,
+     0.466,
+     0.562,
+     0.497
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.annualFees",
+   "panel": "page3",
+   "type": "money",
+   "boxes": [
+    [
+     0.845,
+     0.5327,
+     0.913,
+     0.5637
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.academicYearFrom",
+   "panel": "page3",
+   "type": "year2",
+   "boxes": [
+    [
+     0.2218,
+     0.5493,
+     0.2604,
+     0.5803
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.academicYearTo",
+   "panel": "page3",
+   "type": "year2",
+   "boxes": [
+    [
+     0.2847,
+     0.5493,
+     0.3233,
+     0.5803
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.effectiveFrom",
+   "panel": "page3",
+   "type": "year2",
+   "boxes": [
+    [
+     0.4097,
+     0.5493,
+     0.454,
+     0.5803
+    ]
+   ]
+  },
+  {
+   "key": "undertaking.effectiveTo",
+   "panel": "page3",
+   "type": "text",
+   "boxes": [
+    [
+     0.4589,
+     0.5493,
+     0.562,
+     0.5803
+    ]
+   ]
+  },
+  {
+   "key": "declaration.studentName",
+   "panel": "page4",
+   "type": "name",
+   "boxes": [
+    [
+     0.4444,
+     0.0373,
+     0.8443,
+     0.0683
+    ]
+   ]
+  },
+  {
+   "key": "declaration.fatherSignature",
+   "panel": "page4",
+   "type": "mark",
+   "boxes": [
+    [
+     0.271,
+     0.4039,
+     0.4701,
+     0.4349
+    ]
+   ]
+  },
+  {
+   "key": "declaration.motherSignature",
+   "panel": "page4",
+   "type": "mark",
+   "boxes": [
+    [
+     0.6331,
+     0.4027,
+     0.8386,
+     0.4337
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.receivedOn",
+   "panel": "page4",
+   "type": "date",
+   "boxes": [
+    [
+     0.2113,
+     0.47,
+     0.5161,
+     0.501
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.feesPaidOn",
+   "panel": "page4",
+   "type": "date",
+   "boxes": [
+    [
+     0.2145,
+     0.5,
+     0.5161,
+     0.5267
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.feesReceiptNo",
+   "panel": "page4",
+   "type": "text",
+   "boxes": [
+    [
+     0.2444,
+     0.5257,
+     0.5161,
+     0.5535
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.checkedBy",
+   "panel": "page4",
+   "type": "name",
+   "boxes": [
+    [
+     0.2089,
+     0.5525,
+     0.5161,
+     0.5803
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.authoritySignature",
+   "panel": "page4",
+   "type": "mark",
+   "boxes": [
+    [
+     0.2823,
+     0.5793,
+     0.5161,
+     0.6065
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.admittedToClass",
+   "panel": "page4",
+   "type": "text",
+   "boxes": [
+    [
+     0.6839,
+     0.4905,
+     0.7967,
+     0.5215
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.division",
+   "panel": "page4",
+   "type": "text",
+   "boxes": [
+    [
+     0.8242,
+     0.4905,
+     0.929,
+     0.5215
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.approvalSignature",
+   "panel": "page4",
+   "type": "mark",
+   "boxes": [
+    [
+     0.5194,
+     0.545,
+     0.7604,
+     0.574
+    ]
+   ]
+  },
+  {
+   "key": "officeUse.approvalDate",
+   "panel": "page4",
+   "type": "date",
+   "boxes": [
+    [
+     0.7968,
+     0.545,
+     0.929,
+     0.574
+    ]
+   ]
+  }
+ ]
+}

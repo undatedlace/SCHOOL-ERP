@@ -1,0 +1,135 @@
+{
+  "formNo": null,
+  "date": null,
+  "admissionClass": null,
+
+  "photographs": {
+    "child": null,
+    "mother": null,
+    "father": null,
+    "guardian": null
+  },
+
+  "student": {
+    "name": {
+      "surname": null,
+      "childName": null,
+      "fatherName": null
+    },
+    "gender": null,
+    "ageAsOn": {
+      "date": null,
+      "years": null,
+      "months": null
+    },
+    "dateOfBirth": null,
+    "dateOfBirthInWords": {
+      "day": null,
+      "month": null,
+      "year": null
+    },
+    "placeOfBirth": {
+      "townCity": null,
+      "state": null
+    },
+    "nationality": null,
+    "religion": null,
+    "community": null,
+    "motherTongue": null,
+    "permanentAddress": null,
+    "communicationAddress": null,
+    "languagesKnown": [null, null, null],
+    "languagesSpokenAtHome": {
+      "main": null,
+      "other": null
+    },
+    "lastSchool": {
+      "attendedFrom": null,
+      "attendedTo": null,
+      "nameAndAddress": null,
+      "lastClassAttended": null,
+      "mediumOfInstruction": null,
+      "reasonForChange": null
+    },
+    "illnessOrDisabilities": null
+  },
+
+  "father": {
+    "name": null,
+    "age": null,
+    "qualification": null,
+    "occupation": null,
+    "email": null,
+    "designation": null,
+    "officeAddress": null
+  },
+
+  "mother": {
+    "name": null,
+    "occupation": null,
+    "qualification": null
+  },
+
+  "familyContact": {
+    "residentialAddress": null,
+    "phone": null,
+    "mobile": null,
+    "fax": null,
+    "monthlyIncome": null,
+    "motherTongue": null
+  },
+
+  "siblings": [
+    { "name": null, "age": null, "schoolCollege": null, "class": null },
+    { "name": null, "age": null, "schoolCollege": null, "class": null },
+    { "name": null, "age": null, "schoolCollege": null, "class": null },
+    { "name": null, "age": null, "schoolCollege": null, "class": null }
+  ],
+
+  "guardian": {
+    "name": {
+      "firstName": null,
+      "middleName": null,
+      "lastName": null
+    },
+    "relationshipWithStudent": null,
+    "age": null,
+    "qualification": null,
+    "occupation": null,
+    "designation": null,
+    "officeAddress": null,
+    "email": null,
+    "residentialAddress": null,
+    "phone": null,
+    "mobile": null,
+    "fax": null
+  },
+
+  "undertaking": {
+    "studentName": null,
+    "annualFees": null,
+    "academicYearFrom": null,
+    "academicYearTo": null,
+    "effectiveFrom": null,
+    "effectiveTo": null
+  },
+
+  "declaration": {
+    "studentName": null,
+    "fatherSignature": null,
+    "motherSignature": null
+  },
+
+  "officeUse": {
+    "receivedOn": null,
+    "feesPaidOn": null,
+    "feesReceiptNo": null,
+    "checkedBy": null,
+    "authoritySignature": null,
+    "admissionStatus": null,
+    "admittedToClass": null,
+    "division": null,
+    "approvalSignature": null,
+    "approvalDate": null
+  }
+}
