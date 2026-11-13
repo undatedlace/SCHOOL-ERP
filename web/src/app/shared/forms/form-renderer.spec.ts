@@ -92,3 +92,36 @@ describe('FormRenderer layout', () => {
     });
   });
 });
+
+describe('FormRenderer answers to check (filled from photos)', () => {
+  it('outlines a field to check and says what was read, leaving others alone', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const fixture = TestBed.createComponent(FormRenderer);
+    fixture.componentRef.setInput('schema', {
+      sections: [
+        {
+          id: 's',
+          title: 'Student',
+          fields: [
+            { id: 'surname', type: 'text', label: 'Surname' },
+            { id: 'religion', type: 'text', label: 'Religion' },
+          ],
+        },
+      ],
+    } satisfies FormSchema);
+    fixture.componentRef.setInput('value', { surname: 'MEMON', religion: 'Muslim' });
+    fixture.componentRef.setInput('review', {
+      surname: { confidence: 0.4, read: 'MEMDN', note: 'Read with low confidence' },
+    });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const outlined = el.querySelectorAll('.ring-amber');
+    expect(outlined).toHaveLength(1);
+    expect(outlined[0].textContent).toContain('Surname');
+    expect(outlined[0].textContent).toContain('read as “MEMDN”');
+    expect((el.querySelector('#f_surname') as HTMLInputElement).value).toBe('MEMON');
+  });
+});

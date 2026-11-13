@@ -1,0 +1,13 @@
+# The service itself (what runs on the server). No PyTorch: RapidOCR runs on
+# ONNX Runtime. TrOCR, if chosen, will be added as an ONNX int8 export.
+# Install: uv pip install --python .venv/bin/python -r requirements.txt
+fastapi==0.162.5
+uvicorn==0.54.0
+python-multipart==0.0.33
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+pillow==13.0.0
+pymupdf==2.1
+rapidfuzz==3.14.6
+rapidocr-onnxruntime==1.4.4
+onnxruntime==1.31.1

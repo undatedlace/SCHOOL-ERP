@@ -54,6 +54,7 @@ import {
   Decision,
   Eligibility,
   FormDetail,
+  FormPhotoRead,
   GuardianInput,
   NewStaff,
   StaffMember,
@@ -191,6 +192,14 @@ export class Api {
     body.append('purpose', purpose);
     body.append('file', file);
     return this.http.post<{ id: string; mimeType: string; sizeBytes: number }>('/api/files', body);
+  };
+
+  // ---------- Admissions: filling a form from photos of the paper ----------
+  formPhotosStatus = () => this.http.get<{ available: boolean }>('/api/admissions/ocr/status');
+  readFormPhotos = (files: File[]) => {
+    const body = new FormData();
+    for (const f of files) body.append('files', f);
+    return this.http.post<FormPhotoRead>('/api/admissions/ocr', body);
   };
 
   // ---------- Admissions ----------
