@@ -69,6 +69,10 @@ const PERMISSIONS = [
   'timetable.read',
   'timetable.read_all',
   'timetable.manage',
+  'student_leave.request',
+  'student_leave.decide',
+  'student_leave.read_all',
+  'student_leave.decide_all',
 ];
 
 // Scope ("own class", "own child") is checked in services, not here.
@@ -116,6 +120,7 @@ const ROLES: Record<string, RoleDef> = {
       'notices.read_all',
       'notices.create',
       'calendar.manage',
+      'student_leave.read_all',
       'dashboard.view',
     ],
   },
@@ -155,6 +160,7 @@ const ROLES: Record<string, RoleDef> = {
       'homework.manage',
       'timetable.read',
       'timetable.read_all',
+      'student_leave.decide',
       'notices.read',
       'calendar.read',
       'notices.create',
@@ -180,6 +186,7 @@ const ROLES: Record<string, RoleDef> = {
       'fees.read',
       'homework.read',
       'timetable.read',
+      'student_leave.request',
       'notices.read',
       'calendar.read',
     ],
@@ -193,6 +200,7 @@ const ROLES: Record<string, RoleDef> = {
       'fees.read',
       'homework.read',
       'timetable.read',
+      'student_leave.request',
       'notices.read',
       'calendar.read',
     ],

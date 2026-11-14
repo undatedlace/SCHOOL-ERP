@@ -44,6 +44,7 @@ model School {
   leaveTypes           LeaveType[]
   leaveEntitlements    LeaveEntitlement[]
   leaveRequests        LeaveRequest[]
+  studentLeave         StudentLeaveRequest[]
   staffAttendance      StaffAttendanceRecord[]
   guardians            Guardian[]
   enrollments          Enrollment[]

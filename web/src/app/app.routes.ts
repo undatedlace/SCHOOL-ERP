@@ -237,6 +237,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/leave/leave-requests').then((m) => m.LeaveRequests),
       },
       {
+        path: 'student-leave',
+        canActivate: [
+          anyPermissionGuard([
+            'student_leave.decide',
+            'student_leave.read_all',
+            'student_leave.decide_all',
+          ]),
+        ],
+        loadComponent: () =>
+          import('./features/student-leave/student-leave-page').then((m) => m.StudentLeavePage),
+      },
+      {
         path: 'my-leave',
         canActivate: [permissionGuard('leave.apply')],
         loadComponent: () => import('./features/leave/my-leave').then((m) => m.MyLeave),
@@ -333,6 +345,12 @@ export const routes: Routes = [
         path: 'timetable',
         loadComponent: () =>
           import('./features/timetable/portal-timetable').then((m) => m.PortalTimetable),
+      },
+      {
+        path: 'absence',
+        canActivate: [permissionGuard('student_leave.request')],
+        loadComponent: () =>
+          import('./features/student-leave/portal-absence').then((m) => m.PortalAbsence),
       },
       {
         path: 'notices',
