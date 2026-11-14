@@ -22,6 +22,7 @@ import { FormsModule } from '@angular/forms';
 import { Avatar } from '../../shared/ui/avatar';
 import { ClassPill } from '../../shared/ui/badge';
 import { Icon } from '../../shared/ui/icon';
+import { AdmissionsImport } from '../imports/import-launchers';
 
 @Component({
   selector: 'app-applications',
@@ -38,6 +39,7 @@ import { Icon } from '../../shared/ui/icon';
     Avatar,
     ClassPill,
     Icon,
+    AdmissionsImport,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -46,6 +48,9 @@ import { Icon } from '../../shared/ui/icon';
       [crumbs]="[{ label: 'Dashboard', link: '/app/dashboard' }, { label: 'Admissions' }]"
       subtitle="Applications for the current academic year: received, reviewed, then granted or refused."
     >
+      <ng-container *appHasPermission="'admissions.manage'">
+        <app-admissions-import *appHasPermission="'students.manage'" (imported)="reload()" />
+      </ng-container>
       <p-button
         *appHasPermission="'admissions.manage'"
         label="New application"
@@ -222,6 +227,11 @@ export class Applications {
     this.status = value;
     this.statusChoice.set(value ?? 'ALL');
     this.first.set(0);
+    void this.fetch();
+  }
+
+  /** After an Excel import: show what came in. */
+  protected reload() {
     void this.fetch();
   }
 

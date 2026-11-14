@@ -8,6 +8,7 @@ import { SelectModule } from '@openng/optimus-ui/select';
 import { TableModule } from '@openng/optimus-ui/table';
 import { Api } from '../../core/api';
 import { AuthService } from '../../core/auth.service';
+import { StudentAttendanceImport } from '../imports/import-launchers';
 import { apiError } from '../../core/api-error';
 import {
   AttendanceDivision,
@@ -48,13 +49,15 @@ type Tab = 'take' | 'report';
     AttendanceGrid,
     SelectButtonModule,
     InputTextModule,
+    StudentAttendanceImport,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-header
-      title="Attendance"
-      subtitle="Mark the day for a division, and see the totals."
-    />
+    <app-page-header title="Attendance" subtitle="Mark the day for a division, and see the totals.">
+      @if (auth.has('attendance.mark')) {
+        <app-student-attendance-import (imported)="afterImport()" />
+      }
+    </app-page-header>
 
     @if (overview(); as o) {
       @if (o.divisions.length > 0) {
@@ -338,6 +341,11 @@ export class AttendancePage {
       this.loaded.set(true);
     }
     if (this.divisionId()) await this.load();
+  }
+
+  /** After an Excel import: show the marks that came in. */
+  protected afterImport() {
+    if (this.divisionId()) void this.load();
   }
 
   protected draft(id: string) {

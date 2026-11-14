@@ -22,6 +22,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { LeaveModule } from './modules/leave/leave.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { CalendarModule } from './modules/calendar/calendar.module.js';
+import { ImportsModule } from './modules/imports/imports.module.js';
 import { NoticesModule } from './modules/notices/notices.module.js';
 import { PromotionModule } from './modules/promotion/promotion.module.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
@@ -61,6 +62,7 @@ import { PlatformModule } from './modules/platform/platform.module.js';
     PromotionModule,
     NoticesModule,
     CalendarModule,
+    ImportsModule,
     SearchModule,
     LeaveModule,
     NotificationsModule,

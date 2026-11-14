@@ -106,6 +106,11 @@ export class DecisionDto {
   @IsOptional()
   @IsUUID()
   divisionId?: string;
+
+  /** When the decision was really taken, for a paper form decided earlier. Defaults to now. */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  decidedOn?: string;
 }
 
 export class ListApplicationsQueryDto extends PageQueryDto {

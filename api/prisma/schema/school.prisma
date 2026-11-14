@@ -54,6 +54,7 @@ model School {
   feeStructures     FeeStructure[]
   feeInvoices       FeeInvoice[]
   payments          Payment[]
+  importBatches     ImportBatch[]
 
   @@map("schools")
 }

@@ -16,6 +16,8 @@ Last updated 10 Nov 2026.
 
 ## Excel files (real data is best; fake names are fine if the columns are real)
 
+The app now has its own Excel templates for admission forms (old and new), fees billed and paid per student per year, and attendance registers (see `docs/bulk-import.md`). Where the school can fill those in, the items below are not needed in another format.
+
 1. **Students:** one row per child. Admission number, name, gender, date of birth, class and division, joining date, mobile numbers, address.
 2. **Guardians:** father, mother and others, with mobile numbers. Note which students are siblings.
 3. **Staff:** employee number, name, designation, mobile, email, joining date, and those who have left with their leaving date.

@@ -17,3 +17,10 @@ api/.claude/
 # Uploaded files in development
 api/storage/
 *.md
+# OCR service: real form photos and answer keys hold children's and parents'
+# personal data and never go in git; nor do the venv and model caches.
+ocr-service/.venv/
+ocr-service/data/
+ocr-service/models/
+__pycache__/
+.pytest_cache/

@@ -28,6 +28,7 @@ import {
 } from '../../core/models';
 import { formatDate, toIsoDate } from '../../shared/dates';
 import { HasPermission } from '../../shared/has-permission.directive';
+import { PastYearFees } from '../imports/past-year-fees';
 import { inr, isMoney } from '../../shared/money';
 import { FormField } from '../../shared/ui/form-field';
 import { Badge } from '../../shared/ui/badge';
@@ -56,6 +57,7 @@ const moneyValidator = (c: { value: string }) =>
 @Component({
   selector: 'app-student-fees',
   imports: [
+    PastYearFees,
     Badge,
     StatTile,
     ReactiveFormsModule,
@@ -84,6 +86,13 @@ const moneyValidator = (c: { value: string }) =>
             [outlined]="true"
             (onClick)="openDues()"
           />
+          <ng-container *appHasPermission="'fees.structure.manage'">
+            <app-past-year-fees
+              *appHasPermission="'fees.payment.create'"
+              [studentId]="studentId()"
+              (saved)="reloadLedger()"
+            />
+          </ng-container>
           <p-button
             *appHasPermission="'fees.reminder.send'"
             label="Remind class teacher"
@@ -625,6 +634,11 @@ export class StudentFees {
     return inv.kind === 'OPENING_BALANCE'
       ? `Previous dues (${inv.academicYear.name})`
       : `Fees ${inv.academicYear.name}`;
+  }
+
+  /** After a past year's fees were added. */
+  protected reloadLedger() {
+    void this.load(this.studentId());
   }
 
   private async load(id: string) {

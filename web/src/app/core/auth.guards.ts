@@ -50,6 +50,16 @@ export const permissionGuard =
     return auth.has(permission) ? true : inject(Router).createUrlTree([auth.homeUrl()]);
   };
 
+/** The user must hold at least one of the permissions. */
+export const anyPermissionGuard =
+  (permissions: string[]): CanActivateFn =>
+  () => {
+    const auth = inject(AuthService);
+    return permissions.some((p) => auth.has(p))
+      ? true
+      : inject(Router).createUrlTree([auth.homeUrl()]);
+  };
+
 /** For `/`: go to the right place. */
 export const homeGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);

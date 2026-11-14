@@ -4,6 +4,8 @@ export interface NavItem {
   description: string;
   /** Hidden unless the user holds this permission. */
   permission?: string;
+  /** Hidden unless the user holds at least one of these. */
+  anyPermission?: string[];
   /** Hidden from anyone who holds this permission (for pages meant only for the people it does not cover). */
   hiddenWith?: string;
 }
@@ -19,6 +21,14 @@ export interface NavEntry {
   /** Set for a group; the group is hidden when the user may open none of its pages. */
   items?: NavItem[];
 }
+
+/** The people who bring data in from Excel: the import history is theirs. */
+export const IMPORT_PERMISSIONS = [
+  'admissions.manage',
+  'fees.structure.manage',
+  'attendance.mark_all',
+  'staff_attendance.manage',
+];
 
 const dashboard: NavItem = {
   label: 'Dashboard',
@@ -159,6 +169,12 @@ const schoolSettings: NavItem = {
   description: 'School name, address and contact details',
   permission: 'settings.manage',
 };
+const importHistory: NavItem = {
+  label: 'Excel imports',
+  path: '/app/settings/imports',
+  description: 'Files brought in from Excel: what went in and what needs fixing',
+  anyPermission: IMPORT_PERMISSIONS,
+};
 const auditLog: NavItem = {
   label: 'Audit log',
   path: '/app/audit-log',
@@ -201,7 +217,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: 'Settings',
     icon: 'settings',
     section: 'admin',
-    items: [schoolSettings, users, staffTypes, leaveSettings, auditLog],
+    items: [schoolSettings, users, staffTypes, leaveSettings, importHistory, auditLog],
   },
 ];
 
@@ -214,7 +230,9 @@ export function visibleEntries(
   has: (permission: string) => boolean,
 ): NavEntry[] {
   const ok = (i: NavItem) =>
-    (!i.permission || has(i.permission)) && !(i.hiddenWith && has(i.hiddenWith));
+    (!i.permission || has(i.permission)) &&
+    (!i.anyPermission || i.anyPermission.some(has)) &&
+    !(i.hiddenWith && has(i.hiddenWith));
   return entries.flatMap((e) => {
     if (e.item) return ok(e.item) ? [e] : [];
     const items = (e.items ?? []).filter(ok);

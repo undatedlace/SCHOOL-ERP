@@ -19,6 +19,8 @@ import { STATUSES, monthBounds } from '../attendance/attendance-utils';
 import { StaffDrafts, asGridReport, staffChanges, staffDraftsFrom } from './staff-grid';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { HasPermission } from '../../shared/has-permission.directive';
+import { StaffAttendanceImport } from '../imports/import-launchers';
 
 type Tab = 'take' | 'report';
 
@@ -34,13 +36,20 @@ type Tab = 'take' | 'report';
     AttendanceGrid,
     SelectButtonModule,
     InputTextModule,
+    HasPermission,
+    StaffAttendanceImport,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
       title="Staff attendance"
       subtitle="Attendance of teachers and other staff. Students' attendance is under Attendance, Students."
-    />
+    >
+      <app-staff-attendance-import
+        *appHasPermission="'staff_attendance.manage'"
+        (imported)="afterImport()"
+      />
+    </app-page-header>
 
     <div class="mb-4 flex flex-wrap items-end gap-3">
       @if (tab() === 'take') {
@@ -322,6 +331,11 @@ export class StaffAttendancePage {
     } catch (error) {
       this.toast.add({ severity: 'error', summary: 'Could not remove', detail: apiError(error) });
     }
+  }
+
+  /** After an Excel import: show the marks that came in. */
+  protected afterImport() {
+    void this.load();
   }
 
   private async load() {

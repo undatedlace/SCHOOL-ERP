@@ -2,6 +2,8 @@
 /// decided how teachers will log in and out, so other ways are added later without changing the table.
 enum AttendanceSource {
   MANUAL
+  /// Brought in from an Excel register.
+  IMPORT
 }
 
 /// One member of staff's attendance on one day. Marked by the school admin.
