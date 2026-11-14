@@ -29,7 +29,7 @@ export function toTime(d: Date): string {
       [ngModel]="time()"
       (ngModelChange)="valueChange.emit($event ? toTime($event) : '')"
       [timeOnly]="true"
-      hourFormat="24"
+      [hourFormat]="hour12() ? '12' : '24'"
       [stepMinute]="5"
       placeholder="hh:mm"
       [showClear]="true"
@@ -47,6 +47,8 @@ export class TimeField {
   readonly label = input('Time');
   readonly inputId = input<string | undefined>(undefined);
   readonly disabled = input(false);
+  /** Show and pick the time as 9:30 AM instead of 09:30 (the value stays "HH:mm"). */
+  readonly hour12 = input(false);
   /** The new time as "HH:mm" ("" when cleared). */
   readonly valueChange = output<string>();
 

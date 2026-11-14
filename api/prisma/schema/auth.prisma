@@ -33,6 +33,7 @@ model User {
   assessmentsWritten    Assessment[]            @relation("AssessmentAuthor")
   staffAttendanceMarked StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
   importsMade           ImportBatch[]           @relation("ImportCreator")
+  timetableChanges      TimetableAdjustment[]   @relation("TimetableAdjustmentCreator")
   /// A shared phone gives two guardians (father and mother) one login.
   guardians             Guardian[]
   student               Student?

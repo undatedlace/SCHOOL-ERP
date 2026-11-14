@@ -9,6 +9,7 @@ export const KIND_BY_SLUG: Record<string, ImportKind> = {
   fees: 'FEES',
   'student-attendance': 'STUDENT_ATTENDANCE',
   'staff-attendance': 'STAFF_ATTENDANCE',
+  timetable: 'TIMETABLE',
 };
 
 export const SLUG_BY_KIND = Object.fromEntries(

@@ -18,6 +18,7 @@ import { StaffAttendanceModule } from './modules/staff-attendance/staff-attendan
 import { DevicesModule } from './modules/devices/devices.module.js';
 import { AssessmentsModule } from './modules/assessments/assessments.module.js';
 import { HomeworkModule } from './modules/homework/homework.module.js';
+import { TimetableModule } from './modules/timetable/timetable.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { LeaveModule } from './modules/leave/leave.module.js';
 import { SearchModule } from './modules/search/search.module.js';
@@ -67,6 +68,7 @@ import { PlatformModule } from './modules/platform/platform.module.js';
     LeaveModule,
     NotificationsModule,
     HomeworkModule,
+    TimetableModule,
     AssessmentsModule,
     DevicesModule,
     StaffAttendanceModule,

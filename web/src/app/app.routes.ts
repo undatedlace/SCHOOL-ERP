@@ -133,6 +133,29 @@ export const routes: Routes = [
           import('./features/staff-attendance/my-attendance-page').then((m) => m.MyAttendancePage),
       },
       {
+        path: 'timetable',
+        canActivate: [permissionGuard('timetable.read_all')],
+        loadComponent: () =>
+          import('./features/timetable/timetable-page').then((m) => m.TimetablePage),
+      },
+      {
+        path: 'timetable/timings',
+        canActivate: [permissionGuard('timetable.manage')],
+        loadComponent: () => import('./features/timetable/timings-page').then((m) => m.TimingsPage),
+      },
+      {
+        path: 'timetable/today',
+        canActivate: [permissionGuard('timetable.manage')],
+        loadComponent: () =>
+          import('./features/timetable/day-changes-page').then((m) => m.DayChangesPage),
+      },
+      {
+        path: 'my-timetable',
+        canActivate: [permissionGuard('timetable.read')],
+        loadComponent: () =>
+          import('./features/timetable/my-timetable-page').then((m) => m.MyTimetablePage),
+      },
+      {
         path: 'calendar',
         canActivate: [permissionGuard('calendar.read')],
         loadComponent: () =>
@@ -305,6 +328,11 @@ export const routes: Routes = [
         path: 'homework',
         loadComponent: () =>
           import('./features/homework/portal-homework').then((m) => m.PortalHomework),
+      },
+      {
+        path: 'timetable',
+        loadComponent: () =>
+          import('./features/timetable/portal-timetable').then((m) => m.PortalTimetable),
       },
       {
         path: 'notices',

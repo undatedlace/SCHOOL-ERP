@@ -1,5 +1,6 @@
 /** The kinds of Excel import, as they appear in the address (/api/imports/<slug>/...). */
-export type ImportSlug = 'admissions' | 'fees' | 'student-attendance' | 'staff-attendance';
+export type ImportSlug =
+  'admissions' | 'fees' | 'student-attendance' | 'staff-attendance' | 'timetable';
 
 export type ImportStatus = 'CHECKED' | 'RUNNING' | 'IMPORTED' | 'CANCELLED' | 'EXPIRED';
 
@@ -66,4 +67,5 @@ export const IMPORT_TITLES: Record<ImportSlug, string> = {
   fees: 'Fees billed and paid',
   'student-attendance': 'Student attendance',
   'staff-attendance': 'Staff attendance',
+  timetable: 'Timetable',
 };

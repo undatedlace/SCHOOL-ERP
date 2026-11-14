@@ -28,6 +28,7 @@ export const IMPORT_PERMISSIONS = [
   'fees.structure.manage',
   'attendance.mark_all',
   'staff_attendance.manage',
+  'timetable.manage',
 ];
 
 const dashboard: NavItem = {
@@ -182,6 +183,32 @@ const auditLog: NavItem = {
   permission: 'audit.read',
 };
 
+const timetable: NavItem = {
+  label: 'Timetable',
+  path: '/app/timetable',
+  description: 'The week for every class, and changes for single days',
+  permission: 'timetable.read_all',
+};
+const dayChanges: NavItem = {
+  label: 'Daily changes',
+  path: '/app/timetable/today',
+  description: 'Teachers on leave, substitutes and cancelled periods for a day',
+  permission: 'timetable.manage',
+};
+const timings: NavItem = {
+  label: 'Timings',
+  path: '/app/timetable/timings',
+  description: 'Period times, breaks and periods a day for each Std',
+  permission: 'timetable.manage',
+};
+const myTimetable: NavItem = {
+  label: 'My timetable',
+  path: '/app/my-timetable',
+  description: 'Your lessons this week, and periods you cover',
+  permission: 'timetable.read',
+  hiddenWith: 'timetable.manage',
+};
+
 /** The staff menu, grouped. Each page is also protected by a route guard and, above all, by the API. */
 export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Dashboard', icon: 'home', section: 'overview', item: dashboard },
@@ -211,6 +238,12 @@ export const NAV_ENTRIES: NavEntry[] = [
     icon: 'attendance',
     section: 'office',
     items: [attendance, staffAttendance, myAttendance],
+  },
+  {
+    label: 'Timetable',
+    icon: 'clock',
+    section: 'office',
+    items: [timetable, myTimetable, dayChanges, timings],
   },
   { label: 'Notices', icon: 'notice', section: 'office', item: notices },
   {
