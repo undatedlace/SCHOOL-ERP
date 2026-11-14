@@ -8,19 +8,23 @@ model AcademicYear {
   /// Ages are counted as on this date (the paper form's "Age as on"). Empty = the day the form was received.
   ageCutoffDate DateTime? @map("age_cutoff_date") @db.Date
 
-  school            School             @relation(fields: [schoolId], references: [id])
-  applications      Application[]
-  enrollments       Enrollment[]
-  homework          Homework[]
-  leaveEntitlements LeaveEntitlement[]
-  leaveRequests     LeaveRequest[]
-  assessments       Assessment[]
-  classTeachers     ClassTeacher[]
-  subjectTeachers   SubjectTeacher[]
-  feeStructures     FeeStructure[]
-  feeInvoices       FeeInvoice[]
-  payments          Payment[]
-  attendance        AttendanceRecord[]
+  school               School                @relation(fields: [schoolId], references: [id])
+  applications         Application[]
+  enrollments          Enrollment[]
+  homework             Homework[]
+  leaveEntitlements    LeaveEntitlement[]
+  leaveRequests        LeaveRequest[]
+  assessments          Assessment[]
+  classTeachers        ClassTeacher[]
+  subjectTeachers      SubjectTeacher[]
+  feeStructures        FeeStructure[]
+  feeInvoices          FeeInvoice[]
+  payments             Payment[]
+  attendance           AttendanceRecord[]
+  bellSchedules        BellSchedule[]
+  classBellSchedules   ClassBellSchedule[]
+  timetableEntries     TimetableEntry[]
+  timetableAdjustments TimetableAdjustment[]
 
   @@unique([schoolId, name])
   @@map("academic_years")
@@ -43,6 +47,7 @@ model SchoolClass {
   feeStructures       FeeStructure[]
   noticeTargets       NoticeTarget[]
   eventTargets        CalendarEventTarget[]
+  bellSchedules       ClassBellSchedule[]
 
   @@unique([schoolId, name])
   @@map("classes")
@@ -54,17 +59,19 @@ model Division {
   classId  String @map("class_id") @db.Uuid
   name     String
 
-  school              School                @relation(fields: [schoolId], references: [id])
-  class               SchoolClass           @relation(fields: [classId], references: [id])
-  grantedApplications Application[]
-  homeworkTargets     HomeworkTarget[]
-  assessments         Assessment[]
-  enrollments         Enrollment[]
-  classTeachers       ClassTeacher[]
-  subjectTeachers     SubjectTeacher[]
-  attendanceRecords   AttendanceRecord[]
-  noticeTargets       NoticeTarget[]
-  eventTargets        CalendarEventTarget[]
+  school               School                @relation(fields: [schoolId], references: [id])
+  class                SchoolClass           @relation(fields: [classId], references: [id])
+  grantedApplications  Application[]
+  homeworkTargets      HomeworkTarget[]
+  assessments          Assessment[]
+  enrollments          Enrollment[]
+  classTeachers        ClassTeacher[]
+  subjectTeachers      SubjectTeacher[]
+  attendanceRecords    AttendanceRecord[]
+  noticeTargets        NoticeTarget[]
+  eventTargets         CalendarEventTarget[]
+  timetableEntries     TimetableEntry[]
+  timetableAdjustments TimetableAdjustment[]
 
   @@unique([classId, name])
   @@index([schoolId])
@@ -77,10 +84,12 @@ model Subject {
   name     String
   code     String?
 
-  school          School           @relation(fields: [schoolId], references: [id])
-  subjectTeachers SubjectTeacher[]
-  homework        Homework[]
-  assessments     Assessment[]
+  school               School                @relation(fields: [schoolId], references: [id])
+  subjectTeachers      SubjectTeacher[]
+  homework             Homework[]
+  assessments          Assessment[]
+  timetableEntries     TimetableEntry[]
+  timetableAdjustments TimetableAdjustment[]
 
   @@unique([schoolId, name])
   @@map("subjects")

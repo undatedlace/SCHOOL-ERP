@@ -4,6 +4,7 @@ enum ImportKind {
   FEES
   STUDENT_ATTENDANCE
   STAFF_ATTENDANCE
+  TIMETABLE
 }
 
 /// CHECKED: uploaded and checked, waiting for "Import". RUNNING: being imported now.

@@ -1,0 +1,137 @@
+/// What a row of the school day is: a teaching period, a break (recess, lunch) or an assembly.
+enum BellSlotKind {
+  PERIOD
+  BREAK
+  ASSEMBLY
+}
+
+/// A change to the timetable for one day only.
+/// SUBSTITUTE: another teacher takes the period. CANCELLED: the period does not happen that day.
+enum TimetableAdjustmentKind {
+  SUBSTITUTE
+  CANCELLED
+}
+
+/// A named set of school-day timings for one academic year ("Primary", "Secondary"), used by the
+/// classes assigned to it. Switched off, never deleted.
+model BellSchedule {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  schoolId       String    @map("school_id") @db.Uuid
+  academicYearId String    @map("academic_year_id") @db.Uuid
+  name           String
+  archivedAt     DateTime? @map("archived_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  school       School              @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear        @relation(fields: [academicYearId], references: [id])
+  slots        BellSlot[]
+  classes      ClassBellSchedule[]
+
+  @@unique([academicYearId, name])
+  @@index([schoolId])
+  @@map("bell_schedules")
+}
+
+/// One row of the school day in a schedule. Times are "HH:mm" in India time. `days` holds the ISO
+/// weekdays (1 Monday to 6 Saturday) the row runs on, so a Saturday half day has its own rows.
+model BellSlot {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  schoolId   String       @map("school_id") @db.Uuid
+  scheduleId String       @map("schedule_id") @db.Uuid
+  kind       BellSlotKind
+  label      String
+  startsAt   String       @map("starts_at")
+  endsAt     String       @map("ends_at")
+  sortOrder  Int          @map("sort_order")
+  days       Int[]
+
+  school      School                @relation(fields: [schoolId], references: [id])
+  schedule    BellSchedule          @relation(fields: [scheduleId], references: [id])
+  entries     TimetableEntry[]
+  adjustments TimetableAdjustment[]
+
+  @@index([scheduleId])
+  @@map("bell_slots")
+}
+
+/// Which timings a class (Std) follows in a year. One per class per year.
+model ClassBellSchedule {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  classId        String   @map("class_id") @db.Uuid
+  scheduleId     String   @map("schedule_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  class        SchoolClass  @relation(fields: [classId], references: [id])
+  schedule     BellSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@unique([academicYearId, classId])
+  @@index([schoolId])
+  @@index([scheduleId])
+  @@map("class_bell_schedules")
+}
+
+/// The regular week: what a division has in one period on one weekday. A row with no subject is a
+/// free period. Changes for a single day are `TimetableAdjustment`s, never edits here.
+model TimetableEntry {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  divisionId     String   @map("division_id") @db.Uuid
+  slotId         String   @map("slot_id") @db.Uuid
+  /// ISO weekday, 1 Monday to 6 Saturday.
+  weekday        Int
+  subjectId      String?  @map("subject_id") @db.Uuid
+  staffId        String?  @map("staff_id") @db.Uuid
+  room           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+  slot         BellSlot     @relation(fields: [slotId], references: [id])
+  subject      Subject?     @relation(fields: [subjectId], references: [id])
+  staff        Staff?       @relation("TimetableTeacher", fields: [staffId], references: [id])
+
+  @@unique([divisionId, slotId, weekday])
+  @@index([academicYearId, staffId, weekday])
+  @@index([schoolId])
+  @@map("timetable_entries")
+}
+
+/// A change for one date: a substitute teacher or a cancelled period. Undone by archiving, so the
+/// history stays. Only one change that is not archived per division, date and period (a partial unique
+/// index in the migration).
+model TimetableAdjustment {
+  id                String                  @id @default(uuid(7)) @db.Uuid
+  schoolId          String                  @map("school_id") @db.Uuid
+  academicYearId    String                  @map("academic_year_id") @db.Uuid
+  date              DateTime                @db.Date
+  divisionId        String                  @map("division_id") @db.Uuid
+  slotId            String                  @map("slot_id") @db.Uuid
+  kind              TimetableAdjustmentKind
+  substituteStaffId String?                 @map("substitute_staff_id") @db.Uuid
+  /// When the substitute teaches another subject than the regular one.
+  subjectId         String?                 @map("subject_id") @db.Uuid
+  reason            String
+  createdById       String                  @map("created_by_id") @db.Uuid
+  createdAt         DateTime                @default(now()) @map("created_at")
+  archivedAt        DateTime?               @map("archived_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  division     Division     @relation(fields: [divisionId], references: [id])
+  slot         BellSlot     @relation(fields: [slotId], references: [id])
+  substitute   Staff?       @relation("TimetableSubstitute", fields: [substituteStaffId], references: [id])
+  subject      Subject?     @relation(fields: [subjectId], references: [id])
+  createdBy    User         @relation("TimetableAdjustmentCreator", fields: [createdById], references: [id])
+
+  @@index([schoolId, date])
+  @@index([substituteStaffId, date])
+  @@map("timetable_adjustments")
+}

@@ -354,3 +354,22 @@
 .app-card-tabs .p-datatable-tbody > tr > td:last-child {
   white-space: nowrap;
 }
+
+/* Printing a page with a ".print-area" (the timetable): only that part is printed. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

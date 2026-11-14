@@ -37,13 +37,15 @@ model Staff {
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
-  school         School                  @relation(fields: [schoolId], references: [id])
-  user           User?                   @relation(fields: [userId], references: [id])
-  staffType      StaffType?              @relation(fields: [staffTypeId], references: [id])
-  classTeacherOf ClassTeacher[]
-  subjectsTaught SubjectTeacher[]
-  attendance     StaffAttendanceRecord[]
-  leaveRequests  LeaveRequest[]
+  school           School                  @relation(fields: [schoolId], references: [id])
+  user             User?                   @relation(fields: [userId], references: [id])
+  staffType        StaffType?              @relation(fields: [staffTypeId], references: [id])
+  classTeacherOf   ClassTeacher[]
+  subjectsTaught   SubjectTeacher[]
+  attendance       StaffAttendanceRecord[]
+  leaveRequests    LeaveRequest[]
+  timetableEntries TimetableEntry[]        @relation("TimetableTeacher")
+  substitutions    TimetableAdjustment[]   @relation("TimetableSubstitute")
 
   @@unique([schoolId, seq])
   @@unique([schoolId, employeeNo])

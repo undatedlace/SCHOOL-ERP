@@ -1,6 +1,6 @@
 # Excel imports
 
-Bringing data in from Excel: new and old admission forms, fees billed and paid, and attendance registers. Built 13 Nov 2026 (branch `feature/bulk-import`).
+Bringing data in from Excel: new and old admission forms, fees billed and paid, attendance registers, and a class's timetable. Built 13 Nov 2026 (branch `feature/bulk-import`); the timetable kind was added on 14 Nov 2026 (branch `feature/timetable`).
 
 ## How every import works
 
@@ -62,3 +62,8 @@ Like the paper register: people down the side, the days across, **P**, **A**, **
 - Notes per day in the attendance registers; deleting marks from a file.
 - A background job for very large files (imports run in the request; 2,000 rows is the cap).
 - Opening the templates in Excel itself has not been tried yet: they were tested by reading them back with the same library (exceljs) in the end-to-end tests.
+
+## Timetable
+
+*Timetable, Import from Excel* (Super Admin and School Admin, `timetable.manage`), for the class chosen on the page. The class must have its timings first (*Timetable, Timings*). The template has one row per division, day and period of those timings (breaks are left out), filled in with what is saved. Write the **Subject** and the **Teacher** (choose from the drop-downs; the teacher list shows "Name (employee no)", and an employee number or an unambiguous name also works). A blank teacher uses the subject teacher from Academic setup; a blank subject and teacher make a free period; **Room** is optional. Rows are checked like the grid editor: the division, day and period must belong to the class's timings, the subject and teacher must exist (and the teacher must not have left), and a teacher may not be in two classes at overlapping times, either with other classes or with another row of the same file (both rows are handed back). Rows that match what is saved are skipped.
+
