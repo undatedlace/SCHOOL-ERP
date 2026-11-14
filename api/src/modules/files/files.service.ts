@@ -192,6 +192,7 @@ export class FilesService {
         AND NOT EXISTS (SELECT 1 FROM student_documents d WHERE d.file_id = f.id)
         AND NOT EXISTS (SELECT 1 FROM homework_attachments h WHERE h.file_id = f.id)
         AND NOT EXISTS (SELECT 1 FROM homework_submission_files h WHERE h.file_id = f.id)
+        AND NOT EXISTS (SELECT 1 FROM conversation_message_files m WHERE m.file_id = f.id)
         AND NOT EXISTS (
           SELECT 1 FROM applications a
           WHERE a.school_id = f.school_id AND a.answers::text LIKE '%' || f.id::text || '%'

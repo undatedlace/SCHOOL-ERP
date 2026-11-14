@@ -71,6 +71,9 @@ export class SchoolService {
         studentIdPrefix: true,
         studentIdDigits: true,
         studentEmailDomain: true,
+        messageQuietStart: true,
+        messageQuietEnd: true,
+        messageQuietSundays: true,
       },
     });
   }
@@ -94,6 +97,9 @@ export class SchoolService {
         studentIdPrefix: true,
         studentIdDigits: true,
         studentEmailDomain: true,
+        messageQuietStart: true,
+        messageQuietEnd: true,
+        messageQuietSundays: true,
       },
     });
     await this.audit.log({

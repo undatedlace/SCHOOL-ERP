@@ -1,0 +1,91 @@
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+/// A conversation between a student's family and one teacher about that student. One conversation is one
+/// student plus one teacher; a new subject can start another. The family side is any login that sees the
+/// student as family (the student's own login or a linked guardian login); the teacher side is teacherUserId.
+/// Never deleted: a conversation that can no longer be continued is read only.
+model Conversation {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  schoolId        String             @map("school_id") @db.Uuid
+  studentId       String             @map("student_id") @db.Uuid
+  teacherUserId   String             @map("teacher_user_id") @db.Uuid
+  /// Plain text, up to 120 characters.
+  subject         String
+  status          ConversationStatus @default(OPEN)
+  startedByUserId String             @map("started_by_user_id") @db.Uuid
+  closedByUserId  String?            @map("closed_by") @db.Uuid
+  closedAt        DateTime?          @map("closed_at")
+  closeReason     String?            @map("close_reason")
+  lastMessageAt   DateTime           @default(now()) @map("last_message_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  school    School                @relation(fields: [schoolId], references: [id])
+  student   Student               @relation(fields: [studentId], references: [id])
+  teacher   User                  @relation("ConversationTeacher", fields: [teacherUserId], references: [id])
+  startedBy User                  @relation("ConversationStarter", fields: [startedByUserId], references: [id])
+  closedBy  User?                 @relation("ConversationCloser", fields: [closedByUserId], references: [id])
+  messages  ConversationMessage[]
+  reads     ConversationRead[]
+
+  @@index([schoolId, lastMessageAt])
+  @@index([teacherUserId, lastMessageAt])
+  @@index([studentId, lastMessageAt])
+  @@map("conversations")
+}
+
+/// One message. Append-only: never edited or deleted. Plain text, 1 to 2,000 characters.
+model ConversationMessage {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  senderUserId   String   @map("sender_user_id") @db.Uuid
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation              @relation(fields: [conversationId], references: [id])
+  sender       User                      @relation("ConversationMessageSender", fields: [senderUserId], references: [id])
+  files        ConversationMessageFile[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderUserId, createdAt])
+  @@index([schoolId])
+  @@map("conversation_messages")
+}
+
+/// A photo or PDF on a message (up to 3 per message). The file has the purpose "message-attachment" and is
+/// served only through the messaging routes.
+model ConversationMessageFile {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  schoolId  String   @map("school_id") @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  fileId    String   @unique @map("file_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message ConversationMessage @relation(fields: [messageId], references: [id])
+  file    StoredFile          @relation("MessageFile", fields: [fileId], references: [id])
+
+  @@index([messageId])
+  @@index([schoolId])
+  @@map("conversation_message_files")
+}
+
+/// How far one person has read one conversation. Unread = messages from others after lastReadAt.
+model ConversationRead {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  lastReadAt     DateTime @map("last_read_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation("ConversationReader", fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([schoolId])
+  @@map("conversation_reads")
+}

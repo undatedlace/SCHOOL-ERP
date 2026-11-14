@@ -14,6 +14,11 @@ export interface NewNotification {
   body?: string;
   /** Where in the app it leads, for example "/app/leave". */
   link?: string;
+  /**
+   * Hold the push until this moment (for example the end of a teacher's quiet hours). The inbox row is still
+   * written at once. A type only for now: the push channel stores and honours it.
+   */
+  pushAt?: Date;
 }
 
 const view = (n: {
