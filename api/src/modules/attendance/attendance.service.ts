@@ -235,9 +235,15 @@ export class AttendanceService {
       }),
     ]);
     const byStudent = new Map(records.map((r) => [r.studentId, r]));
+    const leave = await this.approvedLeaveOn(
+      auth.schoolId,
+      enrolled.map((e) => e.student.id),
+      iso,
+    );
     const students = this.sortRoster(
       enrolled.map((e) => {
         const r = byStudent.get(e.student.id);
+        const approvedLeave = leave.get(e.student.id) ?? null;
         return {
           studentId: e.student.id,
           admissionNo: e.student.admissionNo,
@@ -245,6 +251,13 @@ export class AttendanceService {
           rollNo: e.rollNo,
           status: (r?.status ?? null) as Status | null,
           note: r?.note ?? null,
+          /** Leave the family reported and the school approved, covering this day. */
+          approvedLeave,
+          /**
+           * Only for a student with no saved mark: the screen may pre-select this. Nothing is saved here;
+           * the teacher's save is the record.
+           */
+          suggestedStatus: !r && approvedLeave ? ('ON_LEAVE' as const) : null,
         };
       }),
     );
@@ -270,6 +283,34 @@ export class AttendanceService {
       ),
       students,
     };
+  }
+
+  /** Approved student leave covering a day, by student: the request and whether it is a half day. */
+  private async approvedLeaveOn(
+    schoolId: string,
+    studentIds: string[],
+    iso: string,
+  ): Promise<Map<string, { requestId: string; halfDay: boolean }>> {
+    // A Sunday is never counted as leave, so it is never suggested.
+    if (
+      studentIds.length === 0 ||
+      new Date(`${iso}T00:00:00Z`).getUTCDay() === 0
+    )
+      return new Map();
+    const rows = await this.prisma.studentLeaveRequest.findMany({
+      where: {
+        schoolId,
+        studentId: { in: studentIds },
+        status: 'APPROVED',
+        fromDate: { lte: toDate(iso) },
+        toDate: { gte: toDate(iso) },
+      },
+      select: { id: true, studentId: true, halfDay: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return new Map(
+      rows.map((r) => [r.studentId, { requestId: r.id, halfDay: r.halfDay }]),
+    );
   }
 
   private async mayMark(auth: AuthContext, divisionId: string, yearId: string) {

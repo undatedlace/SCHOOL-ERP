@@ -589,6 +589,10 @@ export interface AttendanceRosterStudent {
   rollNo: number | null;
   status: AttendanceStatus | null;
   note: string | null;
+  /** Leave the family reported and the school approved, covering this day. */
+  approvedLeave?: { requestId: string; halfDay: boolean } | null;
+  /** For a student with no saved mark and approved leave: the screen may pre-select it. */
+  suggestedStatus?: AttendanceStatus | null;
 }
 
 export interface AttendanceRoster {

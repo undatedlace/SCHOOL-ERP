@@ -72,6 +72,12 @@ const promotion: NavItem = {
   description: 'Move each class into the next academic year',
   permission: 'students.promote',
 };
+const studentLeave: NavItem = {
+  label: 'Student leave',
+  path: '/app/student-leave',
+  description: 'Absences reported by families: approve or refuse them',
+  anyPermission: ['student_leave.decide', 'student_leave.read_all', 'student_leave.decide_all'],
+};
 const staff: NavItem = {
   label: 'All staff',
   path: '/app/staff',
@@ -214,7 +220,12 @@ export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Dashboard', icon: 'home', section: 'overview', item: dashboard },
   { label: 'Calendar', icon: 'calendar', section: 'overview', item: calendar },
   { label: 'Admissions', icon: 'clipboard', section: 'office', items: [admissions, forms] },
-  { label: 'Students', icon: 'students', section: 'office', items: [students, promotion] },
+  {
+    label: 'Students',
+    icon: 'students',
+    section: 'office',
+    items: [students, studentLeave, promotion],
+  },
   {
     label: 'Staff',
     icon: 'teachers',

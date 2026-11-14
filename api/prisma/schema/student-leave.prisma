@@ -1,0 +1,42 @@
+enum StudentLeaveStatus {
+  PENDING
+  APPROVED
+  REFUSED
+  WITHDRAWN
+}
+
+/// A family's request to report a student absent for some days ("Report absence"). The student's class
+/// teacher (or an administrator) approves or refuses it. There is no allowance and no balance.
+/// Approved leave pre-fills "on leave" in the attendance roster; it never writes attendance by itself.
+/// The user ids are plain columns (no foreign key): people are never hard-deleted and names are looked up.
+model StudentLeaveRequest {
+  id                String             @id @default(uuid(7)) @db.Uuid
+  schoolId          String             @map("school_id") @db.Uuid
+  studentId         String             @map("student_id") @db.Uuid
+  academicYearId    String             @map("academic_year_id") @db.Uuid
+  fromDate          DateTime           @map("from_date") @db.Date
+  toDate            DateTime           @map("to_date") @db.Date
+  /// Only when from and to are the same day.
+  halfDay           Boolean            @default(false) @map("half_day")
+  /// Plain text, 1 to 500 characters.
+  reason            String
+  status            StudentLeaveStatus @default(PENDING)
+  /// The days counted: Sundays and school holidays left out; a half day is 0.5.
+  days              Decimal            @db.Decimal(4, 1)
+  requestedByUserId String             @map("requested_by_user_id") @db.Uuid
+  decidedByUserId   String?            @map("decided_by_user_id") @db.Uuid
+  decidedAt         DateTime?          @map("decided_at")
+  decisionNote      String?            @map("decision_note")
+  withdrawnAt       DateTime?          @map("withdrawn_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  school       School       @relation(fields: [schoolId], references: [id])
+  student      Student      @relation(fields: [studentId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  @@index([schoolId, status])
+  @@index([studentId, fromDate])
+  @@index([schoolId, fromDate, toDate])
+  @@map("student_leave_requests")
+}
