@@ -55,6 +55,28 @@ const config: ExpoConfig = {
         },
       },
     ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Choose photos of homework or to attach to a message.',
+        cameraPermission: 'Take photos of homework or to attach to a message.',
+        microphonePermission: false,
+      },
+    ],
+    [
+      'expo-camera',
+      {
+        cameraPermission: 'Take photos of homework or to attach to a message.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      'expo-notifications',
+      {
+        color: TEAL,
+      },
+    ],
   ],
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
