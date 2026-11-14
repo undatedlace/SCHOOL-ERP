@@ -33,6 +33,12 @@ services:
         sync: false
       - key: FILES_DRIVER
         value: s3
+      # Push notifications (docs/push.md): off until Expo is set up. The worker replaces cron here;
+      # add EXPO_ACCESS_TOKEN by hand in the dashboard when switching on.
+      - key: PUSH_DRIVER
+        value: 'off'
+      - key: PUSH_WORKER
+        value: 'on'
       - key: S3_BUCKET
         sync: false
       - key: S3_REGION

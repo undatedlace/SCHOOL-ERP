@@ -5,7 +5,7 @@ enum DevicePlatform {
 }
 
 /// A phone or browser that can receive push messages for one person. Registered by the mobile app after
-/// sign-in; the push channel (not built yet) reads this table. A token belongs to one person at a time.
+/// sign-in; the push channel (modules/push, docs/push.md) reads this table. A token belongs to one person at a time.
 model Device {
   id         String         @id @default(uuid(7)) @db.Uuid
   schoolId   String         @map("school_id") @db.Uuid

@@ -99,6 +99,10 @@ DATABASE_URL='postgresql://...' npm run admin:reset-password -- you@example.com
 
 Prints a new temporary password (works for 2 days, must be changed at sign-in) and signs you out everywhere. Audited as `auth.password_reset_cli`.
 
+## Push notifications on PPE
+
+`PUSH_DRIVER` is `off` in `render.yaml`, so nothing is sent and nothing is marked for sending. To try the channel without any outside service, set `PUSH_DRIVER=log` in the Render dashboard: the log then shows a line such as `push to ...xyz789 "Leave update"` for each push. `PUSH_WORKER=on` is already set, so held-back and retried pushes are sent by the API itself every minute (Render cron jobs are paid). To send real pushes set `PUSH_DRIVER=expo` and add `EXPO_ACCESS_TOKEN`; the steps are in `docs/push.md`.
+
 ## Not set up for PPE
 
 The daily jobs (`files:cleanup`, `homework:remind`) need Render cron jobs, which are paid. Run them by hand from a laptop if needed. There is no custom domain yet; the `onrender.com` address is used.

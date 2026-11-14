@@ -1,3 +1,10 @@
+enum PushStatus {
+  NONE
+  PENDING
+  SENT
+  FAILED
+}
+
 /// A message for one person, shown in the bell and on the Notifications page. Every feature that needs to
 /// tell someone something writes one of these through NotificationsService; delivery by e-mail, push or
 /// SMS can be added later as channels that read this table without changing the features.
@@ -15,9 +22,18 @@ model Notification {
   readAt    DateTime? @map("read_at")
   createdAt DateTime  @default(now()) @map("created_at")
 
+  /// The push channel. NONE: the person had no device when this was written. PENDING: waiting to be sent
+  /// (at `pushAt` or after). SENT: handed to the push service. FAILED: gave up after three tries.
+  pushStatus   PushStatus @default(NONE) @map("push_status")
+  /// Earliest time to send (quiet hours or a retry); null for NONE.
+  pushAt       DateTime?  @map("push_at")
+  pushedAt     DateTime?  @map("pushed_at")
+  pushAttempts Int        @default(0) @map("push_attempts")
+
   school School @relation(fields: [schoolId], references: [id])
   user   User   @relation("NotificationRecipient", fields: [userId], references: [id])
 
   @@index([userId, readAt, createdAt])
+  @@index([pushStatus, pushAt])
   @@map("notifications")
 }
