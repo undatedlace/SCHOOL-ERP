@@ -5,22 +5,27 @@ enum SchoolStatus {
 }
 
 model School {
-  id                 String       @id @default(uuid(7)) @db.Uuid
-  name               String
+  id                  String       @id @default(uuid(7)) @db.Uuid
+  name                String
   /// Typed at sign-in when the system holds more than one school, for example "hesj". Lower case.
-  code               String       @unique
-  status             SchoolStatus @default(ACTIVE)
-  address            String?
-  phone              String?
-  email              String?
-  board              String?
+  code                String       @unique
+  status              SchoolStatus @default(ACTIVE)
+  address             String?
+  phone               String?
+  email               String?
+  board               String?
   /// Student IDs are this prefix plus a zero-padded number, for example hesj0001. Empty = plain numbers.
-  studentIdPrefix    String?      @map("student_id_prefix")
-  studentIdDigits    Int          @default(4) @map("student_id_digits")
+  studentIdPrefix     String?      @map("student_id_prefix")
+  studentIdDigits     Int          @default(4) @map("student_id_digits")
   /// With a domain, a student's school e-mail is their ID at this domain.
-  studentEmailDomain String?      @map("student_email_domain")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @default(now()) @updatedAt @map("updated_at")
+  studentEmailDomain  String?      @map("student_email_domain")
+  /// Quiet hours for teachers (India time, "HH:mm"): a family message sent then reaches the teacher's inbox at
+  /// once, but the push waits until they end. Sundays are quiet all day when messageQuietSundays is on.
+  messageQuietStart   String       @default("19:00") @map("message_quiet_start")
+  messageQuietEnd     String       @default("07:00") @map("message_quiet_end")
+  messageQuietSundays Boolean      @default(true) @map("message_quiet_sundays")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @default(now()) @updatedAt @map("updated_at")
 
   users                User[]
   sessions             Session[]
@@ -61,6 +66,7 @@ model School {
   classBellSchedules   ClassBellSchedule[]
   timetableEntries     TimetableEntry[]
   timetableAdjustments TimetableAdjustment[]
+  conversations        Conversation[]
 
   @@map("schools")
 }

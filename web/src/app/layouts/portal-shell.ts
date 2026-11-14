@@ -75,6 +75,7 @@ export class PortalShell {
     { label: 'Results', path: '/portal/results' },
     { label: 'Report absence', path: '/portal/absence' },
     { label: 'Calendar', path: '/portal/calendar' },
+    { label: 'Messages', path: '/portal/messages' },
     { label: 'Notices', path: '/portal/notices' },
   ];
   protected readonly school = httpResource<School>(() => '/api/school');

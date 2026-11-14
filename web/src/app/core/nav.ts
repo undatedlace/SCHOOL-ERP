@@ -133,6 +133,12 @@ const feeSetup: NavItem = {
   description: 'Kinds of fee, what each class pays, and when',
   permission: 'fees.read_all',
 };
+const messages: NavItem = {
+  label: 'Messages',
+  path: '/app/messages',
+  description: 'Write to the families of your students, or read conversations as an administrator',
+  anyPermission: ['messages.use', 'messages.read_all'],
+};
 const notices: NavItem = {
   label: 'Notices',
   path: '/app/notices',
@@ -256,6 +262,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     section: 'office',
     items: [timetable, myTimetable, dayChanges, timings],
   },
+  { label: 'Messages', icon: 'mail', section: 'office', item: messages },
   { label: 'Notices', icon: 'notice', section: 'office', item: notices },
   {
     label: 'Settings',

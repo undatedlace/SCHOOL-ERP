@@ -211,6 +211,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
+        path: 'messages',
+        canActivate: [anyPermissionGuard(['messages.use', 'messages.read_all'])],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'messages/:id',
+        canActivate: [anyPermissionGuard(['messages.use', 'messages.read_all'])],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
@@ -351,6 +363,18 @@ export const routes: Routes = [
         canActivate: [permissionGuard('student_leave.request')],
         loadComponent: () =>
           import('./features/student-leave/portal-absence').then((m) => m.PortalAbsence),
+      },
+      {
+        path: 'messages',
+        canActivate: [permissionGuard('messages.use')],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'messages/:id',
+        canActivate: [permissionGuard('messages.use')],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
       },
       {
         path: 'notices',

@@ -19,25 +19,30 @@ model User {
   createdAt             DateTime   @default(now()) @map("created_at")
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  school                School                  @relation(fields: [schoolId], references: [id])
-  roles                 UserRole[]
-  sessions              Session[]
-  attendanceMarked      AttendanceRecord[]      @relation("AttendanceMarker")
-  noticesWritten        Notice[]                @relation("NoticeAuthor")
-  eventsWritten         CalendarEvent[]         @relation("EventAuthor")
-  notifications         Notification[]          @relation("NotificationRecipient")
-  devices               Device[]                @relation("UserDevices")
-  submissionsMade       HomeworkSubmission[]    @relation("SubmissionAuthor")
-  submissionsReviewed   HomeworkSubmission[]    @relation("SubmissionReviewer")
-  homeworkWritten       Homework[]              @relation("HomeworkAuthor")
-  assessmentsWritten    Assessment[]            @relation("AssessmentAuthor")
-  staffAttendanceMarked StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
-  importsMade           ImportBatch[]           @relation("ImportCreator")
-  timetableChanges      TimetableAdjustment[]   @relation("TimetableAdjustmentCreator")
+  school                 School                  @relation(fields: [schoolId], references: [id])
+  roles                  UserRole[]
+  sessions               Session[]
+  attendanceMarked       AttendanceRecord[]      @relation("AttendanceMarker")
+  noticesWritten         Notice[]                @relation("NoticeAuthor")
+  eventsWritten          CalendarEvent[]         @relation("EventAuthor")
+  notifications          Notification[]          @relation("NotificationRecipient")
+  devices                Device[]                @relation("UserDevices")
+  submissionsMade        HomeworkSubmission[]    @relation("SubmissionAuthor")
+  submissionsReviewed    HomeworkSubmission[]    @relation("SubmissionReviewer")
+  homeworkWritten        Homework[]              @relation("HomeworkAuthor")
+  assessmentsWritten     Assessment[]            @relation("AssessmentAuthor")
+  staffAttendanceMarked  StaffAttendanceRecord[] @relation("StaffAttendanceMarker")
+  importsMade            ImportBatch[]           @relation("ImportCreator")
+  timetableChanges       TimetableAdjustment[]   @relation("TimetableAdjustmentCreator")
   /// A shared phone gives two guardians (father and mother) one login.
-  guardians             Guardian[]
-  student               Student?
-  staff                 Staff?
+  guardians              Guardian[]
+  student                Student?
+  staff                  Staff?
+  conversationsAsTeacher Conversation[]          @relation("ConversationTeacher")
+  conversationsStarted   Conversation[]          @relation("ConversationStarter")
+  conversationsClosed    Conversation[]          @relation("ConversationCloser")
+  conversationMessages   ConversationMessage[]   @relation("ConversationMessageSender")
+  conversationReads      ConversationRead[]      @relation("ConversationReader")
 
   @@unique([schoolId, email])
   @@unique([schoolId, mobile])

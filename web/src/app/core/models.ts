@@ -25,6 +25,10 @@ export interface School {
   studentIdDigits: number;
   /** A student's school e-mail is their ID at this domain. */
   studentEmailDomain: string | null;
+  /** Quiet hours for teachers, India time "HH:mm"; a family message sent then waits for the push. */
+  messageQuietStart: string;
+  messageQuietEnd: string;
+  messageQuietSundays: boolean;
 }
 
 /** What the move-a-student call tells the screen about the class change. */

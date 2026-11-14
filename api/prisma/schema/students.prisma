@@ -58,6 +58,7 @@ model Student {
   payments        Payment[]
   attendance      AttendanceRecord[]
   leaveRequests   StudentLeaveRequest[]
+  conversations   Conversation[]
 
   @@unique([schoolId, seq])
   @@unique([schoolId, admissionNo])

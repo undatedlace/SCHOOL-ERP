@@ -63,6 +63,15 @@ export const FILE_PURPOSES: Record<string, FilePurpose> = {
     kind: 'document',
     scoped: true,
   },
+  // A photo or PDF on a message between a family and a teacher. Served by the messaging module to the two
+  // sides of the conversation and to administrators who may read all conversations.
+  'message-attachment': {
+    write: 'messages.use',
+    read: 'messages.use',
+    maxBytes: 10 * MB,
+    kind: 'document',
+    scoped: true,
+  },
 };
 
 export const MAX_UPLOAD_BYTES = Math.max(

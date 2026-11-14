@@ -99,7 +99,7 @@ export class Api {
 
   // ---------- School ----------
   school = () => this.http.get<School>('/api/school');
-  updateSchool = (body: Record<string, string | number>) =>
+  updateSchool = (body: Record<string, string | number | boolean>) =>
     this.http.patch<School>('/api/school', body);
 
   // ---------- Users and roles ----------

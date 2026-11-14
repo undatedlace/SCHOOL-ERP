@@ -12,9 +12,10 @@ model StoredFile {
   uploadedById String   @map("uploaded_by_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
-  school             School                  @relation(fields: [schoolId], references: [id])
-  homeworkAttachment HomeworkAttachment?     @relation("HomeworkAttachmentFile")
-  submissionFile     HomeworkSubmissionFile? @relation("SubmissionFile")
+  school             School                   @relation(fields: [schoolId], references: [id])
+  homeworkAttachment HomeworkAttachment?      @relation("HomeworkAttachmentFile")
+  submissionFile     HomeworkSubmissionFile?  @relation("SubmissionFile")
+  messageFile        ConversationMessageFile? @relation("MessageFile")
 
   @@index([schoolId, purpose])
   @@map("files")
