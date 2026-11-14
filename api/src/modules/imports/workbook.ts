@@ -182,8 +182,11 @@ export function addTable(
   const headRow = ws.getRow(HEADER_ROW);
   keyRow.hidden = true;
   headRow.height = 32;
+  // At least one row, even for an empty register: a range such as D3:D2 breaks the file.
   const last =
-    FIRST_DATA_ROW - 1 + Math.max(opts.prepared ?? PREPARED_ROWS, rows.length);
+    FIRST_DATA_ROW -
+    1 +
+    Math.max(opts.prepared ?? PREPARED_ROWS, rows.length, 1);
 
   columns.forEach((c, i) => {
     const n = i + 1;
