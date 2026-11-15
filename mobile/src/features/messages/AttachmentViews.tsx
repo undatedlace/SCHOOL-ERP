@@ -1,6 +1,4 @@
-import { Directory, File, Paths } from 'expo-file-system';
 import { Image } from 'expo-image';
-import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,10 +6,9 @@ import { api } from '@/api';
 import { errorMessage } from '@/api/errors';
 import { MIN_TOUCH, radius, spacing, useTheme } from '@/theme';
 import { Button, Icon, Text } from '@/ui';
+import { downloadAndShare } from '@/features/files/download';
 import { isImage } from './format';
 import type { MessageFile } from './types';
-
-const safeName = (name: string) => name.replace(/[^\w.-]+/g, '_').slice(0, 80) || 'file';
 
 /** The address and headers of one attachment (the API checks the sender's token). */
 function fileRequest(conversationId: string, file: MessageFile) {
@@ -21,29 +18,13 @@ function fileRequest(conversationId: string, file: MessageFile) {
   };
 }
 
-/**
- * Downloads an attachment into the cache, hands it to the system (preview or share sheet), and
- * removes the copy again afterwards, so nothing stays on the phone.
- */
-export async function openAttachment(conversationId: string, file: MessageFile): Promise<void> {
-  const { url, headers } = fileRequest(conversationId, file);
-  const folder = new Directory(Paths.cache, 'message-files');
-  if (!folder.exists) folder.create({ intermediates: true, idempotent: true });
-  const destination = new File(folder, `${file.id}-${safeName(file.name)}`);
-  const saved = await File.downloadFileAsync(url, destination, { headers, idempotent: true });
-  try {
-    await Sharing.shareAsync(saved.uri, {
-      mimeType: file.mimeType,
-      dialogTitle: file.name,
-      UTI: file.mimeType === 'application/pdf' ? 'com.adobe.pdf' : undefined,
-    });
-  } finally {
-    try {
-      saved.delete();
-    } catch {
-      // The system clears the cache folder anyway.
-    }
-  }
+/** Downloads an attachment and opens the share sheet; the cached copy is deleted afterwards. */
+export function openAttachment(conversationId: string, file: MessageFile): Promise<void> {
+  return downloadAndShare({
+    path: `/messages/${conversationId}/files/${file.id}`,
+    fileName: file.name,
+    mimeType: file.mimeType,
+  });
 }
 
 /** A photo as a thumbnail, or a PDF as a row. Tap to open. */

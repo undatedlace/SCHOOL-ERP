@@ -10,8 +10,8 @@ import { MultilineField } from './MultilineField';
 import { AttachButton, AttachSheet, AttachmentTray } from './AttachmentTray';
 import { teacherLine } from './format';
 import { useRefreshMessages } from './hooks';
-import { MAX_BODY, MAX_SUBJECT, type FamilyContact, type FamilyContacts, type SendResult } from './types';
-import { useAttachments } from './useAttachments';
+import { MAX_BODY, MAX_FILES, MAX_SUBJECT, type FamilyContact, type FamilyContacts, type SendResult } from './types';
+import { useAttachments } from '@/features/files/useAttachments';
 
 /** Pick a teacher, write a subject and a first message, attach papers or photos, send. */
 export function NewMessageScreen() {
@@ -19,7 +19,7 @@ export function NewMessageScreen() {
   const { colors } = useTheme();
   const refresh = useRefreshMessages();
   const contacts = useApiQuery<FamilyContacts>('/messages/contacts', { query: { as: 'family', pageSize: 50 } });
-  const attachments = useAttachments();
+  const attachments = useAttachments('message-attachment', MAX_FILES);
 
   const [picked, setPicked] = useState<FamilyContact | null>(null);
   const [subject, setSubject] = useState('');
@@ -163,7 +163,7 @@ export function NewMessageScreen() {
           {attachments.notice}
         </Text>
       ) : null}
-      {attachments.failed ? (
+      {attachments.hasFailed ? (
         <Text variant="small" tone="bad">
           A file could not be uploaded. Remove it and try again.
         </Text>
@@ -181,11 +181,11 @@ export function NewMessageScreen() {
         title={attachments.uploading ? 'Uploading files...' : 'Send message'}
         icon="send"
         loading={sending}
-        disabled={attachments.uploading || attachments.failed}
+        disabled={attachments.uploading || attachments.hasFailed}
         onPress={() => void send()}
         testID="send-new"
       />
-      <AttachSheet visible={sheet} onClose={() => setSheet(false)} onPick={(s) => void attachments.pick(s)} />
+      <AttachSheet visible={sheet} onClose={() => setSheet(false)} onPick={(s) => void attachments.add(s)} />
     </Screen>
   );
 }

@@ -3,8 +3,8 @@ import { useCallback, useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { MIN_TOUCH, radius, spacing, useTheme } from '@/theme';
 import { Icon, ListRow, Sheet, Text } from '@/ui';
-import type { PendingAttachment } from './attachments';
-import type { AttachSource } from './useAttachments';
+import type { Attachment } from '@/features/files/useAttachments';
+import type { FileSource } from '@/features/files/upload';
 import { isImage } from './format';
 
 /** The pictures and papers chosen for a message, each with a remove button. */
@@ -12,7 +12,7 @@ export function AttachmentTray({
   items,
   onRemove,
 }: {
-  items: PendingAttachment[];
+  items: Attachment[];
   onRemove: (key: string) => void;
 }) {
   const { colors } = useTheme();
@@ -69,11 +69,11 @@ export function AttachSheet({
 }: {
   visible: boolean;
   onClose: () => void;
-  onPick: (source: AttachSource) => void;
+  onPick: (source: FileSource) => void;
 }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const choose = useCallback(
-    (source: AttachSource) => {
+    (source: FileSource) => {
       onClose();
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => onPick(source), 450);
@@ -83,8 +83,8 @@ export function AttachSheet({
   return (
     <Sheet visible={visible} onClose={onClose} title="Attach">
       <ListRow title="Take a photo" icon="camera-outline" onPress={() => choose('camera')} testID="attach-camera" />
-      <ListRow title="Choose from photos" icon="images-outline" onPress={() => choose('photos')} testID="attach-photos" />
-      <ListRow title="Choose a PDF" icon="document-outline" onPress={() => choose('pdf')} testID="attach-pdf" />
+      <ListRow title="Choose from photos" icon="images-outline" onPress={() => choose('gallery')} testID="attach-photos" />
+      <ListRow title="Choose a PDF" icon="document-outline" onPress={() => choose('document')} testID="attach-pdf" />
       <Text variant="caption" tone="muted">
         Up to 3 files, 10 MB each. Photos and PDF files only.
       </Text>

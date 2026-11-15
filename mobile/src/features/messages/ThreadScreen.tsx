@@ -18,8 +18,8 @@ import { Composer } from './Composer';
 import { groupByDay, mergeMessages, teacherLine } from './format';
 import { useRefreshMessages } from './hooks';
 import { MessageBubble } from './MessageBubble';
-import type { ConversationDetail, Message, SendResult } from './types';
-import { useAttachments } from './useAttachments';
+import { MAX_FILES, type ConversationDetail, type Message, type SendResult } from './types';
+import { useAttachments } from '@/features/files/useAttachments';
 
 const PAGE = 30;
 
@@ -47,7 +47,7 @@ export function ThreadScreen() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [quietNote, setQuietNote] = useState(quiet === '1');
-  const attachments = useAttachments();
+  const attachments = useAttachments('message-attachment', MAX_FILES);
 
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const nearBottom = useRef(true);

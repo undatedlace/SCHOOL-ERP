@@ -5,7 +5,7 @@ import { MAX_FONT_SCALE, MIN_TOUCH, fontFamily, radius, spacing, useTheme } from
 import { Icon, Text } from '@/ui';
 import { AttachButton, AttachSheet, AttachmentTray } from './AttachmentTray';
 import { MAX_BODY } from './types';
-import type { useAttachments } from './useAttachments';
+import type { useAttachments } from '@/features/files/useAttachments';
 
 interface Props {
   value: string;
@@ -37,7 +37,7 @@ export function Composer({ value, onChangeText, attachments, sending, error, onS
   }, []);
 
   const empty = value.trim().length === 0;
-  const blocked = empty || sending || attachments.uploading || attachments.failed;
+  const blocked = empty || sending || attachments.uploading || attachments.hasFailed;
 
   return (
     <View
@@ -52,7 +52,7 @@ export function Composer({ value, onChangeText, attachments, sending, error, onS
           {attachments.notice}
         </Text>
       ) : null}
-      {attachments.failed ? (
+      {attachments.hasFailed ? (
         <Text variant="caption" tone="bad">
           A file could not be uploaded. Remove it and try again.
         </Text>
@@ -92,7 +92,7 @@ export function Composer({ value, onChangeText, attachments, sending, error, onS
           {sending ? <ActivityIndicator color={colors.primaryForeground} /> : <Icon name="send" size={20} color={colors.primaryForeground} />}
         </Pressable>
       </View>
-      <AttachSheet visible={sheet} onClose={() => setSheet(false)} onPick={(s) => void attachments.pick(s)} />
+      <AttachSheet visible={sheet} onClose={() => setSheet(false)} onPick={(s) => void attachments.add(s)} />
     </View>
   );
 }

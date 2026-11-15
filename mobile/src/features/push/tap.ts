@@ -1,6 +1,18 @@
 import type { RoleKind } from '@/auth/types';
-import { routeStackForLink } from './linkToRoute';
+import { linkToRoute } from '@/features/notifications/link-to-route';
 import type { PushPayload } from './payload';
+
+/**
+ * The screens to open for a notification link, using the shared link mapping. A conversation opens
+ * over the inbox so Back lands there. The teacher app has no conversation screen yet, so a teacher
+ * lands on the Messages tab.
+ */
+export function routeStackFor(link: string | null | undefined, kind: RoleKind): string[] {
+  if (kind === 'other') return [];
+  if (kind === 'teacher') return [linkToRoute(link, 'teacher').replace(/^(\/teacher\/messages)\/.+$/, '$1')];
+  const route = linkToRoute(link, 'family');
+  return /^\/family\/messages\/.+/.test(route) ? ['/family/messages', route] : [route];
+}
 
 export interface TapDeps {
   accounts: readonly { id: string; kind: RoleKind }[];
@@ -33,7 +45,7 @@ export async function handleNotificationTap(payload: PushPayload, deps: TapDeps)
   }
   deps.refreshCounts();
 
-  const stack = routeStackForLink(payload.link, account.kind);
+  const stack = routeStackFor(payload.link, account.kind);
   if (stack.length > 0) deps.navigate(stack);
   return stack;
 }

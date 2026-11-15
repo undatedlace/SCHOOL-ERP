@@ -1,8 +1,7 @@
 import { createHandledSet, registrationDecision, registrationOrder } from './decision';
-import { routeStackForLink } from './linkToRoute';
 import { parsePushData } from './payload';
 import { syncRegistrations, type SyncDeps } from './sync';
-import { handleNotificationTap, type TapDeps } from './tap';
+import { handleNotificationTap, routeStackFor, type TapDeps } from './tap';
 
 const ID = '3f6c1d0e-1111-4a2b-9c3d-123456789abc';
 const TOKEN = 'ExponentPushToken[abc123]';
@@ -42,34 +41,34 @@ describe('parsePushData', () => {
   });
 });
 
-describe('routeStackForLink', () => {
+describe('routeStackFor', () => {
   it('opens a message thread over the inbox', () => {
-    expect(routeStackForLink('/portal/messages/' + ID, 'family')).toEqual(['/family/messages', '/family/messages/' + ID]);
+    expect(routeStackFor('/portal/messages/' + ID, 'family')).toEqual(['/family/messages', '/family/messages/' + ID]);
   });
   it('maps the family pages', () => {
-    expect(routeStackForLink('/portal/absence', 'family')).toEqual(['/family/report-absence']);
-    expect(routeStackForLink('/portal/homework', 'family')).toEqual(['/family/homework']);
-    expect(routeStackForLink('/portal/results', 'family')).toEqual(['/family/results']);
-    expect(routeStackForLink('/portal/messages', 'family')).toEqual(['/family/messages']);
-    expect(routeStackForLink('/portal', 'family')).toEqual(['/family']);
-    expect(routeStackForLink('/portal/fees?tab=receipts', 'family')).toEqual(['/family/fees']);
+    expect(routeStackFor('/portal/absence', 'family')).toEqual(['/family/report-absence']);
+    expect(routeStackFor('/portal/homework', 'family')).toEqual(['/family/homework']);
+    expect(routeStackFor('/portal/results', 'family')).toEqual(['/family/results']);
+    expect(routeStackFor('/portal/messages', 'family')).toEqual(['/family/messages']);
+    expect(routeStackFor('/portal', 'family')).toEqual(['/family']);
+    expect(routeStackFor('/portal/fees?tab=receipts', 'family')).toEqual(['/family/fees']);
   });
   it('falls back to the notifications list for anything unknown or unsafe', () => {
-    expect(routeStackForLink(null, 'family')).toEqual(['/family/notifications']);
-    expect(routeStackForLink('/portal/unknown-page', 'family')).toEqual(['/family/notifications']);
-    expect(routeStackForLink('/app/messages/' + ID, 'family')).toEqual(['/family/notifications']);
-    expect(routeStackForLink('/portal/messages/../../x', 'family')).toEqual(['/family/messages']);
-    expect(routeStackForLink('/portal/messages/' + ID + '/extra', 'family')).toEqual(['/family/messages']);
+    expect(routeStackFor(null, 'family')).toEqual(['/family/notifications']);
+    expect(routeStackFor('/portal/unknown-page', 'family')).toEqual(['/family/notifications']);
+    expect(routeStackFor('/app/messages/' + ID, 'family')).toEqual(['/family/notifications']);
+    expect(routeStackFor('/portal/messages/../../x', 'family')).toEqual(['/family/notifications']);
+    expect(routeStackFor('/portal/messages/' + ID + '/extra', 'family')).toEqual(['/family/notifications']);
   });
   it('maps teacher links to what the phone app has', () => {
-    expect(routeStackForLink('/app/homework', 'teacher')).toEqual(['/teacher/homework']);
-    expect(routeStackForLink('/app/my-leave', 'teacher')).toEqual(['/teacher/my-leave']);
-    expect(routeStackForLink('/app/messages/' + ID, 'teacher')).toEqual(['/teacher/messages']);
-    expect(routeStackForLink('/app/student-leave', 'teacher')).toEqual(['/teacher/notifications']);
-    expect(routeStackForLink('/portal/fees', 'teacher')).toEqual(['/teacher/notifications']);
+    expect(routeStackFor('/app/homework', 'teacher')).toEqual(['/teacher/homework']);
+    expect(routeStackFor('/app/my-leave', 'teacher')).toEqual(['/teacher/my-leave']);
+    expect(routeStackFor('/app/messages/' + ID, 'teacher')).toEqual(['/teacher/messages']);
+    expect(routeStackFor('/app/student-leave', 'teacher')).toEqual(['/teacher/notifications']);
+    expect(routeStackFor('/portal/fees', 'teacher')).toEqual(['/teacher/notifications']);
   });
   it('opens nothing for an account the app has no screens for', () => {
-    expect(routeStackForLink('/portal/fees', 'other')).toEqual([]);
+    expect(routeStackFor('/portal/fees', 'other')).toEqual([]);
   });
 });
 
