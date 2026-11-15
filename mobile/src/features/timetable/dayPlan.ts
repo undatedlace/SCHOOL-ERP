@@ -22,6 +22,13 @@ export interface TimelineRow {
   free: boolean;
   /** One-day change, if any. */
   change: { kind: 'SUBSTITUTE' | 'CANCELLED'; substitute: string | null } | null;
+  /** A teacher's own day only: the class this lesson is with ("Nursery-A") and its id. */
+  divisionId?: string;
+  divisionLabel?: string;
+  /** A teacher's own day only: a period the teacher covers for someone else. */
+  covering?: boolean;
+  /** A teacher's own day only: the teacher's lesson, taken by another teacher for the day. */
+  coveredByOther?: boolean;
 }
 
 export type DayStatus = 'school' | 'holiday' | 'sunday' | 'no-lessons';
@@ -85,7 +92,8 @@ export function planDay(week: DivisionWeek | null | undefined, date: string): Da
 
 export type RowState = 'done' | 'now' | 'next' | 'later';
 
-const isLesson = (r: TimelineRow) => r.kind === 'PERIOD' && !r.free && r.change?.kind !== 'CANCELLED';
+const isLesson = (r: TimelineRow) =>
+  r.kind === 'PERIOD' && !r.free && r.change?.kind !== 'CANCELLED' && !r.coveredByOther;
 
 /**
  * Done, now, next or later for every row of a day. Days before today are all done and days

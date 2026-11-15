@@ -22,10 +22,12 @@ interface Props {
   placeholder?: string;
   error?: string | null;
   testID?: string;
+  /** The line under the calendar. Default: the note about Sundays and holidays. */
+  footnote?: string;
 }
 
 /** A labelled date box that opens a month calendar in a sheet. No packages: built from the UI kit. */
-export function DateField({ label, value, onChange, min, max, placeholder = 'Choose a day', error, testID }: Props) {
+export function DateField({ label, value, onChange, min, max, placeholder = 'Choose a day', error, testID, footnote }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
 
@@ -60,6 +62,7 @@ export function DateField({ label, value, onChange, min, max, placeholder = 'Cho
           value={value}
           min={min}
           max={max}
+          footnote={footnote}
           onPick={(day) => {
             onChange(day);
             setOpen(false);
@@ -74,11 +77,13 @@ function MonthPicker({
   value,
   min,
   max,
+  footnote,
   onPick,
 }: {
   value: string | null;
   min: string;
   max: string;
+  footnote?: string;
   onPick: (day: string) => void;
 }) {
   const { colors } = useTheme();
@@ -173,7 +178,7 @@ function MonthPicker({
         </View>
       ))}
       <Text variant="caption" tone="muted">
-        Sundays and school holidays are not counted as days away.
+        {footnote ?? 'Sundays and school holidays are not counted as days away.'}
       </Text>
     </View>
   );

@@ -66,6 +66,13 @@ describe('linkToRoute (teacher)', () => {
     expect(linkToRoute('/app/homework', 'teacher')).toBe('/teacher/homework');
     expect(linkToRoute('/app/my-leave', 'teacher')).toBe('/teacher/my-leave');
     expect(linkToRoute('/app/my-timetable?weekOf=2026-11-16', 'teacher')).toBe('/teacher');
+    expect(linkToRoute(`/app/homework/${ID}`, 'teacher')).toBe(`/teacher/homework/${ID}`);
+  });
+
+  it('sends student leave waiting for the class teacher to the Today tab', () => {
+    expect(linkToRoute('/app/student-leave', 'teacher')).toBe('/teacher');
+    expect(linkToRoute('/app/student-leave?status=PENDING', 'teacher')).toBe('/teacher');
+    expect(linkToRoute('/portal/absence', 'teacher')).toBe('/teacher/notifications');
   });
 
   it('does not send a teacher to portal pages, or a family to staff pages', () => {
@@ -74,7 +81,7 @@ describe('linkToRoute (teacher)', () => {
   });
 
   it('falls back for staff pages the app does not have', () => {
-    expect(linkToRoute('/app/student-leave', 'teacher')).toBe('/teacher/notifications');
+    expect(linkToRoute('/app/leave', 'teacher')).toBe('/teacher/notifications');
     expect(linkToRoute(`/app/students/${ID}`, 'teacher')).toBe('/teacher/notifications');
   });
 });

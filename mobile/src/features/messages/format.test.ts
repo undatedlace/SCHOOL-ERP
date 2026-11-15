@@ -1,4 +1,4 @@
-import { dayLabel, groupByDay, inboxTimeLabel, mergeMessages, previewLine, readOnlyTag, teacherLine } from './format';
+import { counterpart, dayLabel, groupByDay, inboxTimeLabel, mergeMessages, previewLine, readOnlyTag, teacherLine } from './format';
 import type { Message } from './types';
 
 // 14 Nov 2026, 3:00 pm India time (09:30 UTC)
@@ -84,5 +84,22 @@ describe('groupByDay and mergeMessages', () => {
       [msg('b', '2026-11-13T06:00:00.000Z'), msg('c', '2026-11-14T03:00:00.000Z')],
     );
     expect(merged.map((m) => m.id)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('counterpart', () => {
+  const base = {
+    student: { id: 's', name: 'Rayan Ansari', className: 'Nursery', divisionName: 'A', photoFileId: null },
+    teacher: { userId: 't', name: 'Farzana Sultana', subjects: ['English'], isClassTeacher: true },
+  };
+  it('shows the teacher to a family', () => {
+    expect(counterpart({ ...base, myRole: 'family' })).toEqual({ name: 'Farzana Sultana', line: 'Class teacher · English' });
+  });
+  it('shows the student and class to a teacher', () => {
+    expect(counterpart({ ...base, myRole: 'teacher' })).toEqual({ name: 'Rayan Ansari', line: 'Student · Nursery-A' });
+  });
+  it('copes with a student whose class is unknown', () => {
+    const student = { ...base.student, className: null, divisionName: null };
+    expect(counterpart({ ...base, student, myRole: 'teacher' }).line).toBe('Student');
   });
 });

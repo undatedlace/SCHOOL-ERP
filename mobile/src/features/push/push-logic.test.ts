@@ -63,8 +63,9 @@ describe('routeStackFor', () => {
   it('maps teacher links to what the phone app has', () => {
     expect(routeStackFor('/app/homework', 'teacher')).toEqual(['/teacher/homework']);
     expect(routeStackFor('/app/my-leave', 'teacher')).toEqual(['/teacher/my-leave']);
-    expect(routeStackFor('/app/messages/' + ID, 'teacher')).toEqual(['/teacher/messages']);
-    expect(routeStackFor('/app/student-leave', 'teacher')).toEqual(['/teacher/notifications']);
+    expect(routeStackFor('/app/messages/' + ID, 'teacher')).toEqual(['/teacher/messages', '/teacher/messages/' + ID]);
+    expect(routeStackFor('/app/messages', 'teacher')).toEqual(['/teacher/messages']);
+    expect(routeStackFor('/app/student-leave', 'teacher')).toEqual(['/teacher']);
     expect(routeStackFor('/portal/fees', 'teacher')).toEqual(['/teacher/notifications']);
   });
   it('opens nothing for an account the app has no screens for', () => {

@@ -21,6 +21,8 @@ interface TimelineProps {
   nowMin: number;
   /** Tighter rows, for the week list. */
   compact?: boolean;
+  /** Something to show under a lesson's details (the teacher's "Register" button). */
+  renderAction?: (row: TimelineRow) => ReactNode;
 }
 
 const TIME_COL = 62;
@@ -33,7 +35,7 @@ export function noSchoolText(plan: DayPlan): { title: string; detail: string } {
 }
 
 /** The periods of one day as a timeline, with a live "now" line when the day is today. */
-export function Timeline({ plan, today, nowMin, compact = false }: TimelineProps) {
+export function Timeline({ plan, today, nowMin, compact = false, renderAction }: TimelineProps) {
   const { colors } = useTheme();
   if (plan.rows.length === 0) {
     const text = noSchoolText(plan);
@@ -63,6 +65,7 @@ export function Timeline({ plan, today, nowMin, compact = false }: TimelineProps
             nowMin={nowMin}
             compact={compact}
             isLast={i === plan.rows.length - 1}
+            renderAction={renderAction}
           />
         </Fragment>
       ))}
@@ -104,6 +107,7 @@ interface ItemProps {
   nowMin: number;
   compact: boolean;
   isLast: boolean;
+  renderAction?: (row: TimelineRow) => ReactNode;
 }
 
 function rowLabel(row: TimelineRow, state: RowState): string {
@@ -113,18 +117,21 @@ function rowLabel(row: TimelineRow, state: RowState): string {
   if (row.teacher) parts.push(row.teacher);
   if (row.room) parts.push(row.room);
   if (row.change?.kind === 'CANCELLED') parts.push('Cancelled');
-  if (row.change?.kind === 'SUBSTITUTE') parts.push('Substitute teacher');
+  if (row.divisionLabel) parts.push(row.divisionLabel);
+  if (row.covering) parts.push('Covering');
+  else if (row.change?.kind === 'SUBSTITUTE') parts.push('Substitute teacher');
   if (state === 'now') parts.push('Now');
   if (state === 'next') parts.push('Up next');
   if (state === 'done') parts.push('Done');
   return parts.filter(Boolean).join(', ');
 }
 
-function TimelineItem({ row, state, line, nowMin, compact, isLast }: ItemProps) {
+function TimelineItem({ row, state, line, nowMin, compact, isLast, renderAction }: ItemProps) {
   const { colors } = useTheme();
   const thin = row.kind !== 'PERIOD';
   const cancelled = row.change?.kind === 'CANCELLED';
-  const substitute = row.change?.kind === 'SUBSTITUTE';
+  const covering = row.covering === true;
+  const substitute = row.change?.kind === 'SUBSTITUTE' && !covering;
 
   const cardBackground =
     state === 'now' ? colors.primarySoft : state === 'next' ? colors.amberSoft : state === 'done' ? colors.muted : colors.card;
@@ -164,7 +171,7 @@ function TimelineItem({ row, state, line, nowMin, compact, isLast }: ItemProps) 
     );
   } else {
     const title = row.free ? 'Free period' : row.subject ?? row.label;
-    const details = [row.label, substitute ? null : row.teacher, row.room].filter(Boolean).join(' · ');
+    const details = [row.divisionLabel, row.label, substitute ? null : row.teacher, row.room].filter(Boolean).join(' · ');
     const progress = state === 'now' && !cancelled ? Math.min(1, Math.max(0, (nowMin - row.startMin) / Math.max(1, row.endMin - row.startMin))) : null;
     body = (
       <View
@@ -183,6 +190,7 @@ function TimelineItem({ row, state, line, nowMin, compact, isLast }: ItemProps) 
             {title}
           </Text>
           {cancelled ? <Badge label="Cancelled" tone="bad" /> : null}
+          {covering && !cancelled ? <Badge label="Covering" tone="info" /> : null}
           {!cancelled && state === 'now' ? <Badge label="Now" tone="primary" /> : null}
           {!cancelled && state === 'next' ? <Badge label="Up next" tone="amber" /> : null}
           {!cancelled && state === 'done' ? <Icon name="checkmark-circle" size={18} color={colors.goodFill} /> : null}
@@ -196,10 +204,11 @@ function TimelineItem({ row, state, line, nowMin, compact, isLast }: ItemProps) 
           <View style={styles.sub}>
             <Icon name="swap-horizontal" size={16} color={colors.info} />
             <Text variant="smallStrong" tone="info" numberOfLines={2} style={styles.flex}>
-              Substitute: {row.change?.substitute ?? row.teacher ?? 'another teacher'}
+              {row.coveredByOther ? 'Covered by' : 'Substitute'}: {row.change?.substitute ?? row.teacher ?? 'another teacher'}
             </Text>
           </View>
         ) : null}
+        {renderAction && !cancelled ? renderAction(row) : null}
         {progress !== null ? (
           <View style={{ gap: spacing.xs }}>
             <View

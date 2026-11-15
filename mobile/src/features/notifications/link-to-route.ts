@@ -33,13 +33,15 @@ const TEACHER_SECTIONS: Record<string, string> = {
   'my-leave': '/teacher/my-leave',
   'my-attendance': '/teacher/my-attendance',
   'my-timetable': '/teacher',
+  // Student leave waiting for the class teacher is a card on the Today tab.
+  'student-leave': '/teacher',
   notices: '/teacher/notices',
   notifications: '/teacher/notifications',
 };
 
 /** Sections whose second part is an id that opens one item (`/portal/messages/<id>`). */
 const FAMILY_DETAIL = new Set(['messages', 'notices', 'homework']);
-const TEACHER_DETAIL = new Set(['messages']);
+const TEACHER_DETAIL = new Set(['messages', 'homework']);
 
 export function linkToRoute(link: string | null | undefined, base: RouteBase = 'family'): string {
   const fallback = notificationsRoute(base);

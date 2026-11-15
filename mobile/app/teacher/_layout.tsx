@@ -7,6 +7,12 @@ import { fontFamily, useTheme } from '@/theme';
  * button. To add a screen, drop a file here (see mobile/README.md); give it a title below.
  */
 const TITLES: Record<string, string> = {
+  'attendance/[divisionId]': 'Register',
+  'homework/new': 'New homework',
+  'homework/[id]': 'Homework',
+  'homework/edit/[id]': 'Change homework',
+  'messages/new': 'New message',
+  'messages/[id]': 'Conversation',
   marks: 'Marks',
   'my-leave': 'My leave',
   'my-attendance': 'My attendance',
