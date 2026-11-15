@@ -20,6 +20,7 @@ import {
   writeBiometricPreference,
   type BiometricSupport,
 } from './biometric';
+import { forgetDevice, unregisterDevice } from '@/features/push/devices';
 import { roleKindFromMe, roleLabelFromMe } from './roles';
 import {
   getActiveId,
@@ -169,6 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const dropAccount = useCallback(
     async (accountId: string, message?: string) => {
       const wasActive = activeRef.current?.id === accountId;
+      void forgetDevice(accountId); // push (wave 2, G): this phone's device record for the account
       const remaining = await removeAccount(accountId);
       applyAccounts(remaining);
       if (message) setNotice(message);
@@ -340,6 +342,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!id) return;
       const token = sessionRef.current?.accountId === id ? sessionRef.current.token : await getToken(id);
       if (token) {
+        // Push (wave 2, G): stop pushes to this phone for this account before the session ends.
+        await unregisterDevice(id, token).catch(() => undefined);
         // Best effort: even if the phone is offline, the account is still removed from it.
         await api.post<void>('/auth/logout', undefined, { token }).catch((e) => {
           if (!isApiError(e)) throw e;

@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
 import { AuthProvider, useAuth } from '@/auth';
+import { PushProvider } from '@/features/push/PushProvider';
 import { fontAssets, ThemeProvider, useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -21,7 +22,10 @@ export default function RootLayout() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <RootNavigator />
+            {/* Push (wave 2, G): permission, device registration, taps and the in-app banner. */}
+            <PushProvider>
+              <RootNavigator />
+            </PushProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>

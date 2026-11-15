@@ -13,6 +13,8 @@ const TITLES: Record<string, string> = {
   notices: 'Notices',
   calendar: 'Calendar',
   'report-absence': 'Report absence',
+  'messages/new': 'New message',
+  'messages/[id]': 'Conversation',
   notifications: 'Notifications',
   profile: 'Profile and settings',
 };
