@@ -72,6 +72,12 @@ const promotion: NavItem = {
   description: 'Move each class into the next academic year',
   permission: 'students.promote',
 };
+const studentLeave: NavItem = {
+  label: 'Student leave',
+  path: '/app/student-leave',
+  description: 'Absences reported by families: approve or refuse them',
+  anyPermission: ['student_leave.decide', 'student_leave.read_all', 'student_leave.decide_all'],
+};
 const staff: NavItem = {
   label: 'All staff',
   path: '/app/staff',
@@ -126,6 +132,12 @@ const feeSetup: NavItem = {
   path: '/app/fees/setup',
   description: 'Kinds of fee, what each class pays, and when',
   permission: 'fees.read_all',
+};
+const messages: NavItem = {
+  label: 'Messages',
+  path: '/app/messages',
+  description: 'Write to the families of your students, or read conversations as an administrator',
+  anyPermission: ['messages.use', 'messages.read_all'],
 };
 const notices: NavItem = {
   label: 'Notices',
@@ -214,7 +226,12 @@ export const NAV_ENTRIES: NavEntry[] = [
   { label: 'Dashboard', icon: 'home', section: 'overview', item: dashboard },
   { label: 'Calendar', icon: 'calendar', section: 'overview', item: calendar },
   { label: 'Admissions', icon: 'clipboard', section: 'office', items: [admissions, forms] },
-  { label: 'Students', icon: 'students', section: 'office', items: [students, promotion] },
+  {
+    label: 'Students',
+    icon: 'students',
+    section: 'office',
+    items: [students, studentLeave, promotion],
+  },
   {
     label: 'Staff',
     icon: 'teachers',
@@ -245,6 +262,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     section: 'office',
     items: [timetable, myTimetable, dayChanges, timings],
   },
+  { label: 'Messages', icon: 'mail', section: 'office', item: messages },
   { label: 'Notices', icon: 'notice', section: 'office', item: notices },
   {
     label: 'Settings',

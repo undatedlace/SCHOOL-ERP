@@ -206,6 +206,16 @@ type Tab = 'take' | 'report';
                     {{ s.name }}
                   </div>
                   <div class="text-xs text-muted-foreground">Admission no. {{ s.admissionNo }}</div>
+                  @if (s.approvedLeave) {
+                    <div class="mt-1 text-xs font-medium text-info">
+                      Leave approved{{ s.approvedLeave.halfDay ? ' (half day)' : '' }}
+                      @if (!s.status) {
+                        <span class="font-normal text-muted-foreground">
+                          - set to Leave until you save</span
+                        >
+                      }
+                    </div>
+                  }
                 </div>
                 <div class="flex gap-1" role="group" [attr.aria-label]="'Attendance for ' + s.name">
                   <p-selectbutton

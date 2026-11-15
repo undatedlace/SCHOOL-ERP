@@ -97,7 +97,7 @@ describe('mobile access (e2e)', () => {
   });
 
   it('registers a device, refreshes it, lists it and removes it; others cannot touch it', async () => {
-    const pushToken = unique('push');
+    const pushToken = `ExponentPushToken[${unique('push')}]`;
     const reg = await request(server())
       .post('/api/v1/devices')
       .set('Authorization', `Bearer ${token}`)

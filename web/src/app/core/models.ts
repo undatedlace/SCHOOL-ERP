@@ -25,6 +25,10 @@ export interface School {
   studentIdDigits: number;
   /** A student's school e-mail is their ID at this domain. */
   studentEmailDomain: string | null;
+  /** Quiet hours for teachers, India time "HH:mm"; a family message sent then waits for the push. */
+  messageQuietStart: string;
+  messageQuietEnd: string;
+  messageQuietSundays: boolean;
 }
 
 /** What the move-a-student call tells the screen about the class change. */
@@ -589,6 +593,10 @@ export interface AttendanceRosterStudent {
   rollNo: number | null;
   status: AttendanceStatus | null;
   note: string | null;
+  /** Leave the family reported and the school approved, covering this day. */
+  approvedLeave?: { requestId: string; halfDay: boolean } | null;
+  /** For a student with no saved mark and approved leave: the screen may pre-select it. */
+  suggestedStatus?: AttendanceStatus | null;
 }
 
 export interface AttendanceRoster {

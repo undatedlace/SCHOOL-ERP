@@ -11,6 +11,7 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from '@openng/optimus-ui/button';
+import { CheckboxModule } from '@openng/optimus-ui/checkbox';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { MessageService } from '@openng/optimus-ui/api';
 import { Api } from '../../core/api';
@@ -18,10 +19,19 @@ import { apiError } from '../../core/api-error';
 import { School } from '../../core/models';
 import { FormField } from '../../shared/ui/form-field';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TimeField } from '../../shared/ui/time-field';
 
 @Component({
   selector: 'app-school-settings',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, FormField, PageHeader],
+  imports: [
+    ReactiveFormsModule,
+    ButtonModule,
+    CheckboxModule,
+    InputTextModule,
+    FormField,
+    PageHeader,
+    TimeField,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-header
@@ -125,6 +135,40 @@ import { PageHeader } from '../../shared/ui/page-header';
             }
           </p>
         </fieldset>
+        <fieldset class="grid gap-4 border-t pt-4 sm:col-span-2 sm:grid-cols-2">
+          <legend class="mb-1 text-sm font-semibold">Messages: quiet hours for teachers</legend>
+          <p class="text-sm text-muted-foreground sm:col-span-2">
+            A message from a family reaches the teacher's inbox at once, but the phone alert waits
+            until quiet hours end (India time). Messages to families are never held back.
+          </p>
+          <div class="flex flex-col gap-1 text-sm">
+            <label for="messageQuietStart">Quiet hours begin</label>
+            <app-time-field
+              label="Quiet hours begin"
+              inputId="messageQuietStart"
+              [value]="form.controls.messageQuietStart.value"
+              (valueChange)="setQuiet('messageQuietStart', $event)"
+            />
+          </div>
+          <div class="flex flex-col gap-1 text-sm">
+            <label for="messageQuietEnd">Quiet hours end</label>
+            <app-time-field
+              label="Quiet hours end"
+              inputId="messageQuietEnd"
+              [value]="form.controls.messageQuietEnd.value"
+              (valueChange)="setQuiet('messageQuietEnd', $event)"
+            />
+          </div>
+          <div class="flex items-center gap-2 text-sm sm:col-span-2">
+            <p-checkbox
+              inputId="messageQuietSundays"
+              [binary]="true"
+              ariaLabel="Sundays are quiet all day"
+              formControlName="messageQuietSundays"
+            />
+            <label for="messageQuietSundays">Sundays are quiet all day</label>
+          </div>
+        </fieldset>
         <div class="sm:col-span-2">
           <p-button
             type="submit"
@@ -155,6 +199,9 @@ export class SchoolSettings {
       '',
       Validators.pattern(/^(([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})?$/),
     ],
+    messageQuietStart: ['19:00', Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)],
+    messageQuietEnd: ['07:00', Validators.pattern(/^([01]\d|2[0-3]):[0-5]\d$/)],
+    messageQuietSundays: [true],
   });
 
   private readonly values = toSignal(this.form.valueChanges, {
@@ -185,8 +232,17 @@ export class SchoolSettings {
         studentIdPrefix: s.studentIdPrefix ?? '',
         studentIdDigits: String(s.studentIdDigits ?? 4),
         studentEmailDomain: s.studentEmailDomain ?? '',
+        messageQuietStart: s.messageQuietStart ?? '19:00',
+        messageQuietEnd: s.messageQuietEnd ?? '07:00',
+        messageQuietSundays: s.messageQuietSundays ?? true,
       });
     });
+  }
+
+  /** A quiet-hours field changed (the time box gives "" when cleared). */
+  protected setQuiet(key: 'messageQuietStart' | 'messageQuietEnd', value: string) {
+    this.form.controls[key].setValue(value);
+    this.form.controls[key].markAsDirty();
   }
 
   protected async save() {
@@ -195,13 +251,23 @@ export class SchoolSettings {
 
     // The API ignores empty optional fields, so only send what has a value. The student ID settings are
     // always sent: an empty prefix or domain means "none".
-    const { studentIdPrefix, studentIdDigits, studentEmailDomain, ...profile } =
-      this.form.getRawValue();
-    const body: Record<string, string | number> = {
+    const {
+      studentIdPrefix,
+      studentIdDigits,
+      studentEmailDomain,
+      messageQuietStart,
+      messageQuietEnd,
+      messageQuietSundays,
+      ...profile
+    } = this.form.getRawValue();
+    const body: Record<string, string | number | boolean> = {
       ...Object.fromEntries(Object.entries(profile).filter(([, v]) => v.trim() !== '')),
       studentIdPrefix: studentIdPrefix.trim(),
       studentIdDigits: Number(studentIdDigits),
       studentEmailDomain: studentEmailDomain.trim(),
+      messageQuietStart: messageQuietStart || '19:00',
+      messageQuietEnd: messageQuietEnd || '07:00',
+      messageQuietSundays,
     };
     this.saving.set(true);
     try {

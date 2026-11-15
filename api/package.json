@@ -13,6 +13,7 @@
     "s3:check": "tsx scripts/s3-check.ts",
     "files:cleanup": "node dist/cli/files-cleanup.js",
     "homework:remind": "node dist/cli/homework-reminders.js",
+    "push:send-due": "node dist/cli/push-send-due.js",
     "admin:reset-password": "node dist/cli/admin-reset-password.js",
     "owner:create": "node dist/cli/platform-owner.js create",
     "owner:reset-password": "node dist/cli/platform-owner.js reset-password",

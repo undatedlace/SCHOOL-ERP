@@ -73,6 +73,25 @@ describe('SchoolSettings student IDs', () => {
     await fixture.whenStable();
   });
 
+  it('sends the quiet hours for messages, with the defaults when the school has none yet', async () => {
+    const { fixture, http, type, el } = await setup();
+    type('name', 'Hera English School');
+    fixture.componentInstance['form'].markAsDirty();
+    const save = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Save changes'),
+    ) as HTMLButtonElement;
+    save.click();
+    fixture.detectChanges();
+    const req = http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/school');
+    expect(req.request.body).toMatchObject({
+      messageQuietStart: '19:00',
+      messageQuietEnd: '07:00',
+      messageQuietSundays: true,
+    });
+    req.flush(school);
+    await fixture.whenStable();
+  });
+
   it('refuses a prefix that starts with a digit or a bad domain', async () => {
     const { fixture, type, el } = await setup();
     type('studentIdPrefix', '9bad');

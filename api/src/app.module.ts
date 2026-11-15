@@ -20,7 +20,9 @@ import { AssessmentsModule } from './modules/assessments/assessments.module.js';
 import { HomeworkModule } from './modules/homework/homework.module.js';
 import { TimetableModule } from './modules/timetable/timetable.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { MessagingModule } from './modules/messaging/messaging.module.js';
 import { LeaveModule } from './modules/leave/leave.module.js';
+import { StudentLeaveModule } from './modules/student-leave/student-leave.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { CalendarModule } from './modules/calendar/calendar.module.js';
 import { ImportsModule } from './modules/imports/imports.module.js';
@@ -66,6 +68,7 @@ import { PlatformModule } from './modules/platform/platform.module.js';
     ImportsModule,
     SearchModule,
     LeaveModule,
+    StudentLeaveModule,
     NotificationsModule,
     HomeworkModule,
     TimetableModule,
@@ -75,6 +78,7 @@ import { PlatformModule } from './modules/platform/platform.module.js';
     InsightsModule,
     AdmissionsModule,
     PlatformModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [

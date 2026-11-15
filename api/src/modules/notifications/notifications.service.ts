@@ -6,6 +6,7 @@ import {
   skipTake,
 } from '../../common/dto/page-query.dto.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 
 export interface NewNotification {
   /** What happened, like "leave.requested". */
@@ -14,6 +15,8 @@ export interface NewNotification {
   body?: string;
   /** Where in the app it leads, for example "/app/leave". */
   link?: string;
+  /** Earliest time to send the push (quiet hours). Undefined means as soon as possible. */
+  pushAt?: Date;
 }
 
 const view = (n: {
@@ -40,7 +43,10 @@ const view = (n: {
  */
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
   /** Writes one message for each person (once each; nobody is told twice about the same thing). */
   async notify(
@@ -50,6 +56,9 @@ export class NotificationsService {
   ): Promise<number> {
     const ids = [...new Set(userIds.filter((u): u is string => !!u))];
     if (ids.length === 0) return 0;
+    // Push: people with a device get their row marked PENDING in this same write (one extra query).
+    const withDevice = await this.push.usersWithDevices(ids);
+    const pushAt = n.pushAt ?? new Date();
     const res = await this.prisma.notification.createMany({
       data: ids.map((userId) => ({
         schoolId,
@@ -58,8 +67,13 @@ export class NotificationsService {
         title: n.title,
         body: n.body ?? null,
         link: n.link ?? null,
+        ...(withDevice.has(userId)
+          ? { pushStatus: 'PENDING' as const, pushAt }
+          : {}),
       })),
     });
+    // Fire and forget: a push problem must never reach the feature that called us.
+    if (withDevice.size > 0 && pushAt.getTime() <= Date.now()) this.push.kick();
     return res.count;
   }
 

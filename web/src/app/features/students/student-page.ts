@@ -34,6 +34,7 @@ import { HasPermission } from '../../shared/has-permission.directive';
 import { StudentDocuments } from './student-documents';
 import { StudentAttendanceSection } from './student-attendance';
 import { StudentFees } from './student-fees';
+import { StudentLeaveCard } from '../student-leave/student-leave-card';
 import { FormField } from '../../shared/ui/form-field';
 import { Avatar } from '../../shared/ui/avatar';
 import { Badge, BadgeTone, ClassPill } from '../../shared/ui/badge';
@@ -63,6 +64,7 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
     StudentDocuments,
     StudentFees,
     StudentAttendanceSection,
+    StudentLeaveCard,
     Avatar,
     Badge,
     ClassPill,
@@ -411,6 +413,7 @@ import { TextareaModule } from '@openng/optimus-ui/textarea';
 
         <div class="flex min-w-0 flex-col gap-6">
           <app-student-attendance [studentId]="s.id" />
+          <app-student-leave-card [studentId]="s.id" />
           <app-student-fees [studentId]="s.id" [openPayment]="pay() === '1'" />
           <app-student-documents [studentId]="s.id" />
         </div>

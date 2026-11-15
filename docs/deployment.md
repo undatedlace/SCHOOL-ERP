@@ -74,6 +74,7 @@ BACKUP_DIR=/var/backups/school-erp ./restore-check.sh
 ## Housekeeping to schedule
 
 - Daily: `npm run files:cleanup` in the API (removes uploads that were never attached): `docker compose run --rm api node dist/cli/files-cleanup.js`.
+- Every minute (or set `PUSH_WORKER=on` instead): `npm run push:send-due` in the API sends push messages that were held back for quiet hours or are waiting to be retried: `docker compose run --rm api node dist/cli/push-send-due.js`. Safe to run from several places at once. Push is off until `PUSH_DRIVER=expo` is set; see `docs/push.md`.
 - Weekly: the restore check above.
 - Before launch: scan uploads with ClamAV (or the host's scanner); turn the Content-Security-Policy in `web/nginx-security-headers.conf` from report-only to enforced after checking the pages in a browser; set up uptime monitoring on `/api/health`.
 

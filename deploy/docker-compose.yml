@@ -40,6 +40,10 @@ services:
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-}
       S3_KEY_PREFIX: ${S3_KEY_PREFIX:-school-erp}
+      # Push notifications (docs/push.md). "off" until the Expo account is set up.
+      PUSH_DRIVER: ${PUSH_DRIVER:-off}
+      PUSH_WORKER: ${PUSH_WORKER:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
     volumes:
       - files:/data/files
 

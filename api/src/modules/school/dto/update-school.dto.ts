@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsInt,
   IsOptional,
@@ -78,4 +79,21 @@ export class UpdateSchoolDto {
     message: 'Use a domain like school.in',
   })
   studentEmailDomain?: string;
+
+  /** When quiet hours begin for teachers (India time, "HH:mm"), for example 19:00. */
+  @IsOptional()
+  @Transform(trim)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Use a time like 19:00' })
+  messageQuietStart?: string;
+
+  /** When quiet hours end (India time, "HH:mm"), for example 07:00. */
+  @IsOptional()
+  @Transform(trim)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Use a time like 07:00' })
+  messageQuietEnd?: string;
+
+  /** Whether Sundays are quiet all day. */
+  @IsOptional()
+  @IsBoolean()
+  messageQuietSundays?: boolean;
 }

@@ -211,6 +211,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
       },
       {
+        path: 'messages',
+        canActivate: [anyPermissionGuard(['messages.use', 'messages.read_all'])],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'messages/:id',
+        canActivate: [anyPermissionGuard(['messages.use', 'messages.read_all'])],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
@@ -235,6 +247,18 @@ export const routes: Routes = [
         path: 'leave',
         canActivate: [permissionGuard('leave.manage')],
         loadComponent: () => import('./features/leave/leave-requests').then((m) => m.LeaveRequests),
+      },
+      {
+        path: 'student-leave',
+        canActivate: [
+          anyPermissionGuard([
+            'student_leave.decide',
+            'student_leave.read_all',
+            'student_leave.decide_all',
+          ]),
+        ],
+        loadComponent: () =>
+          import('./features/student-leave/student-leave-page').then((m) => m.StudentLeavePage),
       },
       {
         path: 'my-leave',
@@ -333,6 +357,24 @@ export const routes: Routes = [
         path: 'timetable',
         loadComponent: () =>
           import('./features/timetable/portal-timetable').then((m) => m.PortalTimetable),
+      },
+      {
+        path: 'absence',
+        canActivate: [permissionGuard('student_leave.request')],
+        loadComponent: () =>
+          import('./features/student-leave/portal-absence').then((m) => m.PortalAbsence),
+      },
+      {
+        path: 'messages',
+        canActivate: [permissionGuard('messages.use')],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'messages/:id',
+        canActivate: [permissionGuard('messages.use')],
+        loadComponent: () =>
+          import('./features/messages/messages-page').then((m) => m.MessagesPage),
       },
       {
         path: 'notices',

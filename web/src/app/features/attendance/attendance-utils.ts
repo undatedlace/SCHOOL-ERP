@@ -18,9 +18,16 @@ export const statusLabel = (s: AttendanceStatus) => STATUSES.find((x) => x.value
 /** What the teacher has chosen so far, by student. */
 export type Drafts = Record<string, { status: AttendanceStatus | null; note: string }>;
 
+/**
+ * Starts from what is saved. A student with no saved mark but approved leave is pre-selected as
+ * "On leave" (the API's suggestion); nothing is saved until the teacher saves, and they can change it.
+ */
 export const draftsFrom = (roster: AttendanceRoster): Drafts =>
   Object.fromEntries(
-    roster.students.map((s) => [s.studentId, { status: s.status, note: s.note ?? '' }]),
+    roster.students.map((s) => [
+      s.studentId,
+      { status: s.status ?? s.suggestedStatus ?? null, note: s.note ?? '' },
+    ]),
   );
 
 /** The students whose mark differs from what is saved: only these are sent. */
