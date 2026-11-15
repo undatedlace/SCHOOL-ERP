@@ -12,7 +12,7 @@ import { radius, spacing, useTheme } from '@/theme';
 import { Badge, Button, Card, ListRow, SectionHeader, Skeleton, StatTile, Text } from '@/ui';
 import { ProgressBar } from '../ProgressBar';
 import { awaitingMarking, dueText, markedProgressText, type QueueItem } from '../homework/homeworkLogic';
-import { isMyLesson, lessonsAway, lessonsToTeach, nextLessonText, registerHref } from './teacherDay';
+import { isMyLesson, lessonsAway, lessonsToTeach, marksHref, nextLessonText, registerHref } from './teacherDay';
 import type { OverviewDivision } from '../attendance/useAttendanceData';
 
 interface Clock {
@@ -200,6 +200,16 @@ export function LessonsCard({
                       onPress={() => router.push(href)}
                       accessibilityLabel={`Take the register for ${row.divisionLabel ?? 'this class'}`}
                       testID={`register-${row.key}`}
+                    />
+                    <Button
+                      title="Marks"
+                      icon="create-outline"
+                      size="sm"
+                      variant="ghost"
+                      fullWidth={false}
+                      onPress={() => router.push(marksHref(row))}
+                      accessibilityLabel={`Marks for ${row.divisionLabel ?? 'this class'}`}
+                      testID={`marks-${row.key}`}
                     />
                   </View>
                 );
@@ -394,7 +404,7 @@ const styles = StyleSheet.create({
   upNext: { borderRadius: radius.lg, padding: spacing.md, gap: 2, marginTop: spacing.xs },
   tiles: { gap: spacing.md },
   tileRow: { flexDirection: 'row', gap: spacing.md },
-  action: { marginTop: spacing.xs, flexDirection: 'row' },
+  action: { marginTop: spacing.xs, flexDirection: 'row', gap: spacing.sm },
   queueTrailing: { alignItems: 'flex-end', gap: 2 },
   hairline: { height: StyleSheet.hairlineWidth },
   dateTile: { width: 44, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },

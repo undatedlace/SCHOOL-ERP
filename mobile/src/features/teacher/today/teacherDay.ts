@@ -125,6 +125,11 @@ export function registerHref(row: Pick<TimelineRow, 'divisionId'>, date: string)
   return row.divisionId ? `/teacher/attendance/${row.divisionId}?date=${date}` : null;
 }
 
+/** Where the "Marks" button of a lesson goes: the list of tests for that division. */
+export function marksHref(row: Pick<TimelineRow, 'divisionId'>): string {
+  return row.divisionId ? `/teacher/marks?divisionId=${row.divisionId}` : '/teacher/marks';
+}
+
 /** "Nursery-A, 9:20 am": the line under the Lessons tile. */
 export function nextLessonText(next: { row: TimelineRow; when: 'now' | 'next' } | null, clock: (hhmm: string) => string): string | null {
   if (!next) return null;

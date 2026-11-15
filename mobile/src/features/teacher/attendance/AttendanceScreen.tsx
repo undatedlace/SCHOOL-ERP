@@ -66,8 +66,8 @@ export function AttendanceScreen() {
               next={nextLessonIn(week.data, d.id, today, nowMin) ?? nextLessonIn(following.data, d.id, today, nowMin)}
               today={today}
               onRegister={() => router.push(`/teacher/attendance/${d.id}`)}
-              onMarks={() => router.push('/teacher/marks')}
-              onStudents={() => router.push('/teacher/students')}
+              onMarks={() => router.push(`/teacher/marks?divisionId=${d.id}`)}
+              onStudents={() => router.push(`/teacher/students?divisionId=${d.id}`)}
             />
           ))}
         </View>

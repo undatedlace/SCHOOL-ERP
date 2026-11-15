@@ -5,6 +5,7 @@ import {
   nextLessonIn,
   nextLessonText,
   planTeacherDay,
+  marksHref,
   registerHref,
   type TeacherCell,
   type TeacherChange,
@@ -136,6 +137,12 @@ describe('registerHref and nextLessonText', () => {
     const plan = planTeacherDay(week(), '2026-11-16');
     expect(registerHref(plan.rows[0]!, '2026-11-16')).toBe('/teacher/attendance/div-n?date=2026-11-16');
     expect(registerHref({ divisionId: undefined }, '2026-11-16')).toBeNull();
+  });
+
+  it('opens the list of tests for that division from the Marks button', () => {
+    const plan = planTeacherDay(week(), '2026-11-16');
+    expect(marksHref(plan.rows[0]!)).toBe('/teacher/marks?divisionId=div-n');
+    expect(marksHref({ divisionId: undefined })).toBe('/teacher/marks');
   });
 
   it('writes the line under the Lessons tile', () => {
