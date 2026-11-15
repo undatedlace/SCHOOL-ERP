@@ -137,9 +137,11 @@ describe('push (e2e)', () => {
       sound: 'default',
       data: { notificationId: n.id, link: '/portal/results' },
     });
-    const wire = JSON.stringify(m);
+    // Only the human-readable text is checked here: the ids in `data` are random and may contain
+    // any digits (a "92" inside a UUID once failed this test). The exact match above covers the rest.
+    const readable = `${m.title} ${m.body}`;
     for (const secret of ['Asha', 'Maths', '92', 'Fees pending', '12,500']) {
-      expect(wire).not.toContain(secret);
+      expect(readable).not.toContain(secret);
     }
   });
 

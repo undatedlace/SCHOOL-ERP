@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { radius, spacing, useTheme } from '@/theme';
 import { Avatar, Icon, Text } from '@/ui';
-import { inboxTimeLabel, previewLine, readOnlyTag, teacherLine } from './format';
+import { counterpart, inboxTimeLabel, previewLine, readOnlyTag } from './format';
 import type { Conversation } from './types';
 
 interface Props {
@@ -14,12 +14,13 @@ interface Props {
 export function ConversationRow({ conversation: c, onPress, showDivider = false }: Props) {
   const { colors } = useTheme();
   const unread = c.unreadCount > 0;
+  const other = counterpart(c);
   const tag = readOnlyTag(c);
   const preview = previewLine(c);
   const time = inboxTimeLabel(c.lastMessageAt);
 
   const label = [
-    c.teacher.name,
+    other.name,
     c.subject,
     unread ? `${c.unreadCount} unread` : null,
     tag,
@@ -41,18 +42,18 @@ export function ConversationRow({ conversation: c, onPress, showDivider = false 
         pressed && { backgroundColor: colors.accent },
       ]}
     >
-      <Avatar name={c.teacher.name} size={48} />
+      <Avatar name={other.name} size={48} />
       <View style={styles.body}>
         <View style={styles.top}>
           <Text variant={unread ? 'bodyStrong' : 'body'} numberOfLines={1} style={styles.name}>
-            {c.teacher.name}
+            {other.name}
           </Text>
           <Text variant="caption" tone={unread ? 'primary' : 'muted'}>
             {time}
           </Text>
         </View>
         <Text variant="caption" tone="muted" numberOfLines={1}>
-          {teacherLine(c.teacher)}
+          {other.line}
         </Text>
         <Text variant={unread ? 'smallStrong' : 'small'} tone="strong" numberOfLines={1}>
           {c.subject}

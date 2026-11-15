@@ -31,6 +31,7 @@ mobile/
       (tabs)/              Today, Attendance, Messages, Homework, More
       marks.tsx my-leave.tsx my-attendance.tsx students.tsx notices.tsx
       notifications.tsx profile.tsx
+      marks/ (new, [id])  my-leave/ (new)  students/ ([id])  notices/ (new, [id], edit/[id])
   src/
     theme/                 tokens (colours copied from web/src/styles.css, light and dark), fonts, ThemeProvider
     ui/                    the UI kit (import from '@/ui')

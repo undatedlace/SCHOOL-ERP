@@ -51,6 +51,18 @@ export function teacherLine(t: Pick<ConversationTeacher, 'subjects' | 'isClassTe
   return parts.join(' · ') || 'Teacher';
 }
 
+/**
+ * Who the other side of a conversation is, for the person looking at it. A family sees the
+ * teacher; a teacher sees the student (and their class), since the student account is the family.
+ */
+export function counterpart(c: Pick<Conversation, 'myRole' | 'teacher' | 'student'>): { name: string; line: string } {
+  if (c.myRole === 'teacher') {
+    const place = [c.student.className, c.student.divisionName].filter(Boolean).join('-');
+    return { name: c.student.name, line: place ? `Student · ${place}` : 'Student' };
+  }
+  return { name: c.teacher.name, line: teacherLine(c.teacher) };
+}
+
 /** The word marking a conversation nobody can reply to any more, or null. */
 export function readOnlyTag(c: Pick<Conversation, 'status' | 'canReply'>): string | null {
   if (c.status === 'CLOSED') return 'Closed';

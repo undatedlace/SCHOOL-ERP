@@ -12,10 +12,22 @@ import { SearchBox, useDebounced } from './SearchBox';
 import type { Conversation, Page } from './types';
 
 type Filter = 'all' | 'unread';
+type Base = 'family' | 'teacher';
 const PAGE = 30;
 
-/** The Messages tab: the family's conversations with teachers, unread first. */
-export function InboxScreen() {
+const COPY: Record<Base, { intro: string; empty: string }> = {
+  family: {
+    intro: 'Write to your class teacher and subject teachers.',
+    empty: 'Start a conversation with your class teacher or a subject teacher.',
+  },
+  teacher: {
+    intro: 'Write to the families of the students you teach.',
+    empty: 'Start a conversation with a student\'s family.',
+  },
+};
+
+/** The Messages tab: conversations, unread first. Families write to teachers; teachers to families. */
+export function InboxScreen({ base = 'family' }: { base?: Base }) {
   const router = useRouter();
   const { colors } = useTheme();
   const [filter, setFilter] = useState<Filter>('all');
@@ -58,7 +70,7 @@ export function InboxScreen() {
         <View style={styles.headText}>
           <Text variant="title">Messages</Text>
           <Text variant="small" tone="muted">
-            Write to your class teacher and subject teachers.
+            {COPY[base].intro}
           </Text>
         </View>
         <Button
@@ -66,7 +78,7 @@ export function InboxScreen() {
           icon="create-outline"
           size="sm"
           fullWidth={false}
-          onPress={() => router.push('/family/messages/new')}
+          onPress={() => router.push(`/${base}/messages/new`)}
           accessibilityLabel="New message"
           testID="new-message"
         />
@@ -102,9 +114,9 @@ export function InboxScreen() {
           <EmptyState
             icon="chatbubbles-outline"
             title="No messages yet"
-            description="Start a conversation with your class teacher or a subject teacher."
+            description={COPY[base].empty}
             actionLabel="New message"
-            onAction={() => router.push('/family/messages/new')}
+            onAction={() => router.push(`/${base}/messages/new`)}
           />
         )
       ) : (
@@ -115,7 +127,7 @@ export function InboxScreen() {
                 key={c.id}
                 conversation={c}
                 showDivider={i < items.length - 1}
-                onPress={() => router.push(`/family/messages/${c.id}`)}
+                onPress={() => router.push(`/${base}/messages/${c.id}`)}
               />
             ))}
           </Card>

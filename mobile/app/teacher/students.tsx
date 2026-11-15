@@ -1,13 +1,8 @@
-import { ComingSoon } from '@/features/shell/ComingSoon';
+import { useLocalSearchParams } from 'expo-router';
+import { StudentsScreen } from '@/features/teacher/students/StudentsScreen';
 
-/** Placeholder. Wave 3 (H) fills this in; replace the body of this file with the real screen. */
+/** `/teacher/students`, optionally `?divisionId=` to open the list for one class. */
 export default function TeacherStudents() {
-  return (
-    <ComingSoon
-      title="Students"
-      icon="people-outline"
-      description="Look up a student in your school."
-      willShow={["Search and read-only profiles"]}
-    />
-  );
+  const { divisionId } = useLocalSearchParams<{ divisionId?: string }>();
+  return <StudentsScreen divisionId={typeof divisionId === 'string' ? divisionId : undefined} />;
 }

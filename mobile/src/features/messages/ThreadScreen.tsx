@@ -15,7 +15,7 @@ import { useApiQuery } from '@/api/hooks';
 import { radius, spacing, useTheme } from '@/theme';
 import { Avatar, Button, ErrorState, Icon, Skeleton, Text } from '@/ui';
 import { Composer } from './Composer';
-import { groupByDay, mergeMessages, teacherLine } from './format';
+import { counterpart, groupByDay, mergeMessages } from './format';
 import { useRefreshMessages } from './hooks';
 import { MessageBubble } from './MessageBubble';
 import { MAX_FILES, type ConversationDetail, type Message, type SendResult } from './types';
@@ -146,13 +146,15 @@ export function ThreadScreen() {
     );
   }
 
+  const other = counterpart(data);
+
   return (
     <View
       ref={frame}
       style={[styles.flex, { backgroundColor: colors.background }]}
       onLayout={() => frame.current?.measureInWindow((_x, y) => setTop(y))}
     >
-      <Stack.Screen options={{ title: data.teacher.name }} />
+      <Stack.Screen options={{ title: other.name }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -177,13 +179,13 @@ export function ThreadScreen() {
           testID="thread-scroll"
         >
           <View style={[styles.about, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Avatar name={data.teacher.name} size={44} />
+            <Avatar name={other.name} size={44} />
             <View style={styles.aboutText}>
               <Text variant="bodyStrong" numberOfLines={1}>
-                {data.teacher.name}
+                {other.name}
               </Text>
               <Text variant="small" tone="muted" numberOfLines={2}>
-                {teacherLine(data.teacher)}
+                {other.line}
               </Text>
             </View>
           </View>
@@ -230,7 +232,7 @@ export function ThreadScreen() {
             </View>
           ))}
 
-          {quietNote && data.canReply ? (
+          {quietNote && data.canReply && data.myRole === 'family' ? (
             <View style={[styles.quiet, { backgroundColor: colors.amberSoft }]} accessibilityLiveRegion="polite">
               <Icon name="moon-outline" size={16} color={colors.amberInk} />
               <Text variant="small" style={[styles.flexShrink, { color: colors.amberInk }]}>
