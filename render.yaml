@@ -74,6 +74,13 @@ services:
       - type: rewrite
         source: /api/*
         destination: https://school-erp-api-ppe.onrender.com/api/*
+      # The APK download page is a plain static page, not part of the Angular app.
+      - type: rewrite
+        source: /download
+        destination: /download/index.html
+      - type: rewrite
+        source: /download/
+        destination: /download/index.html
       # Every other address is an app page; the Angular router decides what to show.
       - type: rewrite
         source: /*

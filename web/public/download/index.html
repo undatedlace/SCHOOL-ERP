@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0e5e61">
+  <title>Get the School ERP Android app</title>
+  <style>
+    :root {
+      --bg: #f2f5f6; --card: #ffffff; --fg: #15222b; --muted: #5c6a75; --border: #e2e7eb;
+      --primary: #0e5e61; --primary-hover: #0a4b4e; --on-primary: #ffffff; --soft: #e2f0ef;
+      --amber-soft: #fcf0d6; --amber-ink: #3b2600; --ring: #1f8589;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0c1316; --card: #131c20; --fg: #e5ecef; --muted: #93a2ab; --border: #223138;
+        --primary: #5cc2ba; --primary-hover: #7fd0c9; --on-primary: #06201f; --soft: rgba(92,194,186,.14);
+        --amber-soft: rgba(239,179,66,.15); --amber-ink: #f6d48f; --ring: #6fd3ca;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 34rem; margin: 0 auto; padding: 24px 16px 48px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px; background: var(--primary); color: var(--on-primary);
+      display: grid; place-items: center; font-weight: 700; font-size: 18px;
+    }
+    .brand b { display: block; font-size: 1.05rem; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; padding: 2px 10px;
+      border-radius: 999px; background: var(--amber-soft); color: var(--amber-ink);
+    }
+    .tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    h1 { font-size: 1.6rem; line-height: 1.25; margin: 8px 0 6px; }
+    p { margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 20px; margin: 16px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 16px; text-align: center; }
+    .meta div { background: var(--soft); border-radius: 12px; padding: 10px 6px; }
+    .meta dt { font-size: .75rem; color: var(--muted); }
+    .meta dd { margin: 2px 0 0; font-weight: 600; word-break: break-word; }
+    .button {
+      display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px;
+      border-radius: 14px; background: var(--primary); color: var(--on-primary); text-decoration: none;
+      font-weight: 600; font-size: 1.05rem; padding: 12px 20px;
+    }
+    .button:hover { background: var(--primary-hover); }
+    a:focus-visible, summary:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
+    h2 { font-size: 1.1rem; margin: 0 0 10px; }
+    ol { margin: 0; padding-left: 1.3rem; }
+    li { margin-bottom: 8px; }
+    code { font: .82rem ui-monospace, Menlo, monospace; word-break: break-all; }
+    details { margin-top: 4px; }
+    summary { cursor: pointer; color: var(--primary); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+    a { color: var(--primary); }
+    footer { font-size: .9rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">SE</div>
+      <div><b>School ERP</b><span class="tag">Test copy, sample data only</span></div>
+    </div>
+
+    <h1>Get the Android app</h1>
+    <p class="muted">For testers. It works on Android phones. Please do not enter real student or family information, because this is a test copy.</p>
+
+    <section class="card" aria-labelledby="dl-title">
+      <h2 id="dl-title">Download</h2>
+      <dl class="meta">
+        <div><dt>Version</dt><dd id="v-version">Latest</dd></div>
+        <div><dt>Released</dt><dd id="v-date">-</dd></div>
+        <div><dt>Size</dt><dd id="v-size">-</dd></div>
+      </dl>
+      <a class="button" id="dl" href="https://github.com/undatedlace/SCHOOL-ERP/releases/latest/download/school-erp.apk" download>
+        Download the app (.apk)
+      </a>
+      <details>
+        <summary>Check the file (optional)</summary>
+        <p class="muted">After downloading, the file's SHA-256 should be:</p>
+        <p><code id="v-sha">shown here once the version loads</code></p>
+      </details>
+    </section>
+
+    <section class="card" aria-labelledby="how-title">
+      <h2 id="how-title">How to install</h2>
+      <ol>
+        <li>Tap <b>Download the app</b>, then open the file when it finishes.</li>
+        <li>If Android says it cannot install from this source, tap <b>Settings</b> and allow <b>Install unknown apps</b> for this browser, then go back and tap <b>Install</b>.</li>
+        <li>If <b>Play Protect</b> says the app is unrecognised, tap <b>More details</b>, then <b>Install anyway</b>. This is normal for a test app that is not in the Play Store.</li>
+        <li>Open <b>School ERP</b> and sign in with the login you were given.</li>
+      </ol>
+    </section>
+
+    <section class="card" aria-labelledby="up-title">
+      <h2 id="up-title">Updating</h2>
+      <p>When there is a new version, download it from this page and install it over the old one. Your signed-in accounts stay.</p>
+      <p class="muted">iPhone: not available yet. The web version works in any phone browser.</p>
+    </section>
+
+    <footer>
+      <p><a id="fb" href="/" hidden>Send feedback</a><span id="fb-sep" hidden> &middot; </span><a href="/">Open the web version</a></p>
+    </footer>
+  </main>
+
+  <script>
+    // Fills in the version, date, size and checksum from the newest app release on GitHub, and the
+    // feedback link from the API. If any of it fails, the page still works: the button already points
+    // at the newest release.
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+
+      fetch('https://api.github.com/repos/undatedlace/SCHOOL-ERP/releases?per_page=10', { headers: { Accept: 'application/vnd.github+json' } })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (list) {
+          var rel = list.filter(function (x) { return !x.draft && !x.prerelease && /^app-v/.test(x.tag_name); })[0];
+          if (!rel) return;
+          var asset = (rel.assets || []).filter(function (a) { return a.name === 'school-erp.apk'; })[0];
+          $('v-version').textContent = rel.tag_name.replace(/^app-v/, '');
+          $('v-date').textContent = new Date(rel.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          if (asset) {
+            $('v-size').textContent = (asset.size / 1048576).toFixed(0) + ' MB';
+            $('dl').href = asset.browser_download_url;
+          }
+          var m = /SHA-256:\s*`?([0-9a-f]{64})`?/i.exec(rel.body || '');
+          if (m) $('v-sha').textContent = m[1];
+        })
+        .catch(function () { /* keep the defaults */ });
+
+      fetch('/api/app-info')
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (info) {
+          if (info && /^https:\/\//.test(info.feedbackUrl || '')) {
+            $('fb').href = info.feedbackUrl; $('fb').hidden = false; $('fb-sep').hidden = false;
+          }
+        })
+        .catch(function () { /* no feedback link */ });
+    })();
+  </script>
+</body>
+</html>
