@@ -11,6 +11,8 @@ const TITLES: Record<string, string> = {
   results: 'Results',
   attendance: 'Attendance',
   notices: 'Notices',
+  'notices/[id]': 'Notice',
+  'homework/[id]': 'Homework',
   calendar: 'Calendar',
   'report-absence': 'Report absence',
   'messages/new': 'New message',
