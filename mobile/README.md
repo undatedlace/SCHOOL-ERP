@@ -64,3 +64,18 @@ Typed routes are off on purpose (many people add routes at once); links are plai
 ## Builds
 
 `app.config.ts` (name, scheme `schoolerp`, bundle ids `com.schoolerp.app`, light and dark teal splash) and `eas.json` (profiles `development`, `preview` (internal APK, iOS simulator build, points at the PPE test copy) and `production`). There are no secrets in either. The icons are placeholders (a graduation cap on teal) until the school's logo arrives. Push notifications, the Apple and Google store accounts and the production API address come later (M3, M6).
+
+## The APK testers install (Android)
+
+`scripts/build-apk.sh [API_URL] [VERSION_CODE]` builds a signed release APK for 64-bit phones into `dist/school-erp.apk` (about 45 MB) and prints its SHA-256. The API address defaults to the PPE API on Render and must be `https://`. **The VERSION_CODE must go up with every build you publish** (1, 2, 3 ...), or Android refuses to install it over the old one.
+
+**The signing key** is made the first time the script runs and lives in `~/.school-erp-keys` (outside the repository; `*.jks` is also git-ignored). Back that folder up: Android only accepts an update signed with the same key, so if it is lost every tester must uninstall the app before installing the next version. Never commit it.
+
+**Publishing** (the download page at `/download` on the web site reads the newest release whose tag starts with `app-v`):
+
+```
+gh release create app-v0.1.1 mobile/dist/school-erp.apk \
+  --title "School ERP app 0.1.1" --notes "What changed. SHA-256: <the hash the script printed>"
+```
+
+The asset must keep the name `school-erp.apk`: the page's button points at `releases/latest/download/school-erp.apk`. The page itself is `web/public/download/index.html`.
