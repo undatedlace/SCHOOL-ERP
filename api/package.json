@@ -26,6 +26,7 @@
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "seed:demo": "tsx prisma/seed-demo.ts",
+    "seed:demo-app": "tsx scripts/demo-app-data.ts",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
